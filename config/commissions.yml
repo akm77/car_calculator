@@ -1,0 +1,7 @@
+thresholds:
+  - max_price: 1500000
+    amount: 40000
+  - max_price: 3500000
+    amount: 65000
+  - amount: 85000
+

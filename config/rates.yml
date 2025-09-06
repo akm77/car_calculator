@@ -1,0 +1,21 @@
+currencies:
+  USD_RUB: 90.0
+  EUR_RUB: 100.0
+  JPY_RUB: 0.60
+  CNY_RUB: 12.0
+  AED_RUB: 24.5
+
+customs_services:
+  japan: 70000
+  korea: 70000
+  uae: 120000
+  china: 70000
+
+era_glonass_rub: 35000
+
+utilization:
+  base_private: 20000
+  coef_lt3: 0.17
+  coef_3_5: 0.26
+  coef_gt5: 0.26
+

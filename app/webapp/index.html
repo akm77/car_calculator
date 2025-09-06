@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Car Import Calculator</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f1115;
+      --bg-alt: #161a20;
+      --bg-soft: #1f252d;
+      --text: #e6e9ef;
+      --text-dim: #a2adbd;
+      --accent: #4d9fff;
+      --accent-hover: #77b7ff;
+      --danger: #ff5576;
+      --radius-s: 6px;
+      --radius-m: 12px;
+      --shadow-1: 0 2px 4px -2px rgba(0,0,0,.4), 0 4px 24px -6px rgba(0,0,0,.35);
+      --border: 1px solid #262f3a;
+      --focus: 0 0 0 3px rgba(77,159,255,.35);
+      --font-stack: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --trans: 140ms cubic-bezier(.4,0,.2,1);
+      --grad-accent: linear-gradient(135deg,#3187ff,#6bb5ff 55%,#8acaed);
+      --danger-fade: rgba(255,85,118,.14);
+      --accent-fade: rgba(77,159,255,.15);
+      --ok: #3ac27d;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f5f7fb;
+        --bg-alt: #ffffff;
+        --bg-soft: #f0f3f8;
+        --text: #1d232c;
+        --text-dim: #5c6675;
+        --accent: #186ddc;
+        --accent-hover: #3486f2;
+        --border: 1px solid #d6dde6;
+        --shadow-1: 0 2px 4px rgba(0,0,0,.06),0 6px 22px -8px rgba(0,0,0,.12);
+        --focus: 0 0 0 3px rgba(24,109,220,.28);
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--font-stack);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      padding: clamp(.75rem,1.6vw,1.6rem);
+      display: flex;
+      justify-content: center;
+    }
+    h1 { font-size: clamp(1.35rem,2.2vw,1.9rem); margin: 0 0 1.2rem; font-weight: 600; letter-spacing: .5px; background: var(--grad-accent); -webkit-background-clip: text; color: transparent; }
+    .app-shell { width: 100%; max-width: 880px; background: var(--bg-alt); border: var(--border); border-radius: var(--radius-m); padding: clamp(1rem,2.2vw,2rem); box-shadow: var(--shadow-1); display: flex; flex-direction: column; gap: 1.4rem; }
+    form { display: contents; }
+    .field-grid { display: grid; gap: 1rem 1.2rem; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); }
+    label { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; color: var(--text-dim); display: flex; flex-direction: column; gap: .45rem; }
+    select, input[type=number] { background: var(--bg-soft); color: var(--text); border: var(--border); padding: .65rem .7rem; font: inherit; border-radius: var(--radius-s); outline: none; transition: background var(--trans), border-color var(--trans), box-shadow var(--trans), color var(--trans); min-height: 42px; }
+    select:hover, input[type=number]:hover { background: linear-gradient(var(--bg-soft), var(--bg-soft)) padding-box, var(--grad-accent) border-box; border: 1px solid transparent; }
+    select:focus, input[type=number]:focus { box-shadow: var(--focus); }
+    ::placeholder { color: var(--text-dim); opacity: .7; }
+    button[type=submit], .btn-secondary, .btn-chat { border: none; background: var(--grad-accent); color: #fff; font: 600 .9rem/1 var(--font-stack); padding: .8rem 1.2rem; border-radius: var(--radius-s); cursor: pointer; letter-spacing: .4px; display: inline-flex; gap: .55rem; align-items: center; position: relative; transition: transform var(--trans), filter var(--trans), box-shadow var(--trans); box-shadow: 0 4px 14px -4px rgba(49,135,255,.4); }
+    button[type=submit]:hover, .btn-secondary:hover, .btn-chat:hover { filter: brightness(1.07); }
+    button[type=submit]:active, .btn-secondary:active, .btn-chat:active { transform: translateY(1px); }
+    button[type=submit]:focus-visible, .btn-secondary:focus-visible, .btn-chat:focus-visible { outline: none; box-shadow: var(--focus),0 4px 14px -4px rgba(49,135,255,.55); }
+    .btn-secondary { background: var(--bg-soft); color: var(--text-dim); box-shadow: none; border: var(--border); }
+    .btn-secondary:hover { color: var(--text); }
+    .btn-chat { background: linear-gradient(135deg,#2d8bff,#5fa8ff); }
+    .actions { margin-top: .5rem; display:flex; gap: .9rem; flex-wrap: wrap; }
+    .result { font-size: .8rem; background: var(--bg-soft); border: var(--border); border-radius: var(--radius-s); padding: 1rem 1rem 1.1rem; line-height: 1.5; position: relative; max-height: 480px; overflow: auto; scrollbar-width: thin; display:flex; flex-direction:column; gap:.8rem; }
+    .result:empty::before { content: 'Результат появится здесь'; color: var(--text-dim); font-family: var(--font-stack); }
+    .breakdown-table { width:100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    .breakdown-table th { text-align:left; font-weight:600; font-size:.68rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-dim); padding:0 0 .3rem; }
+    .breakdown-table td { padding:.22rem 0; vertical-align:top; }
+    .breakdown-table tr.total-row td { padding-top:.55rem; border-top:1px solid rgba(255,255,255,.12); font-weight:600; font-size:.95rem; }
+    @media (prefers-color-scheme: light){ .breakdown-table tr.total-row td { border-top:1px solid #d9e2ec;} }
+    .badge { display:inline-block; background:var(--accent-fade); color: var(--accent-hover); padding:.25rem .55rem; border-radius:999px; font-size:.65rem; font-weight:600; letter-spacing:.05em; }
+    .warnings { background: var(--danger-fade); border:1px solid rgba(255,85,118,.4); color: var(--danger); padding:.55rem .7rem; border-radius: var(--radius-s); font-size:.7rem; line-height:1.3; }
+    .meta-line { font-size:.7rem; color:var(--text-dim); display:flex; gap:.6rem; flex-wrap:wrap; }
+    .meta-line span { background:var(--bg-soft); padding:.3rem .6rem; border-radius: var(--radius-s); border:var(--border); }
+    .fade-divider { height:1px; width:100%; background: linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent); opacity:.4; }
+    .tagline { font-size:.72rem; text-transform:uppercase; letter-spacing:.15em; color: var(--text-dim); font-weight:500; }
+    .result::-webkit-scrollbar { width: 8px; } .result::-webkit-scrollbar-track { background: transparent; } .result::-webkit-scrollbar-thumb { background: #3a4654; border-radius: 30px; }
+    @media (prefers-color-scheme: light) { .result::-webkit-scrollbar-thumb { background:#c7d1dc; } }
+    .toast { position:fixed; left:50%; bottom:14px; transform:translateX(-50%) translateY(20px); opacity:0; background:var(--bg-alt); color:var(--text); border:var(--border); border-radius:var(--radius-s); padding:.7rem 1rem; font-size:.72rem; letter-spacing:.04em; box-shadow:var(--shadow-1); transition:opacity .35s var(--trans), transform .35s var(--trans); z-index:999; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .app-shell { animation: fadeIn .45s ease; }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
+    /* Add multi-view layout */
+    .views { display: contents; }
+    .view { display: none; flex-direction: column; gap: 1.4rem; animation: fadeIn .35s ease; }
+    .view.active { display: flex; }
+    .result-actions { display:flex; gap:.75rem; flex-wrap:wrap; }
+    .btn-back { background: var(--bg-soft); color: var(--text-dim); border: var(--border); box-shadow:none; }
+    .btn-back:hover { color: var(--text); }
+    @media (max-width: 480px) {
+      .result {
+        max-height: 55vh;
+        font-size: .74rem;
+        padding: .75rem .75rem .85rem;
+      }
+      .breakdown-table td { padding: .18rem 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="views">
+      <div class="view active" id="view-form">
+        <div>
+          <div class="tagline">Car import</div>
+          <h1>Калькулятор ввоза авто</h1>
+        </div>
+        <form id="calcForm">
+          <div class="field-grid">
+            <label>Страна
+              <select name="country" id="country" required>
+                <option value="japan" selected>Япония</option>
+                <option value="korea">Корея</option>
+                <option value="uae">ОАЭ</option>
+                <option value="china">Китай</option>
+              </select>
+            </label>
+            <label>Год выпуска <input type="number" name="year" required min="1990" placeholder="2022" /></label>
+            <label>Объём двигателя (см3) <input type="number" name="engine_cc" required min="100" placeholder="1998" /></label>
+            <label>Стоимость закупки <input type="number" name="purchase_price" required step="0.01" placeholder="1200000" /></label>
+            <label>Валюта
+              <select name="currency" id="currency" required>
+                <option value="JPY">JPY</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="CNY">CNY</option>
+                <option value="AED">AED</option>
+              </select>
+            </label>
+            <label>Тип фрахта (если применимо)
+              <select name="freight_type" id="freight_type">
+                <option value="">(auto)</option>
+                <option value="standard">standard</option>
+                <option value="open">open</option>
+                <option value="container">container</option>
+              </select>
+            </label>
+          </div>
+          <div class="actions">
+            <button type="submit" id="submitBtn">Рассчитать</button>
+            <button type="button" class="btn-secondary" id="resetBtn">Сброс</button>
+          </div>
+        </form>
+      </div>
+      <div class="view" id="view-result">
+        <div class="result" id="result"></div>
+        <div class="result-actions">
+            <button type="button" class="btn-back" id="backBtn">Назад</button>
+            <button type="button" class="btn-chat" id="sendChatBtn" style="display:none;">Отправить в чат</button>
+            <button type="button" class="btn-secondary" id="newCalcBtn">Новый расчёт</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+<script>
+// Telegram WebApp integration (optional)
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+if (tg) { try { tg.expand(); } catch(_){} }
+
+function applyTelegramTheme() {
+  if(!tg || !tg.themeParams) return;
+  const p = tg.themeParams;
+  const map = {
+    '--bg': p.bg_color,
+    '--bg-alt': p.secondary_bg_color || p.bg_color,
+    '--bg-soft': p.secondary_bg_color || p.bg_color,
+    '--text': p.text_color,
+    '--text-dim': p.hint_color || p.text_color,
+    '--accent': p.button_color || '#4d9fff',
+    '--accent-hover': p.button_color || '#77b7ff',
+    '--border': `1px solid ${p.section_separator_color || 'rgba(0,0,0,0.15)'}`
+  };
+  for(const k in map){ if(map[k]) document.documentElement.style.setProperty(k, map[k]); }
+}
+applyTelegramTheme();
+
+// View management
+const viewForm = document.getElementById('view-form');
+const viewResult = document.getElementById('view-result');
+function showView(name){
+  if(name==='form') { viewForm.classList.add('active'); viewResult.classList.remove('active'); location.hash = '#calc'; }
+  else { viewResult.classList.add('active'); viewForm.classList.remove('active'); location.hash = '#result'; }
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+window.addEventListener('hashchange', ()=>{ if(location.hash==='#result') showView('result'); else showView('form'); });
+if(location.hash==='#result') showView('result');
+
+const form = document.getElementById('calcForm');
+const resultDiv = document.getElementById('result');
+const sendChatBtn = document.getElementById('sendChatBtn');
+const toastEl = document.getElementById('toast');
+const countryEl = document.getElementById('country');
+const currencyEl = document.getElementById('currency');
+const resetBtn = document.getElementById('resetBtn');
+const backBtn = document.getElementById('backBtn');
+const newCalcBtn = document.getElementById('newCalcBtn');
+
+backBtn.addEventListener('click', ()=> showView('form'));
+newCalcBtn.addEventListener('click', ()=> { showView('form'); });
+countryEl.addEventListener('change', () => {
+  const autoCur = countryCurrency[countryEl.value];
+  if(autoCur) {
+    currencyEl.value = autoCur;
+  }
+  // Freight type visibility (example: Japan has standard; UAE open/container)
+  const ft = document.getElementById('freight_type');
+  if(countryEl.value === 'uae') {
+    // keep existing options
+  } else if(countryEl.value === 'japan') {
+    ft.value = 'standard';
+  } else {
+    ft.value = '';
+  }
+});
+
+resetBtn.addEventListener('click', () => {
+  form.reset();
+  resultDiv.innerHTML='';
+  sendChatBtn.style.display='none';
+});
+
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(()=> toastEl.classList.remove('show'), 2600);
+}
+
+function formatMoney(v) { if (typeof v !== 'number') return v; return v.toLocaleString('ru-RU',{maximumFractionDigits:0}); }
+function formatSmall(v) { if (typeof v !== 'number') return v; return v.toLocaleString('ru-RU',{minimumFractionDigits:0, maximumFractionDigits:0}); }
+
+let lastData = null;
+function renderResult(data){
+  lastData = data;
+  const b = data.breakdown; const m = data.meta; const req = data.request;
+  const warnings = (m.warnings||[]).filter(Boolean);
+  const rows = [
+    ['Закупка','purchase_price_rub'],
+    ['Пошлина','duties_rub'],
+    ['Утиль сбор','utilization_fee_rub'],
+    ['Тамож. услуги','customs_services_rub'],
+    ['ЭРА-ГЛОНАСС','era_glonass_rub'],
+    ['Фрахт','freight_rub'],
+    ['Расходы страны','country_expenses_rub'],
+    ['Комиссия','company_commission_rub'],
+  ];
+  let table = '<table class="breakdown-table"><thead><tr><th>Статья</th><th>RUB</th></tr></thead><tbody>';
+  rows.forEach(r=>{ table += `<tr><td>${r[0]}</td><td>${formatSmall(b[r[1]])}</td></tr>`; });
+  table += `<tr class="total-row"><td>ИТОГО</td><td>${formatMoney(b.total_rub)}</td></tr>`;
+  table += '</tbody></table>';
+  const metaLine = `<div class="meta-line">`+
+    `<span>Возраст: ${m.age_years}</span>`+
+    `<span>Категория: ${m.age_category}</span>`+
+    `<span>Проходность: ${m.passing_category}</span>`+
+    `<span>Диапазон объёма: ${m.volume_band||'-'}</span>`+
+    `</div>`;
+  const warnBlock = warnings.length ? `<div class="warnings">${warnings.map(w=>`• ${w}`).join('<br>')}</div>` : '';
+  resultDiv.innerHTML = metaLine + table + warnBlock;
+  sendChatBtn.style.display = tg ? 'inline-flex' : 'none';
+  sendChatBtn.onclick = () => {
+    if(!tg) return showToast('Нет Telegram API');
+    const summary = `Страна: ${req.country}, год: ${req.year}, объем: ${req.engine_cc}см³`; // noqa
+    const payload = { summary, total_rub: b.total_rub };
+    try { tg.sendData(JSON.stringify(payload)); showToast('Отправлено'); } catch(e){ showToast('Ошибка отправки'); }
+  };
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(form);
+  const payload = Object.fromEntries(fd.entries());
+  if(!payload.freight_type) delete payload.freight_type;
+  payload.year = Number(payload.year);
+  payload.engine_cc = Number(payload.engine_cc);
+  payload.purchase_price = Number(payload.purchase_price);
+  if(!payload.year || payload.year < 1990){ showToast('Некорректный год'); return; }
+  try {
+    document.getElementById('submitBtn').disabled = true;
+    const resp = await fetch('/api/calculate', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data = await resp.json();
+    renderResult(data);
+    showView('result');
+  } catch(err) {
+    showToast('Ошибка расчета');
+  } finally {
+    document.getElementById('submitBtn').disabled = false;
+  }
+});
+</script>
+</body>
+</html>

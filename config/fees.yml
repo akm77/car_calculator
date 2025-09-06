@@ -1,0 +1,42 @@
+japan:
+  country_currency: JPY
+  tiers:
+    - max_price: 3000000
+      expenses: 150000
+    - max_price: 6000000
+      expenses: 300000
+    - expenses: 400000
+  freight:
+    standard:
+      amount: 350
+      currency: USD
+korea:
+  country_currency: USD
+  base_expenses:
+    inspection: 1000
+    delivery: 700
+  freight:
+    standard:
+      amount: 550
+      currency: USD
+uae:
+  country_currency: USD
+  base_expenses:
+    inspection: 700
+    delivery: 500
+  freight:
+    open:
+      amount: 2500
+      currency: USD
+    container:
+      amount: 5500
+      currency: USD
+china:
+  country_currency: USD
+  base_expenses:
+    inspection: 700
+  freight:
+    open:
+      amount: 500
+      currency: USD
+

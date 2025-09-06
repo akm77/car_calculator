@@ -1,19 +1,135 @@
 [project]
 name = "car-calculator"
 version = "0.1.0"
-description = ""
+description = "Car import cost calculator (Telegram Bot + WebApp + FastAPI API)"
 authors = [
     { name = "akm77", email = "aleksey.kotryakhov@gmail.com" }
 ]
 readme = "README.md"
 requires-python = ">=3.13,<4.0"
 dependencies = [
-    "poetry-core (>=2.1.3,<3.0.0)"
+    "aiogram>=3.4.0",
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.2.1",
+    "pyyaml>=6.0.0",
+    "python-dotenv>=1.0.0",
+    "structlog>=24.1.0"
 ]
 
 [tool.poetry]
-package-mode = false
+packages = [{ include = "app" }]
+# Removed package-mode=false so scripts are installed
+
+[tool.poetry.scripts]
+car-calculator-api = "app.main:run_api"
+car-calculator-bot = "app.bot.main:run_bot"
+
+[tool.poetry.dependencies]
+python = ">=3.13,<4.0"
+aiogram = ">=3.4.0"
+fastapi = ">=0.111.0"
+uvicorn = {version=">=0.30.0", extras=["standard"]}
+pydantic = ">=2.7.0"
+pydantic-settings = ">=2.2.1"
+pyyaml = ">=6.0.0"
+python-dotenv = ">=1.0.0"
+structlog = ">=24.1.0"
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8.2.0"
+mypy = ">=1.10.0"
+ruff = ">=0.5.0"
 
 [build-system]
 requires = ["poetry-core>=2.1.3,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+# ---------------- Ruff configuration (best-practice baseline) ----------------
+[tool.ruff]
+# Match project style & performance
+line-length = 100
+indent-width = 4
+# Python version target
+target-version = "py313"
+# Exclusions
+extend-exclude = [
+  "build",
+  "dist",
+  "scripts",
+  "poetry.lock",
+]
+
+[tool.ruff.lint]
+# Core rule sets:
+#  - E/F/W: pycodestyle + pyflakes
+#  - B: bugbear
+#  - I: import sorting
+#  - UP: pyupgrade
+#  - SIM: simplify
+#  - RET: return related
+#  - PL: pylint (selected useful subset)
+#  - PIE: misc improvements
+#  - PERF: performance
+#  - RUF: Ruff native rules
+#  - N: pep8-naming
+#  - TRY: exceptions best practices
+#  - ISC: implicit string concat
+#  - C4: comprehensions
+#  - DTZ: datetime TZ
+#  - PTH: pathlib usage
+#  - TCH: type-checking blocks
+#  - ASYNC: async pitfalls
+#  - SLOT: __slots__ suggestions (informational)
+select = [
+  "E","F","W","I","B","UP","SIM","RET","PL","PIE","PERF","RUF","N","TRY","ISC","C4","DTZ","PTH","TCH","ASYNC","SLOT"
+]
+# Temporarily ignore some noisy / stylistic rules (can be revisited later)
+ignore = [
+  "B008",   # function call in default argument (review later)
+  "PLR0913",# too many arguments (domain-specific calculators)
+  "PLR2004",# magic value comparisons (many numeric constants expected)
+]
+
+# Per-file adjustments
+[tool.ruff.lint.per-file-ignores]
+"app/__init__.py" = ["F401"]  # re-export allowance
+
+[tool.ruff.lint.isort]
+case-sensitive = false
+combine-as-imports = true
+force-sort-within-sections = true
+known-first-party = ["app"]
+lines-after-imports = 2
+section-order = ["future","standard-library","third-party","first-party","local-folder"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+docstring-code-format = true
+skip-magic-trailing-comma = false
+
+# ---------------- Pytest ----------------
+[tool.pytest.ini_options]
+addopts = "-q"
+python_files = "test_*.py"
+
+# ---------------- Mypy ----------------
+[tool.mypy]
+python_version = "3.13"
+warn_unused_configs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+strict_optional = true
+no_implicit_optional = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = false
+check_untyped_defs = true
+ignore_missing_imports = true
