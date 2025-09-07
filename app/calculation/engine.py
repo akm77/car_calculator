@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from app.core.messages import (
@@ -10,9 +10,11 @@ from app.core.messages import (
 )
 from app.core.settings import get_configs
 
+from ..services.cbr import get_effective_rates
 from .models import CalculationMeta, CalculationRequest, CalculationResult, CostBreakdown
 from .tariff_tables import (
     find_duty_rate,
+    find_lt3_value_bracket,
     format_volume_band,
     get_age_category,
     get_passing_category,
@@ -70,25 +72,40 @@ def _compute_duty(
     duties_conf: dict[str, Any],
     rates_conf: dict[str, Any],
     warnings: list[str],
+    purchase_price_rub: float,
 ) -> float:
+    eur_rub = _currency_rate(rates_conf, "EUR")
+    # lt3 logic: percentage of customs value (EUR) but not less than min per cc
+    if age_category == "lt3":
+        customs_value_eur = purchase_price_rub / eur_rub
+        bracket = find_lt3_value_bracket(duties_conf, customs_value_eur)
+        if not bracket:
+            warnings.append(WARN_NO_DUTY_RATE)
+            return 0.0
+        percent = float(bracket.get("percent", 0))
+        min_rate = float(bracket.get("min_rate_eur_per_cc", 0))
+        duty_eur_percent = customs_value_eur * percent
+        duty_eur_min = min_rate * engine_cc
+        duty_eur = max(duty_eur_percent, duty_eur_min)
+        return duty_eur * eur_rub
+    # 3_5 & gt5: band rate per cc
     rate_eur_per_cc = find_duty_rate(duties_conf, age_category, engine_cc)
     if rate_eur_per_cc is None:
         warnings.append(WARN_NO_DUTY_RATE)
         return 0.0
-    eur_rub = _currency_rate(rates_conf, "EUR")
     return engine_cc * rate_eur_per_cc * eur_rub
 
 
-def _utilization_fee(age_category: str, rates_conf: dict[str, Any]) -> float:
+def _utilization_fee(age_category: str, engine_cc: int, rates_conf: dict[str, Any]) -> float:
+    # New table-based logic (personal M1) with absolute RUB values per engine segment.
     util = rates_conf.get("utilization", {})
-    base_private = float(util.get("base_private", 20000))
-    if age_category == "lt3":
-        coef = float(util.get("coef_lt3", 0.17))
-    elif age_category == "3_5":
-        coef = float(util.get("coef_3_5", 0.26))
-    else:
-        coef = float(util.get("coef_gt5", util.get("coef_3_5", 0.26)))
-    return base_private * coef
+    table = util.get("personal_m1", [])
+    key = "lt3" if age_category == "lt3" else "ge3"
+    for seg in table:
+        max_cc = seg.get("max_cc")
+        if max_cc is None or engine_cc <= max_cc:
+            return float(seg.get(key, 0))
+    return 0.0
 
 
 def _commission(amount_rub: float, commissions_conf: dict[str, Any]) -> float:
@@ -102,21 +119,31 @@ def _commission(amount_rub: float, commissions_conf: dict[str, Any]) -> float:
 
 def calculate(req: CalculationRequest) -> CalculationResult:
     configs = get_configs()
-    rates_conf = configs.rates
+
+    rates_conf = get_effective_rates(configs.rates)
     fees_conf = configs.fees.get(req.country, {})
     commissions_conf = configs.commissions
     duties_conf = configs.duties
 
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
     age_years = today.year - req.year
     age_category = get_age_category(age_years)
     passing_category = get_passing_category(age_category)
 
-    warnings: list[str] = []
-    duties_rub = _compute_duty(req.engine_cc, age_category, duties_conf, rates_conf, warnings)
-    volume_band = format_volume_band(duties_conf, age_category, req.engine_cc)
-
+    # Convert purchase first (needed for lt3 duty logic)
     purchase_price_rub = _convert(req.purchase_price, req.currency, rates_conf)
+
+    warnings: list[str] = []
+
+    duties_rub = _compute_duty(
+        req.engine_cc,
+        age_category,
+        duties_conf,
+        rates_conf,
+        warnings,
+        purchase_price_rub,
+    )
+    volume_band = format_volume_band(duties_conf, age_category, req.engine_cc)
 
     if req.country == "japan":
         if req.currency.lower() != "jpy":
@@ -132,12 +159,11 @@ def calculate(req: CalculationRequest) -> CalculationResult:
     )
     freight_rub = _convert(freight_amount, freight_currency, rates_conf)
 
-    # Customs services / SVH / etc.
     customs_services_map = rates_conf.get("customs_services", {})
     customs_services_rub = float(customs_services_map.get(req.country, 0))
 
     era_glonass_rub = float(rates_conf.get("era_glonass_rub", 35000))
-    utilization_fee_rub = _utilization_fee(age_category, rates_conf)
+    utilization_fee_rub = _utilization_fee(age_category, req.engine_cc, rates_conf)
     commission_rub = _commission(purchase_price_rub, commissions_conf)
 
     total_rub = sum(

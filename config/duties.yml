@@ -1,7 +1,24 @@
 age_categories:
   lt3:
-    bands: []  # Not provided (usually different formula: % of customs value). Placeholder.
-  3_5:
+    value_brackets:
+      - max_customs_value_eur: 8500
+        percent: 0.54
+        min_rate_eur_per_cc: 2.5
+      - max_customs_value_eur: 16700
+        percent: 0.48
+        min_rate_eur_per_cc: 3.5
+      - max_customs_value_eur: 42300
+        percent: 0.48
+        min_rate_eur_per_cc: 5.5
+      - max_customs_value_eur: 84500
+        percent: 0.48
+        min_rate_eur_per_cc: 7.5
+      - max_customs_value_eur: 169000
+        percent: 0.48
+        min_rate_eur_per_cc: 15
+      - percent: 0.48
+        min_rate_eur_per_cc: 20
+  "3_5":
     bands:
       - max_cc: 1000
         rate_eur_per_cc: 1.5
@@ -27,4 +44,3 @@ age_categories:
       - max_cc: 3000
         rate_eur_per_cc: 5.0
       - rate_eur_per_cc: 5.7  # >3000
-

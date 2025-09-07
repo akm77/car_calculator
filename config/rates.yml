@@ -5,6 +5,13 @@ currencies:
   CNY_RUB: 12.0
   AED_RUB: 24.5
 
+live_currency_codes:
+  - USD
+  - EUR
+  - JPY
+  - CNY
+  - AED
+
 customs_services:
   japan: 70000
   korea: 70000
@@ -14,8 +21,12 @@ customs_services:
 era_glonass_rub: 35000
 
 utilization:
-  base_private: 20000
-  coef_lt3: 0.17
-  coef_3_5: 0.26
-  coef_gt5: 0.26
-
+  personal_m1:
+    - max_cc: 3000
+      lt3: 3400
+      ge3: 5200  # applies to 3_5 and gt5
+    - max_cc: 3500
+      lt3: 2153400
+      ge3: 3296800
+    - lt3: 2742200  # >3500
+      ge3: 3604800

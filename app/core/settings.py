@@ -32,6 +32,9 @@ class AppSettings(BaseSettings):
     log_level: str = Field(default="info", alias="LOG_LEVEL")
     environment: str = Field(default=_raw_env, alias="ENVIRONMENT")
     public_base_url: str = Field(default="http://localhost:8000", alias="PUBLIC_BASE_URL")
+    enable_live_cbr: bool = Field(default=False, alias="ENABLE_LIVE_CBR")
+    cbr_cache_ttl_seconds: int = Field(default=1800, alias="CBR_CACHE_TTL_SECONDS")
+    cbr_url: str = Field(default="https://www.cbr.ru/scripts/XML_daily.asp", alias="CBR_URL")
 
     model_config = SettingsConfigDict(
         env_file=str(BASE_DIR / _env_file),

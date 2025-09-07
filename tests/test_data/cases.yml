@@ -1,0 +1,102 @@
+# Test cases for final cost calculation validation
+# age_offset: number of years subtracted from current year to derive vehicle year.
+# Expected monetary values in RUB.
+
+cases:
+  - name: lt3_min_duty
+    age_offset: 1
+    request:
+      country: korea
+      engine_cc: 1800
+      purchase_price: 7000
+      currency: EUR
+      freight_type: standard
+    expected:
+      age_category: lt3
+      purchase_price_rub: 700000
+      duties_rub: 450000
+      utilization_fee_rub: 3400
+      customs_services_rub: 70000
+      era_glonass_rub: 35000
+      freight_rub: 49500
+      country_expenses_rub: 153000
+      company_commission_rub: 40000
+      total_rub: 1500900
+  - name: lt3_percent_duty
+    age_offset: 1
+    request:
+      country: china
+      engine_cc: 1000
+      purchase_price: 80000
+      currency: EUR
+      freight_type: open
+    expected:
+      age_category: lt3
+      purchase_price_rub: 8000000
+      duties_rub: 3840000
+      utilization_fee_rub: 3400
+      customs_services_rub: 70000
+      era_glonass_rub: 35000
+      freight_rub: 45000
+      country_expenses_rub: 63000
+      company_commission_rub: 85000
+      total_rub: 12141400
+  - name: band_3_5_mid
+    age_offset: 4
+    request:
+      country: japan
+      engine_cc: 1500
+      purchase_price: 2000000
+      currency: JPY
+      freight_type: standard
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 1200000
+      duties_rub: 255000
+      utilization_fee_rub: 5200
+      customs_services_rub: 70000
+      era_glonass_rub: 35000
+      freight_rub: 31500
+      country_expenses_rub: 90000
+      company_commission_rub: 40000
+      total_rub: 1726700
+  - name: gt5_large_engine
+    age_offset: 6
+    request:
+      country: uae
+      engine_cc: 4000
+      purchase_price: 10000
+      currency: USD
+      freight_type: open
+    expected:
+      age_category: gt5
+      purchase_price_rub: 900000
+      duties_rub: 2280000
+      utilization_fee_rub: 3604800
+      customs_services_rub: 120000
+      era_glonass_rub: 35000
+      freight_rub: 225000
+      country_expenses_rub: 108000
+      company_commission_rub: 40000
+      total_rub: 7312800
+  - name: japan_2022_1998cc
+    # Explicit year provided; ignore age_offset for this case
+    age_offset: 3
+    request:
+      country: japan
+      year: 2022
+      engine_cc: 1998
+      purchase_price: 1200000
+      currency: JPY
+      freight_type: standard
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 720000
+      duties_rub: 539460
+      utilization_fee_rub: 5200
+      customs_services_rub: 70000
+      era_glonass_rub: 35000
+      freight_rub: 31500
+      country_expenses_rub: 90000
+      company_commission_rub: 40000
+      total_rub: 1531160
