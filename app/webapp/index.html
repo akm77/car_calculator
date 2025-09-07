@@ -606,6 +606,9 @@
               <button type="button" class="btn btn-primary" id="sendChatBtn" style="display:none;">
                 Отправить в чат
               </button>
+              <button type="button" class="btn btn-secondary" id="copyReportBtn" style="display:none;">
+                Скопировать отчёт
+              </button>
               <button type="button" class="btn btn-secondary" id="newCalcBtn">
                 Новый расчёт
               </button>
@@ -659,6 +662,7 @@
     const form = document.getElementById('calcForm');
     const resultContent = document.getElementById('result-content');
     const sendChatBtn = document.getElementById('sendChatBtn');
+    const copyReportBtn = document.getElementById('copyReportBtn');
     const toastEl = document.getElementById('toast');
     const countryEl = document.getElementById('country');
     const currencyEl = document.getElementById('currency');
@@ -690,6 +694,7 @@
       form.reset();
       resultContent.innerHTML = '';
       sendChatBtn.style.display = 'none';
+      copyReportBtn.style.display = 'none';
       showView('form');
     });
 
@@ -713,6 +718,7 @@
       form.reset();
       resultContent.innerHTML = '';
       sendChatBtn.style.display = 'none';
+      copyReportBtn.style.display = 'none';
       showToast('Форма очищена');
     });
 
@@ -753,8 +759,11 @@
       `;
 
       // Breakdown table
+      const purchaseRate = (data.request.purchase_price > 0) ? (b.purchase_price_rub / data.request.purchase_price) : null;
+      const purchaseRateNote = purchaseRate ? ` (курс ${data.request.currency}/RUB ${purchaseRate.toFixed(4)})` : '';
+      // Breakdown table rows
       const rows = [
-        ['💰 Закупка', 'purchase_price_rub'],
+        ['💰 Закупка' + purchaseRateNote, 'purchase_price_rub'],
         ['📋 Пошлина', 'duties_rub'],
         ['♻️ Утиль сбор', 'utilization_fee_rub'],
         ['🏢 Тамож. услуги', 'customs_services_rub'],
@@ -794,6 +803,7 @@
 
       resultContent.innerHTML = metaInfo + table + warnBlock;
       sendChatBtn.style.display = tg ? 'inline-flex' : 'none';
+      copyReportBtn.style.display = 'inline-flex';
 
       sendChatBtn.onclick = () => {
         if (!tg) return showToast('Нет Telegram API');
@@ -805,6 +815,23 @@
         } catch(e) {
           showToast('Ошибка отправки в чат');
         }
+      };
+
+      copyReportBtn.onclick = () => {
+        const lines = [];
+        lines.push(`Страна: ${req.country}`);
+        lines.push(`Год: ${req.year}`);
+        lines.push(`Двигатель: ${req.engine_cc} см³`);
+        if (purchaseRate) lines.push(`Курс ${req.currency}/RUB: ${purchaseRate.toFixed(6)}`);
+        rows.forEach(r => {
+          const key = r[1];
+            lines.push(`${r[0]}: ${Math.round(b[key]).toLocaleString('ru-RU')}`);
+        });
+        lines.push(`ИТОГО: ${Math.round(b.total_rub).toLocaleString('ru-RU')} ₽`);
+        const report = lines.join('\n');
+        navigator.clipboard.writeText(report).then(() => {
+          showToast('Отчёт скопирован');
+        }).catch(() => showToast('Не удалось скопировать'));
       };
     }
 
