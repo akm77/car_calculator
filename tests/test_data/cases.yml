@@ -100,3 +100,99 @@ cases:
       country_expenses_rub: 90000
       company_commission_rub: 40000
       total_rub: 1531160
+  # Boundary duty band tests (age category 3_5). All use same purchase price tier.
+  - name: band_3_5_boundary_1000cc
+    age_offset: 4
+    request:
+      country: japan
+      engine_cc: 1000
+      purchase_price: 2000000
+      currency: JPY
+      freight_type: standard
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 1200000
+      duties_rub: 150000
+      utilization_fee_rub: 5200
+      customs_services_rub: 70000
+      era_glonass_rub: 35000
+      freight_rub: 31500
+      country_expenses_rub: 90000
+      company_commission_rub: 40000
+      total_rub: 1621700
+  - name: band_3_5_boundary_1800cc
+    age_offset: 4
+    request:
+      country: japan
+      engine_cc: 1800
+      purchase_price: 2000000
+      currency: JPY
+      freight_type: standard
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 1200000
+      duties_rub: 450000
+      utilization_fee_rub: 5200
+      customs_services_rub: 70000
+      era_glonass_rub: 35000
+      freight_rub: 31500
+      country_expenses_rub: 90000
+      company_commission_rub: 40000
+      total_rub: 1921700
+  - name: band_3_5_boundary_2300cc
+    age_offset: 4
+    request:
+      country: japan
+      engine_cc: 2300
+      purchase_price: 2000000
+      currency: JPY
+      freight_type: standard
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 1200000
+      duties_rub: 621000
+      utilization_fee_rub: 5200
+      customs_services_rub: 70000
+      era_glonass_rub: 35000
+      freight_rub: 31500
+      country_expenses_rub: 90000
+      company_commission_rub: 40000
+      total_rub: 2092700
+  - name: band_3_5_boundary_3000cc
+    age_offset: 4
+    request:
+      country: japan
+      engine_cc: 3000
+      purchase_price: 2000000
+      currency: JPY
+      freight_type: standard
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 1200000
+      duties_rub: 900000
+      utilization_fee_rub: 5200
+      customs_services_rub: 70000
+      era_glonass_rub: 35000
+      freight_rub: 31500
+      country_expenses_rub: 90000
+      company_commission_rub: 40000
+      total_rub: 2371700
+  - name: band_3_5_boundary_gt3000cc
+    age_offset: 4
+    request:
+      country: japan
+      engine_cc: 3200
+      purchase_price: 2000000
+      currency: JPY
+      freight_type: standard
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 1200000
+      duties_rub: 1152000
+      utilization_fee_rub: 3296800
+      customs_services_rub: 70000
+      era_glonass_rub: 35000
+      freight_rub: 31500
+      country_expenses_rub: 90000
+      company_commission_rub: 40000
+      total_rub: 5915300

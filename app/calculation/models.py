@@ -50,6 +50,11 @@ class CostBreakdown(BaseModel):
     total_rub: int
 
 
+class WarningItem(BaseModel):
+    code: str
+    message: str
+
+
 class CalculationMeta(BaseModel):
     age_years: int
     age_category: str
@@ -57,10 +62,18 @@ class CalculationMeta(BaseModel):
     passing_category: str
     duty_formula_mode: str | None = None
     eur_rate_used: str | None = None
-    warnings: list[str] = []
+    warnings: list[WarningItem] = Field(default_factory=list)
 
 
 class CalculationResult(BaseModel):
     request: CalculationRequest
     meta: CalculationMeta
     breakdown: CostBreakdown
+
+
+# Explicit rebuild to avoid Pydantic lazy resolution issues under some import orders
+CalculationRequest.model_rebuild()
+CostBreakdown.model_rebuild()
+WarningItem.model_rebuild()
+CalculationMeta.model_rebuild()
+CalculationResult.model_rebuild()

@@ -62,6 +62,7 @@ async def get_rates() -> dict[str, object]:
     ]
 
     effective_rates = get_effective_rates(rates_conf)
+    cache_info = cbr_service.get_cache_info()
     return {
         "generated_at": datetime.now(UTC).isoformat(),
         "currencies": effective_rates.get("currencies", {}),
@@ -73,6 +74,19 @@ async def get_rates() -> dict[str, object]:
         "era_glonass_rub": rates_conf.get("era_glonass_rub"),
         "japan_expense_tiers": japan_tiers,
         "countries_active": sorted(fees_conf.keys()),
+        "cbr_cache": cache_info,
+    }
+
+
+@router.post("/rates/refresh")
+async def refresh_rates() -> dict[str, object]:
+    """Force refresh of live CBR rates (if enabled) and return updated cache info."""
+    fetched = cbr_service.fetch_rates(force=True)
+    cache_info = cbr_service.get_cache_info()
+    return {
+        "refreshed_at": datetime.now(UTC).isoformat(),
+        "fetched_count": len(fetched) if fetched else 0,
+        "cache": cache_info,
     }
 
 
@@ -138,7 +152,7 @@ async def get_meta() -> dict[str, object]:
 
     notes = [
         "3-5 лет = проходные. <3 и >5 = непроходные (для текущей логики пошлин).",
-        "Для двигателей >2999 см³ утиль сбор подтверждён таблицей.",
+        "Комиссия рассчитывается только от цены закупки без пошлины.",
         "Если санкционный статус неизвестен — обращайтесь в поддержку.",
     ]
 
