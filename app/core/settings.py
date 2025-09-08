@@ -35,6 +35,7 @@ class AppSettings(BaseSettings):
     enable_live_cbr: bool = Field(default=False, alias="ENABLE_LIVE_CBR")
     cbr_cache_ttl_seconds: int = Field(default=1800, alias="CBR_CACHE_TTL_SECONDS")
     cbr_url: str = Field(default="https://www.cbr.ru/scripts/XML_daily.asp", alias="CBR_URL")
+    available_countries: str | None = Field(default=None, alias="AVAILABLE_COUNTRIES")
 
     model_config = SettingsConfigDict(
         env_file=str(BASE_DIR / _env_file),
@@ -50,6 +51,12 @@ class AppSettings(BaseSettings):
     @property
     def webapp_url(self) -> str:
         return f"{self.public_base_url.rstrip('/')}/web/"
+
+    @property
+    def countries_list(self) -> list[str]:
+        if not self.available_countries:
+            return []
+        return [c.strip().lower() for c in self.available_countries.split(",") if c.strip()]
 
 
 class ConfigRegistry(BaseModel):

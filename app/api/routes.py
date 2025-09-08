@@ -7,7 +7,7 @@ from fastapi import APIRouter
 from app.calculation.engine import calculate
 from app.calculation.models import CalculationRequest, CalculationResult
 from app.calculation.tariff_tables import get_passing_category
-from app.core.settings import get_configs
+from app.core.settings import get_configs, get_settings
 from app.services.cbr import get_effective_rates
 
 
@@ -36,6 +36,11 @@ async def get_rates() -> dict[str, object]:
     commissions_conf = cfg.commissions
     fees_conf = cfg.fees
 
+    settings = get_settings()
+    allowed = set(settings.countries_list) if settings.countries_list else None
+    if allowed is not None:
+        fees_conf = {k: v for k, v in fees_conf.items() if k in allowed}
+
     # Extract Japan tiers explicitly (they are price-based expense tiers in purchase currency)
     japan_fees = fees_conf.get("japan", {})
     japan_currency = japan_fees.get("country_currency", "JPY")
@@ -55,6 +60,7 @@ async def get_rates() -> dict[str, object]:
         "customs_services": rates_conf.get("customs_services", {}),
         "era_glonass_rub": rates_conf.get("era_glonass_rub"),
         "japan_expense_tiers": japan_tiers,
+        "countries_active": sorted(fees_conf.keys()),
     }
 
 
@@ -64,6 +70,11 @@ async def get_meta() -> dict[str, object]:
     cfg = get_configs()
     fees_conf = cfg.fees
     rates_conf = cfg.rates
+
+    settings = get_settings()
+    allowed = set(settings.countries_list) if settings.countries_list else None
+    if allowed is not None:
+        fees_conf = {k: v for k, v in fees_conf.items() if k in allowed}
 
     current_year = datetime.now(UTC).year
 
@@ -122,6 +133,7 @@ async def get_meta() -> dict[str, object]:
     return {
         "generated_at": datetime.now(UTC).isoformat(),
         "countries": countries,
+        "active_countries": [c["code"] for c in countries],
         "age_categories": age_categories,
         "freight_type_labels": freight_type_labels,
         "currencies_supported": currencies_supported,

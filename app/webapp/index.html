@@ -538,10 +538,7 @@
                 <div class="form-group">
                   <label class="form-label" for="country">Страна</label>
                   <select class="form-select" name="country" id="country" required>
-                    <option value="japan" selected>🇯🇵 Япония</option>
-                    <option value="korea">🇰🇷 Корея</option>
-                    <option value="uae">🇦🇪 ОАЭ</option>
-                    <option value="china">🇨🇳 Китай</option>
+                    <option value="" disabled selected>Загрузка...</option>
                   </select>
                 </div>
 
@@ -1010,6 +1007,39 @@
     document.querySelectorAll('.app-shell, .form-group, .meta-badge').forEach(el => {
       observer.observe(el);
     });
+
+    async function loadCountries() {
+      try {
+        const resp = await fetch('/api/meta');
+        if(!resp.ok) throw new Error('meta fetch failed');
+        const meta = await resp.json();
+        const select = countryEl;
+        const prev = select.value;
+        select.innerHTML = '';
+        (meta.countries || []).forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.code;
+            opt.textContent = `${c.emoji ? c.emoji + ' ' : ''}${c.label}`;
+          select.appendChild(opt);
+        });
+        // Restore previous if still present else first
+        if (prev && [...select.options].some(o => o.value === prev)) {
+          select.value = prev;
+        } else if (select.options.length) {
+          select.value = select.options[0].value;
+        }
+        // Trigger currency auto-set
+        const active = meta.countries.find(c => c.code === select.value);
+        if (active && active.purchase_currency) {
+          currencyEl.value = active.purchase_currency;
+        }
+      } catch(e) {
+        showToast('Не удалось загрузить список стран');
+      }
+    }
+    // call loader
+    loadCountries();
   </script>
 </body>
 </html>
+
