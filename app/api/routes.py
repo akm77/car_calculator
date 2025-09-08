@@ -8,15 +8,27 @@ from app.calculation.engine import calculate
 from app.calculation.models import CalculationRequest, CalculationResult
 from app.calculation.tariff_tables import get_passing_category
 from app.core.settings import get_configs, get_settings
-from app.services.cbr import get_effective_rates
+from app.services.cbr import cbr_service, get_effective_rates
 
 
 router = APIRouter(prefix="/api")
 
 
 @router.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
+async def health() -> dict[str, object]:
+    cfg = get_configs()
+    effective_rates = get_effective_rates(cfg.rates)
+    eur_rate = effective_rates.get("currencies", {}).get("EUR_RUB")
+    cache_info = cbr_service.get_cache_info()
+    return {
+        "status": "ok",
+        "generated_at": datetime.now(UTC).isoformat(),
+        "config_hash": cfg.hash,
+        "config_loaded_at": cfg.loaded_at,
+        "live_source": effective_rates.get("live_source"),
+        "eur_rate_rub": eur_rate,
+        "cbr_cache": cache_info,
+    }
 
 
 @router.post("/calculate", response_model=CalculationResult)
@@ -126,7 +138,7 @@ async def get_meta() -> dict[str, object]:
 
     notes = [
         "3-5 лет = проходные. <3 и >5 = непроходные (для текущей логики пошлин).",
-        "Для двигателей >2999 см³ утиль сбор может требовать уточнения.",
+        "Для двигателей >2999 см³ утиль сбор подтверждён таблицей.",
         "Если санкционный статус неизвестен — обращайтесь в поддержку.",
     ]
 

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from functools import lru_cache
+import hashlib
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -25,6 +28,12 @@ def _read_yaml(name: str) -> dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
+def _dict_hash(data: dict[str, Any]) -> str:
+    # Stable JSON dump with sorted keys for deterministic hash
+    dumped = json.dumps(data, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(dumped.encode("utf-8")).hexdigest()
+
+
 class AppSettings(BaseSettings):
     bot_token: str | None = Field(default=None, alias="BOT_TOKEN")
     api_host: str = Field(default="0.0.0.0", alias="API_HOST")
@@ -36,6 +45,7 @@ class AppSettings(BaseSettings):
     cbr_cache_ttl_seconds: int = Field(default=1800, alias="CBR_CACHE_TTL_SECONDS")
     cbr_url: str = Field(default="https://www.cbr.ru/scripts/XML_daily.asp", alias="CBR_URL")
     available_countries: str | None = Field(default=None, alias="AVAILABLE_COUNTRIES")
+    rate_limit_per_minute: int = Field(default=60, alias="RATE_LIMIT_PER_MINUTE")
 
     model_config = SettingsConfigDict(
         env_file=str(BASE_DIR / _env_file),
@@ -64,14 +74,24 @@ class ConfigRegistry(BaseModel):
     commissions: dict[str, Any]
     rates: dict[str, Any]
     duties: dict[str, Any]
+    hash: str
+    loaded_at: str
 
     @classmethod
     def load(cls) -> ConfigRegistry:
+        fees = _read_yaml("fees.yml")
+        commissions = _read_yaml("commissions.yml")
+        rates = _read_yaml("rates.yml")
+        duties = _read_yaml("duties.yml")
+        aggregate = {"fees": fees, "commissions": commissions, "rates": rates, "duties": duties}
+        cfg_hash = _dict_hash(aggregate)
         return cls(
-            fees=_read_yaml("fees.yml"),
-            commissions=_read_yaml("commissions.yml"),
-            rates=_read_yaml("rates.yml"),
-            duties=_read_yaml("duties.yml"),
+            fees=fees,
+            commissions=commissions,
+            rates=rates,
+            duties=duties,
+            hash=cfg_hash,
+            loaded_at=datetime.now(UTC).isoformat(),
         )
 
 

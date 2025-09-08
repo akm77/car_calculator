@@ -1,36 +1,41 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from functools import lru_cache
+import os
 from threading import Lock
 import time
 from typing import Any, NamedTuple
 import xml.etree.ElementTree as ET
 
 import httpx
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
-from app.core.settings import get_settings, get_configs
+from app.core.settings import get_configs, get_settings
 from app.struct_logger import logger
 
 
-# Removed hardcoded currencies; will load from config
-CURRENCY_CODES_OF_INTEREST: set[str] | None = None
-
-
+@lru_cache(maxsize=1)
 def _load_currency_codes() -> set[str]:
-    global CURRENCY_CODES_OF_INTEREST
-    if CURRENCY_CODES_OF_INTEREST is None:
-        cfg = get_configs().rates
-        codes = cfg.get("live_currency_codes") or []
-        CURRENCY_CODES_OF_INTEREST = {str(c).upper().strip() for c in codes if c}
-        if not CURRENCY_CODES_OF_INTEREST:
-            # Fallback default if config missing
-            CURRENCY_CODES_OF_INTEREST = {"USD", "EUR", "JPY", "CNY", "AED"}
-    return CURRENCY_CODES_OF_INTEREST
+    cfg = get_configs().rates
+    codes = cfg.get("live_currency_codes") or []
+    result = {str(c).upper().strip() for c in codes if c}
+    if not result:
+        result = {"USD", "EUR", "JPY", "CNY", "AED"}
+    return result
+
+
+def reset_currency_codes_cache() -> None:  # helper if configs refreshed dynamically
+    _load_currency_codes.cache_clear()  # type: ignore[attr-defined]
 
 
 class CacheEntry(NamedTuple):
     rates: dict[str, float]
     fetched_at: float
+
+
+class CBRFetchError(Exception):
+    pass
 
 
 @dataclass
@@ -68,10 +73,30 @@ class CBRRatesService:
             return False
         return (time.time() - self._cache.fetched_at) < ttl_seconds
 
+    @retry(
+        reraise=True,
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=5),
+        retry=retry_if_exception_type(CBRFetchError),
+    )
+    def _do_fetch(self, url: str) -> dict[str, float]:
+        try:
+            resp = httpx.get(url, timeout=10.0)
+            resp.raise_for_status()
+        except Exception as e:  # pragma: no cover
+            raise CBRFetchError(str(e)) from e
+        parsed = self._parse_xml(resp.text)
+        if not parsed:
+            raise CBRFetchError("empty_or_unparsed_response")
+        return parsed
+
     def fetch_rates(self, force: bool = False) -> dict[str, float] | None:
         """Thread-safe получение курсов валют от ЦБ РФ."""
         settings = get_settings()
 
+        # Deterministic tests: never fetch live inside pytest unless force=True
+        if os.getenv("PYTEST_CURRENT_TEST") and not force:
+            return None
         if not settings.enable_live_cbr and not force:
             return None
 
@@ -83,16 +108,11 @@ class CBRRatesService:
 
         # Кеш невалиден, загружаем новые данные
         try:
-            resp = httpx.get(settings.cbr_url, timeout=10.0)
-            resp.raise_for_status()
-
-            parsed = self._parse_xml(resp.text)
-
+            parsed = self._do_fetch(settings.cbr_url)
             # Обновляем кеш под блокировкой
             with self._lock:
                 self._cache = CacheEntry(rates=parsed, fetched_at=time.time())
-
-            logger.info("cbr_rates_fetched", count=len(parsed))
+            logger.info("cbr_rates_fetched", count=len(parsed), retries="ok")
         except Exception as e:  # pragma: no cover
             logger.warning("cbr_fetch_failed", error=str(e))
             return None
@@ -115,7 +135,7 @@ class CBRRatesService:
         """Возвращает информацию о состоянии кеша."""
         with self._lock:
             if not self._cache:
-                return {"cached": False, "rates_count": 0}
+                return {"cached": False, "rates_count": 0, "currencies": sorted(_load_currency_codes())}
 
             settings = get_settings()
             age_seconds = time.time() - self._cache.fetched_at
@@ -132,27 +152,24 @@ class CBRRatesService:
             }
 
 
-_cbr_service = CBRRatesService()
+cbr_service = CBRRatesService()
 
 
 def fetch_cbr_rates(force: bool = False) -> dict[str, float] | None:
     """Публичный API для получения курсов ЦБ РФ (совместимость)."""
-    return _cbr_service.fetch_rates(force)
+    return cbr_service.fetch_rates(force)
 
 
 def parse_cbr_xml(xml_text: str) -> dict[str, float]:
     """Совместимый экспорт парсера для тестов (оборачивает метод сервиса)."""
-    return _cbr_service._parse_xml(xml_text)
+    return cbr_service._parse_xml(xml_text)
 
 
 def get_effective_rates(
     base_rates_conf: dict[str, Any],
     rates_service: CBRRatesService | None = None,
 ) -> dict[str, Any]:
-    """Возвращает объединенную конфигурацию курсов (статические + живые).
-    Если сервис не передан явно – используем fetch_cbr_rates() чтобы сохранить
-    обратную совместимость с тестами, которые monkeypatch'ят функцию.
-    """
+    """Возвращает объединенную конфигурацию курсов (статические + живые)."""
     merged = dict(base_rates_conf)
     currencies = dict(merged.get("currencies", {}))
 
@@ -162,6 +179,10 @@ def get_effective_rates(
         currencies.update(live)
         merged["live_source"] = "cbr"
         merged["live_codes"] = sorted(_load_currency_codes())
+    else:
+        merged["live_source"] = None
 
     merged["currencies"] = currencies
+    if "EUR_RUB" not in currencies:
+        logger.error("eur_rate_missing", source=merged.get("live_source"))
     return merged
