@@ -726,6 +726,16 @@
                 }
             }
 
+            // Helper: count UTF-8 bytes of a string
+            byteLength(str) {
+                try {
+                    return new TextEncoder().encode(str).length;
+                } catch (_) {
+                    // Fallback approximate length
+                    return (str || '').length;
+                }
+            }
+
             sendData(data) {
                 // Allow sendData if Telegram object is present and initData/user available now
                 if (!this.tg || !this.canSendData()) return;
@@ -734,6 +744,56 @@
                 } catch (error) {
                     console.error('Failed to send data to Telegram:', error);
                     try { this.showAlert('Ошибка отправки данных'); } catch (_) {}
+                }
+            }
+
+            // Safe variant that keeps payload under Telegram limit (4096 bytes)
+            sendDataSafe(data) {
+                if (!this.tg || !this.canSendData()) return false;
+                const LIMIT = 4096;
+                let payload = typeof data === 'string' ? data : JSON.stringify(data);
+                let size = this.byteLength(payload);
+                if (size > LIMIT) {
+                    console.warn('[Telegram] Payload too large:', size, 'bytes. Trimming...');
+                    // Build minimal payload
+                    const minimal = {
+                        action: (data && data.action) || 'share_result',
+                        summary: (data && data.summary) || (data && data.text) || 'Расчет готов',
+                        total: data?.total ?? data?.total_rub,
+                        country: data?.country,
+                        year: data?.year,
+                        engine_cc: data?.engine_cc
+                    };
+                    // Ensure summary fits
+                    let summary = minimal.summary || '';
+                    // Leave ~300 bytes for the rest of fields/overhead
+                    const reserveBytes = 300;
+                    const maxSummaryBytes = Math.max(0, LIMIT - reserveBytes - this.byteLength(JSON.stringify({ ...minimal, summary: '' })));
+                    const truncateToBytes = (s, maxBytes) => {
+                        if (this.byteLength(s) <= maxBytes) return s;
+                        // naive truncation by characters until fits
+                        let low = 0, high = s.length;
+                        while (low < high) {
+                            const mid = Math.floor((low + high) / 2);
+                            const candidate = s.slice(0, mid) + '…';
+                            if (this.byteLength(candidate) <= maxBytes) low = mid + 1; else high = mid;
+                        }
+                        const finalStr = s.slice(0, Math.max(0, low - 1)) + '…';
+                        return finalStr;
+                    };
+                    minimal.summary = truncateToBytes(summary, maxSummaryBytes);
+                    payload = JSON.stringify(minimal);
+                    size = this.byteLength(payload);
+                    console.warn('[Telegram] Trimmed payload size:', size, 'bytes');
+                    try { this.showAlert('Сообщение слишком большое — отправляем краткую сводку'); } catch (_) {}
+                }
+                try {
+                    this.tg.sendData(payload);
+                    return true;
+                } catch (error) {
+                    console.error('Failed to send data to Telegram:', error);
+                    try { this.showAlert('Ошибка отправки данных'); } catch (_) {}
+                    return false;
                 }
             }
 
@@ -1282,7 +1342,7 @@
                 if (telegram.canSendData && telegram.canSendData()) {
                     try {
                         const totalVal = b.total_rub;
-                        telegram.sendData({
+                        const sent = telegram.sendDataSafe({
                             action: 'share_result',
                             text: shareText,
                             summary: shareText,
@@ -1295,9 +1355,13 @@
                             currency: r.currency,
                             freight_type: r.freight_type
                         });
-                        showToast('Результат отправлен в чат','success');
+                        if (sent) {
+                            showToast('Результат отправлен в чат','success');
+                        } else {
+                            showToast('Не удалось отправить в чат','error');
+                        }
                         // Close to ensure Telegram delivers web_app_data in chat
-                        setTimeout(() => { try { telegram.close(); } catch (_) {} }, 50);
+                        setTimeout(() => { try { telegram.close(); } catch (_) {} }, 400);
                     } catch (e) {
                         showToast('Не удалось отправить в чат','error');
                         if (window.Telegram?.WebApp?.showAlert) {
@@ -1310,6 +1374,7 @@
                 } else {
                     // Not in Telegram context
                     console.info('Not in Telegram context: open via bot WebApp button to send result to chat.');
+                    try { if (window.Telegram?.WebApp?.showAlert) window.Telegram.WebApp.showAlert('Откройте калькулятор через кнопку в чате бота, чтобы отправить результат'); } catch (_) {}
                 }
             });
         }
