@@ -12,8 +12,364 @@
     <meta name="apple-mobile-web-app-title" content="Растаможка">
     <!-- Telegram Web App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Relative stylesheet path for both desktop and Telegram WebApp -->
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #ffffff);
+            --text-color: var(--tg-theme-text-color, #000000);
+            --hint-color: var(--tg-theme-hint-color, #999999);
+            --link-color: var(--tg-theme-link-color, #2481cc);
+            --button-color: var(--tg-theme-button-color, #2481cc);
+            --button-text-color: var(--tg-theme-button-text-color, #ffffff);
+            --secondary-bg-color: var(--tg-theme-secondary-bg-color, #f1f1f1);
+            --border-radius: 12px;
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 16px;
+            min-height: 100vh;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--hint-color);
+            font-size: 14px;
+        }
+
+        .form-card {
+            background: var(--secondary-bg-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 16px;
+            transition: border-color 0.3s;
+            -webkit-appearance: none;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--link-color);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-group input {
+            flex: 1;
+        }
+
+        .currency-select {
+            width: 100px;
+            flex-shrink: 0;
+        }
+
+        /* Новый компактный дизайн выбора страны */
+        .country-selector {
+            position: relative;
+        }
+
+        .country-dropdown {
+            width: 100%;
+            padding: 12px 40px 12px 12px;
+            border: 2px solid var(--hint-color);
+            border-radius: 8px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            -webkit-appearance: none;
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%23999" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+        }
+
+        .country-dropdown:focus {
+            border-color: var(--link-color);
+            outline: none;
+        }
+
+        .country-dropdown.active {
+            border-color: var(--link-color);
+        }
+
+        .country-option {
+            padding: 8px 12px;
+            font-size: 16px;
+        }
+
+        .freight-options {
+            display: none;
+        }
+
+        .freight-options.show {
+            display: block;
+        }
+
+        .freight-grid {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .freight-btn {
+            padding: 8px 12px;
+            border: 2px solid var(--hint-color);
+            border-radius: 6px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 12px;
+            flex: 1;
+            min-width: 80px;
+            text-align: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .freight-btn:hover, .freight-btn.active {
+            border-color: var(--link-color);
+            background: var(--link-color);
+            color: var(--button-text-color);
+        }
+
+        .calculate-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--button-color);
+            color: var(--button-text-color);
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 16px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .calculate-btn:hover {
+            opacity: 0.9;
+            transform: scale(0.98);
+        }
+
+        .calculate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-card {
+            background: var(--secondary-bg-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-top: 16px;
+            box-shadow: var(--shadow);
+            display: none;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .result-card.show {
+            display: block;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-total {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: var(--button-color);
+            color: var(--button-text-color);
+            border-radius: 8px;
+        }
+
+        .result-total .amount {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .result-total .label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--hint-color);
+        }
+
+        .breakdown-item:last-child {
+            border-bottom: none;
+            font-weight: 600;
+            margin-top: 8px;
+            padding-top: 16px;
+            border-top: 2px solid var(--hint-color);
+        }
+
+        .breakdown-label {
+            font-size: 14px;
+        }
+
+        .breakdown-amount {
+            font-weight: 500;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--hint-color);
+        }
+
+        .loading:after {
+            content: "";
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--hint-color);
+            border-radius: 50%;
+            border-top-color: var(--link-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 14px;
+            border-left: 4px solid #c33;
+        }
+
+        .meta-info {
+            margin-top: 16px;
+            padding: 12px;
+            background: var(--bg-color);
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--hint-color);
+        }
+
+        .share-btn {
+            margin-top: 16px;
+            padding: 12px;
+            background: transparent;
+            color: var(--link-color);
+            border: 2px solid var(--link-color);
+            border-radius: 8px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .share-btn:hover {
+            background: var(--link-color);
+            color: var(--button-text-color);
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .currency-select {
+                width: 100%;
+            }
+        }
+
+        /* Telegram Web App специфичные стили */
+        .tg-web-app {
+            --bg-color: var(--tg-theme-bg-color);
+            --text-color: var(--tg-theme-text-color);
+            --hint-color: var(--tg-theme-hint-color);
+            --link-color: var(--tg-theme-link-color);
+            --button-color: var(--tg-theme-button-color);
+            --button-text-color: var(--tg-theme-button-text-color);
+            --secondary-bg-color: var(--tg-theme-secondary-bg-color);
+        }
+    </style>
     <noscript>Для работы приложения нужен JavaScript</noscript>
 </head>
 <body>
@@ -27,19 +383,14 @@
             <div class="form-card">
                 <div class="form-group">
                     <label>Страна покупки <span class="required">*</span></label>
-                    <div class="country-grid">
-                        <div class="country-btn" data-country="japan">
-                            <span class="flag">🇯🇵</span>Япония
-                        </div>
-                        <div class="country-btn" data-country="korea">
-                            <span class="flag">🇰🇷</span>Корея
-                        </div>
-                        <div class="country-btn" data-country="uae">
-                            <span class="flag">🇦🇪</span>ОАЭ
-                        </div>
-                        <div class="country-btn" data-country="china">
-                            <span class="flag">🇨🇳</span>Китай
-                        </div>
+                    <div class="country-selector">
+                        <select id="countrySelect" class="country-dropdown" required>
+                            <option value="">Выберите страну</option>
+                            <option value="japan" class="country-option">🇯🇵 Япония</option>
+                            <option value="korea" class="country-option">🇰🇷 Корея</option>
+                            <option value="uae" class="country-option">🇦🇪 ОАЭ</option>
+                            <option value="china" class="country-option">🇨🇳 Китай</option>
+                        </select>
                     </div>
                 </div>
 
@@ -126,21 +477,13 @@
                     const override = params.get('api_base');
                     if (override) return override.replace(/\/$/, '');
 
-                    // Fix for Telegram WebApp: when served from external domain (ngrok),
-                    // API should also use the same domain, not localhost
                     if (location.protocol === 'https:' || location.protocol === 'http:') {
                         const currentHost = location.host;
-
-                        // If we're on ngrok or external domain, use same host for API
                         if (currentHost.includes('ngrok') || !currentHost.includes('localhost')) {
                             return `${location.protocol}//${currentHost}`;
                         }
-
-                        // For localhost development, use localhost
                         return `${location.protocol}//${location.host}`;
                     }
-
-                    // Fallback for file:// or other protocols
                     return window.location.hostname ? `https://${window.location.hostname}` : '';
                 } catch (error) {
                     console.warn('Failed to resolve base URL:', error);
@@ -150,7 +493,6 @@
 
             async initCSRF() {
                 try {
-                    // In real app, fetch CSRF token from server
                     this.csrfToken = this.generateCSRFToken();
                 } catch (error) {
                     console.warn('CSRF initialization failed:', error);
@@ -177,7 +519,6 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
-                        // Enhanced ngrok bypass headers for Telegram WebApp
                         'ngrok-skip-browser-warning': 'true',
                         'User-Agent': 'Mozilla/5.0 (compatible; TelegramWebApp)',
                         'Accept': 'application/json, text/plain, */*',
@@ -253,7 +594,6 @@
                     this.applyTheme();
                     this.setupEventListeners();
                     this.isValid = true;
-
                     console.log('Telegram WebApp initialized successfully');
                 } catch (error) {
                     console.error('Telegram WebApp initialization failed:', error);
@@ -278,26 +618,15 @@
                 Object.entries(cssVariables).forEach(([property, value]) => {
                     if (value) root.style.setProperty(property, value);
                 });
-
-                // Update CSS variables to use Telegram theme
-                root.style.setProperty('--bg-color', themeParams.bg_color || '#ffffff');
-                root.style.setProperty('--text-color', themeParams.text_color || '#000000');
-                root.style.setProperty('--hint-color', themeParams.hint_color || '#999999');
-                root.style.setProperty('--link-color', themeParams.link_color || '#2481cc');
-                root.style.setProperty('--button-color', themeParams.button_color || '#2481cc');
-                root.style.setProperty('--button-text-color', themeParams.button_text_color || '#ffffff');
-                root.style.setProperty('--secondary-bg-color', themeParams.secondary_bg_color || '#f1f1f1');
             }
 
             setupEventListeners() {
-                // Handle main button
                 this.tg.MainButton.setText('Рассчитать стоимость');
                 this.tg.MainButton.onClick(() => {
                     const event = new Event('submit', { bubbles: true, cancelable: true });
                     document.getElementById('calculatorForm').dispatchEvent(event);
                 });
 
-                // Handle back button
                 this.tg.BackButton.onClick(() => {
                     const resultCard = document.getElementById('resultCard');
                     if (resultCard.classList.contains('show')) {
@@ -309,7 +638,6 @@
                     }
                 });
 
-                // Handle theme changes
                 this.tg.onEvent('themeChanged', () => {
                     this.applyTheme();
                 });
@@ -395,14 +723,6 @@
         const api = new SecureAPI();
         const telegram = new TelegramWebAppHelper();
 
-        // Country to currency mapping
-        const countryCurrency = {
-            japan: 'JPY',
-            korea: 'USD',
-            uae: 'AED',
-            china: 'CNY'
-        };
-
         // Глобальные переменные
         let selectedCountry = null;
         let selectedFreightType = null;
@@ -466,12 +786,13 @@
 
         // Настройка обработчиков событий
         function setupEventListeners() {
-            // Выбор страны
-            document.querySelectorAll('.country-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    selectCountry(this.dataset.country);
+            // Выбор страны через dropdown
+            document.getElementById('countrySelect').addEventListener('change', function() {
+                const country = this.value;
+                if (country) {
+                    selectCountry(country);
                     telegram.hapticFeedback('light');
-                });
+                }
             });
 
             // Отправка формы
@@ -487,17 +808,18 @@
             document.getElementById('shareBtn').addEventListener('click', function() {
                 shareResult();
             });
+
+            // Обновление состояния кнопки при вводе данных
+            document.getElementById('calculatorForm').addEventListener('input', updateMainButtonState);
         }
 
         // Выбор страны
         function selectCountry(country) {
             selectedCountry = country;
 
-            // Обновляем UI
-            document.querySelectorAll('.country-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.querySelector(`[data-country="${country}"]`).classList.add('active');
+            // Обновляем визуальное состояние dropdown
+            const countrySelect = document.getElementById('countrySelect');
+            countrySelect.classList.add('active');
 
             // Триггерим событие изменения страны
             document.dispatchEvent(new CustomEvent('countryChanged', { detail: country }));
@@ -569,30 +891,50 @@
         // Update main button state based on form validity
         function updateMainButtonState() {
             if (!telegram.isInTelegram()) return;
-            if (!selectedCountry) { telegram.hideMainButton(); return; }
+            if (!selectedCountry) {
+                telegram.hideMainButton();
+                return;
+            }
             const formData = new FormData(document.getElementById('calculatorForm'));
             const isValid = formData.get('year') && formData.get('engineCc') && formData.get('purchasePrice');
-            if (isValid) telegram.showMainButton('Рассчитать стоимость'); else telegram.hideMainButton();
+            if (isValid) {
+                telegram.showMainButton('Рассчитать стоимость');
+            } else {
+                telegram.hideMainButton();
+            }
         }
-
-        document.getElementById('calculatorForm').addEventListener('input', updateMainButtonState);
-        document.addEventListener('countryChanged', updateMainButtonState);
 
         function validateForm() {
             const year = parseInt(document.getElementById('year').value);
             const currentYear = new Date().getFullYear();
-            if (year > currentYear) { showError('Год выпуска не может быть больше текущего'); return false; }
-            if (year < 1990) { showError('Год выпуска должен быть не менее 1990'); return false; }
+            if (year > currentYear) {
+                showError('Год выпуска не может быть больше текущего');
+                return false;
+            }
+            if (year < 1990) {
+                showError('Год выпуска должен быть не менее 1990');
+                return false;
+            }
             const engineCc = parseInt(document.getElementById('engineCc').value);
-            if (engineCc < 500 || engineCc > 10000) { showError('Объем двигателя должен быть от 500 до 10000 см³'); return false; }
+            if (engineCc < 500 || engineCc > 10000) {
+                showError('Объем двигателя должен быть от 500 до 10000 см³');
+                return false;
+            }
             const price = parseFloat(document.getElementById('purchasePrice').value);
-            if (price <= 0) { showError('Цена покупки должна быть больше 0'); return false; }
+            if (price <= 0) {
+                showError('Цена покупки должна быть больше 0');
+                return false;
+            }
             return true;
         }
 
         async function calculateCost() {
-            if (!selectedCountry) { showError('Пожалуйста, выберите страну покупки'); return; }
+            if (!selectedCountry) {
+                showError('Пожалуйста, выберите страну покупки');
+                return;
+            }
             if (!validateForm()) return;
+
             const formData = new FormData(document.getElementById('calculatorForm'));
             const requestData = {
                 country: selectedCountry,
@@ -602,22 +944,37 @@
                 currency: formData.get('currency'),
                 freight_type: selectedFreightType
             };
-            showLoading(true); hideError(); hideResult();
+
+            showLoading(true);
+            hideError();
+            hideResult();
+
             try {
                 telegram.setMainButtonLoading(true);
                 const result = await api.post('/api/calculate', requestData);
                 displayResult(result);
-                if (telegram.isInTelegram()) { telegram.hapticFeedback('medium'); telegram.hideMainButton(); telegram.showBackButton(); }
+                if (telegram.isInTelegram()) {
+                    telegram.hapticFeedback('medium');
+                    telegram.hideMainButton();
+                    telegram.showBackButton();
+                }
             } catch (error) {
-                console.error('Calculation error:', error); showError('Ошибка расчета: ' + error.message); telegram.hapticFeedback('heavy');
-            } finally { showLoading(false); telegram.setMainButtonLoading(false); }
+                console.error('Calculation error:', error);
+                showError('Ошибка расчета: ' + error.message);
+                telegram.hapticFeedback('heavy');
+            } finally {
+                showLoading(false);
+                telegram.setMainButtonLoading(false);
+            }
         }
 
         function displayResult(result) {
             const { breakdown, meta } = result;
             document.getElementById('totalAmount').textContent = formatNumber(breakdown.total_rub) + ' ₽';
+
             const breakdownDiv = document.getElementById('breakdown');
             breakdownDiv.innerHTML = '';
+
             const items = [
                 { label: 'Цена покупки', amount: breakdown.purchase_price_rub },
                 { label: 'Таможенная пошлина', amount: breakdown.duties_rub },
@@ -628,14 +985,28 @@
                 { label: 'Расходы в стране', amount: breakdown.country_expenses_rub },
                 { label: 'Комиссия компании', amount: breakdown.company_commission_rub }
             ];
-            items.forEach(item => { if (item.amount > 0) { const div = document.createElement('div'); div.className='breakdown-item'; div.innerHTML=`<span class="breakdown-label">${item.label}</span><span class="breakdown-amount">${formatNumber(item.amount)} ₽</span>`; breakdownDiv.appendChild(div);} });
-            const totalDiv = document.createElement('div'); totalDiv.className='breakdown-item'; totalDiv.innerHTML=`<span class="breakdown-label">ИТОГО</span><span class="breakdown-amount">${formatNumber(breakdown.total_rub)} ₽</span>`; breakdownDiv.appendChild(totalDiv);
+
+            items.forEach(item => {
+                if (item.amount > 0) {
+                    const div = document.createElement('div');
+                    div.className='breakdown-item';
+                    div.innerHTML=`<span class="breakdown-label">${item.label}</span><span class="breakdown-amount">${formatNumber(item.amount)} ₽</span>`;
+                    breakdownDiv.appendChild(div);
+                }
+            });
+
+            const totalDiv = document.createElement('div');
+            totalDiv.className='breakdown-item';
+            totalDiv.innerHTML=`<span class="breakdown-label">ИТОГО</span><span class="breakdown-amount">${formatNumber(breakdown.total_rub)} ₽</span>`;
+            breakdownDiv.appendChild(totalDiv);
+
             const metaDiv = document.getElementById('metaInfo');
             metaDiv.innerHTML = `
                 <div>Возраст авто: ${meta.age_years} лет (${getAgeCategory(meta.age_category)})</div>
                 <div>Объем двигателя: ${meta.volume_band}</div>
                 ${meta.warnings && meta.warnings.length ? '<div style="color:#e74c3c;margin-top:8px;">⚠️ ' + meta.warnings.map(w=>w.message).join('<br>⚠️ ') + '</div>' : ''}
             `;
+
             document.getElementById('resultCard').classList.add('show');
             document.getElementById('shareBtn').style.display='block';
             window.lastCalculationResult = result;
@@ -645,24 +1016,75 @@
             if (!window.lastCalculationResult) return;
             const result = document.getElementById('totalAmount').textContent;
             const shareText = `🚗 Расчет растаможки автомобиля из ${getCountryName(selectedCountry)}: ${result}`;
+
             if (telegram.isInTelegram()) {
-                telegram.sendData({ action: 'share_result', text: shareText, total: window.lastCalculationResult.breakdown.total_rub, country: selectedCountry });
+                telegram.sendData({
+                    action: 'share_result',
+                    text: shareText,
+                    total: window.lastCalculationResult.breakdown.total_rub,
+                    country: selectedCountry
+                });
                 showToast('Результат отправлен в чат','success');
             } else if (navigator.share) {
-                navigator.share({ title: 'Калькулятор растаможки', text: shareText, url: location.href });
+                navigator.share({
+                    title: 'Калькулятор растаможки',
+                    text: shareText,
+                    url: location.href
+                });
             } else {
                 navigator.clipboard.writeText(shareText).then(()=>showToast('Результат скопирован','success'));
             }
         }
 
-        function getCountryName(country) { return { japan:'Японии', korea:'Кореи', uae:'ОАЭ', china:'Китая' }[country] || country; }
-        function formatNumber(n){ return new Intl.NumberFormat('ru-RU').format(n); }
-        function getAgeCategory(c){ return { lt3:'до 3 лет', '3_5':'3-5 лет (проходные)', gt5:'свыше 5 лет' }[c] || c; }
-        function showLoading(show){ document.getElementById('loading').style.display = show?'block':'none'; document.getElementById('calculateBtn').disabled=show; }
-        function showError(msg){ const e=document.getElementById('error'); e.textContent=msg; e.style.display='block'; }
-        function hideError(){ document.getElementById('error').style.display='none'; }
-        function hideResult(){ document.getElementById('resultCard').classList.remove('show'); document.getElementById('shareBtn').style.display='none'; }
-        function showToast(message,type='info'){ const t=document.createElement('div'); t.className=`toast ${type}`; t.textContent=message; t.style.cssText=`position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:${type==='success'?'#10b981':type==='error'?'#ef4444':'#3b82f6'};color:#fff;padding:12px 24px;border-radius:8px;z-index:1000;animation:slideUp .3s ease-out;`; document.body.appendChild(t); setTimeout(()=>t.remove(),3000); }
+        function getCountryName(country) {
+            return {
+                japan:'Японии',
+                korea:'Кореи',
+                uae:'ОАЭ',
+                china:'Китая'
+            }[country] || country;
+        }
+
+        function formatNumber(n){
+            return new Intl.NumberFormat('ru-RU').format(n);
+        }
+
+        function getAgeCategory(c){
+            return {
+                lt3:'до 3 лет',
+                '3_5':'3-5 лет (проходные)',
+                gt5:'свыше 5 лет'
+            }[c] || c;
+        }
+
+        function showLoading(show){
+            document.getElementById('loading').style.display = show?'block':'none';
+            document.getElementById('calculateBtn').disabled=show;
+        }
+
+        function showError(msg){
+            const e=document.getElementById('error');
+            e.textContent=msg;
+            e.style.display='block';
+        }
+
+        function hideError(){
+            document.getElementById('error').style.display='none';
+        }
+
+        function hideResult(){
+            document.getElementById('resultCard').classList.remove('show');
+            document.getElementById('shareBtn').style.display='none';
+        }
+
+        function showToast(message,type='info'){
+            const t=document.createElement('div');
+            t.className=`toast ${type}`;
+            t.textContent=message;
+            t.style.cssText=`position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:${type==='success'?'#10b981':type==='error'?'#ef4444':'#3b82f6'};color:#fff;padding:12px 24px;border-radius:8px;z-index:1000;animation:slideUp .3s ease-out;`;
+            document.body.appendChild(t);
+            setTimeout(()=>t.remove(),3000);
+        }
     </script>
 </body>
 </html>
