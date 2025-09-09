@@ -5,7 +5,7 @@ from pathlib import Path
 import time
 from typing import TYPE_CHECKING
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -21,30 +21,6 @@ if TYPE_CHECKING:
 
 
 WEB_DIR = Path(__file__).parent / "webapp"
-
-
-def _png_solid(width: int, height: int, rgba: tuple[int, int, int, int] = (36, 129, 204, 255)) -> bytes:
-    """Generate a minimal solid-color PNG (RGBA) without external deps."""
-    import struct, zlib, binascii
-
-    def chunk(tag: bytes, data: bytes) -> bytes:
-        return (
-            struct.pack(">I", len(data))
-            + tag
-            + data
-            + struct.pack(">I", binascii.crc32(tag + data) & 0xFFFFFFFF)
-        )
-
-    sig = b"\x89PNG\r\n\x1a\n"
-    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)  # 8-bit RGBA
-    ihdr_chunk = chunk(b"IHDR", ihdr)
-
-    r, g, b, a = rgba
-    row = bytes([0]) + bytes([r, g, b, a]) * width  # filter byte 0 + pixels
-    raw = row * height
-    idat_chunk = chunk(b"IDAT", zlib.compress(raw, 9))
-    iend_chunk = chunk(b"IEND", b"")
-    return sig + ihdr_chunk + idat_chunk + iend_chunk
 
 
 def rate_limit_middleware(app: FastAPI) -> Callable:
@@ -114,14 +90,7 @@ def create_app() -> FastAPI:
     # API routes
     app.include_router(api_router)
 
-    # Dynamic icons for PWA so Lighthouse can fetch them even if files are missing
-    @app.get("/assets/icon-192.png")
-    async def icon_192() -> Response:
-        return Response(content=_png_solid(192, 192), media_type="image/png")
 
-    @app.get("/assets/icon-512.png")
-    async def icon_512() -> Response:
-        return Response(content=_png_solid(512, 512), media_type="image/png")
 
     # Static files for web interface - исправляем путь
     if WEB_DIR.exists():
@@ -169,12 +138,12 @@ def create_app() -> FastAPI:
                 files[file.name] = {
                     "exists": file.exists(),
                     "is_file": file.is_file(),
-                    "size": file.stat().st_size if file.exists() else 0
+                    "size": file.stat().st_size if file.exists() else 0,
                 }
         return {
             "webapp_dir": str(WEB_DIR),
             "webapp_exists": WEB_DIR.exists(),
-            "files": files
+            "files": files,
         }
 
     return app
