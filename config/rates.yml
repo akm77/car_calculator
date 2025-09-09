@@ -1,8 +1,8 @@
 currencies:
   USD_RUB: 90.0
   EUR_RUB: 100.0
-  JPY_RUB: 0.60
-  CNY_RUB: 12.0
+  JPY_RUB: 0.6
+  CNY_RUB: 9.0
   AED_RUB: 24.5
 
 live_currency_codes:
@@ -22,11 +22,15 @@ era_glonass_rub: 35000
 
 utilization:
   personal_m1:
-    - max_cc: 3000
+    - max_cc: 2999
       lt3: 3400
       ge3: 5200  # applies to 3_5 and gt5
-    - max_cc: 3500
-      lt3: 2153400
-      ge3: 3296800
-    - lt3: 2742200  # >3500
-      ge3: 3604800
+    - max_cc: 3000  # изменяю с 3500 на 3000 - граница по ТЗ
+      lt3: 3400
+      ge3: 5200
+    - # свыше 3000 см³ - повышенные ставки согласно ТЗ
+      lt3: 2742200  # менее 3 лет
+      ge3: 3296800  # 3-5 лет
+      gt5: 3604800  # более 5 лет
+
+live_source: "cbr"

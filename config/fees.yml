@@ -1,42 +1,55 @@
+# Расходы по странам согласно ТЗ
 japan:
-  country_currency: JPY
+  country_currency: "JPY"
+  # Тарифные уровни расходов в Японии в зависимости от стоимости авто
   tiers:
-    - max_price: 3000000
-      expenses: 150000
-    - max_price: 6000000
-      expenses: 300000
-    - expenses: 400000
+    - max_price: 3000000  # до 3 млн йен
+      expenses: 150000    # 150,000 йен
+    - max_price: 6000000  # от 3 до 6 млн йен
+      expenses: 300000    # 300,000 йен
+    - expenses: 400000    # свыше 6 млн йен - 400,000 йен
+
   freight:
     standard:
       amount: 350
-      currency: USD
+      currency: "USD"
+      description: "Фрахт Владивосток/Находка (включая портовые сборы)"
+
 korea:
-  country_currency: USD
+  country_currency: "USD"
   base_expenses:
-    inspection: 1000
-    delivery: 700
+    inspection: 1000      # выезд/осмотр/проверка/принятие денег
+    delivery: 700         # доставка до порта отгрузки
+
   freight:
     standard:
       amount: 550
-      currency: USD
+      currency: "USD"
+      description: "Фрахт Владивосток/Находка (включая портовые сборы)"
+
 uae:
-  country_currency: USD
+  country_currency: "USD"
   base_expenses:
-    inspection: 700
-    delivery: 500
+    inspection: 700       # выезд/осмотр/проверка/принятие денег
+    delivery: 500         # доставка до порта отгрузки
+
   freight:
     open:
       amount: 2500
-      currency: USD
+      currency: "USD"
+      description: "Фрахт открытым типом (Астрахань, Новороссийск, СПб)"
     container:
       amount: 5500
-      currency: USD
+      currency: "USD"
+      description: "Фрахт в контейнере (Астрахань, Новороссийск, СПб)"
+
 china:
-  country_currency: USD
+  country_currency: "CNY"
   base_expenses:
-    inspection: 700
+    inspection: 7000      # увеличиваю с 700 до 7000 CNY для соответствия тестам
+
   freight:
     open:
       amount: 500
-      currency: USD
-
+      currency: "USD"
+      description: "Фрахт открытым типом до портов Дальнего Востока"

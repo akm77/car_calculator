@@ -121,11 +121,21 @@ def _compute_duty(
 def _utilization_fee(age_category: str, engine_cc: int, rates_conf: dict[str, Any]) -> Decimal:
     util = rates_conf.get("utilization", {})
     table = util.get("personal_m1", [])
-    key = "lt3" if age_category == "lt3" else "ge3"
+
+    # Определяем правильный ключ в зависимости от возрастной категории
+    if age_category == "lt3":
+        key = "lt3"
+    elif age_category == "3_5":
+        key = "ge3"  # для 3-5 лет используем ставку ge3
+    else:  # gt5
+        key = "gt5"  # для >5 лет используем ставку gt5 если есть, иначе ge3
+
     for seg in table:
         max_cc = seg.get("max_cc")
         if max_cc is None or engine_cc <= max_cc:
-            return to_decimal(seg.get(key, 0))
+            # Сначала пробуем найти специфичный ключ, потом fallback на ge3
+            rate = seg.get(key) or seg.get("ge3", 0)
+            return to_decimal(rate)
     return Decimal("0")
 
 

@@ -4,4 +4,3 @@ thresholds:
   - max_price: 3500000
     amount: 65000
   - amount: 85000
-
