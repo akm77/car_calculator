@@ -345,30 +345,53 @@
             color: var(--button-text-color);
         }
 
-        @media (max-width: 480px) {
-            body {
-                padding: 12px;
-            }
-
-            .input-group {
-                flex-direction: column;
-            }
-
-            .currency-select {
-                width: 100%;
-            }
+        /* Tabs UI */
+        .tabs { margin-top: 8px; }
+        .tab-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
         }
-
-        /* Telegram Web App специфичные стили */
-        .tg-web-app {
-            --bg-color: var(--tg-theme-bg-color);
-            --text-color: var(--tg-theme-text-color);
-            --hint-color: var(--tg-theme-hint-color);
-            --link-color: var(--tg-theme-link-color);
-            --button-color: var(--tg-theme-button-color);
-            --button-text-color: var(--tg-theme-button-text-color);
-            --secondary-bg-color: var(--tg-theme-secondary-bg-color);
+        .tab-btn {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 2px solid var(--hint-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .2s ease;
+            -webkit-tap-highlight-color: transparent;
         }
+        .tab-btn.active {
+            border-color: var(--link-color);
+            background: var(--secondary-bg-color);
+            color: var(--text-color);
+        }
+        .tab-panes { width: 100%; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        /* Back button on results tab */
+        .back-btn {
+            margin-top: 12px;
+            padding: 12px;
+            background: transparent;
+            color: var(--link-color);
+            border: 2px solid var(--link-color);
+            border-radius: 8px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .back-btn:hover {
+            background: var(--link-color);
+            color: var(--button-text-color);
+        }
+        /* Hide tab navigation from the top UI */
+        .tab-nav { display: none !important; }
     </style>
     <noscript>Для работы приложения нужен JavaScript</noscript>
 </head>
@@ -582,21 +605,47 @@
                 this.init();
             }
 
+            detectInTelegram() {
+                try {
+                    if (!this.tg) return false;
+                    const hasInitData = typeof this.tg.initData === 'string' && this.tg.initData.length > 0;
+                    const hasUser = !!this.tg.initDataUnsafe?.user;
+                    return hasInitData || hasUser;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            canSendData() {
+                // Runtime check whether Telegram can accept sendData from this context
+                try {
+                    if (!this.tg) return false;
+                    const hasInitData = typeof this.tg.initData === 'string' && this.tg.initData.length > 0;
+                    const hasUser = !!this.tg.initDataUnsafe?.user;
+                    return hasInitData || hasUser;
+                } catch (e) {
+                    return false;
+                }
+            }
+
             init() {
                 if (!this.tg) {
                     console.warn('Telegram WebApp API not available');
                     return;
                 }
 
+                // Keep UI features behind isValid; evaluate after ready
                 try {
                     this.tg.ready();
                     this.tg.expand();
+                    // After ready, re-evaluate environment
+                    this.isValid = this.detectInTelegram();
                     this.applyTheme();
-                    this.setupEventListeners();
-                    this.isValid = true;
-                    console.log('Telegram WebApp initialized successfully');
+                    if (this.isValid) this.setupEventListeners();
+                    console.log('Telegram WebApp initialized (isValid:', this.isValid, ')');
                 } catch (error) {
                     console.error('Telegram WebApp initialization failed:', error);
+                    this.isValid = false;
                 }
             }
 
@@ -678,23 +727,23 @@
             }
 
             sendData(data) {
-                if (!this.isValid) return;
-
+                // Allow sendData if Telegram object is present and initData/user available now
+                if (!this.tg || !this.canSendData()) return;
                 try {
                     this.tg.sendData(JSON.stringify(data));
                 } catch (error) {
                     console.error('Failed to send data to Telegram:', error);
-                    this.showAlert('Ошибка отправки данных');
+                    try { this.showAlert('Ошибка отправки данных'); } catch (_) {}
                 }
             }
 
             showAlert(message) {
-                if (!this.isValid) return;
+                if (!this.tg) return;
                 this.tg.showAlert(message);
             }
 
             hapticFeedback(type = 'light') {
-                if (!this.isValid || !this.tg.HapticFeedback) return;
+                if (!this.isValid || !this.tg?.HapticFeedback) return;
 
                 try {
                     if (type === 'light') {
@@ -710,13 +759,126 @@
             }
 
             close() {
-                if (!this.isValid) return;
+                if (!this.tg) return;
                 this.tg.close();
             }
 
             isInTelegram() {
                 return this.isValid;
             }
+        }
+
+        // Tabs helpers
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+            const btn = document.getElementById(tabId === 'resultTab' ? 'resultTabBtn' : 'calcTabBtn');
+            const pane = document.getElementById(tabId);
+
+            if (btn) btn.classList.add('active');
+            if (pane) pane.classList.add('active');
+        }
+        function showResultsTab() { switchTab('resultTab'); }
+        function showCalcTab() { switchTab('calcTab'); }
+        function isResultTabActive() {
+            const pane = document.getElementById('resultTab');
+            return pane ? pane.classList.contains('active') : false;
+        }
+
+        function buildTabsUI() {
+            const container = document.querySelector('.container');
+            const header = container.querySelector('.header');
+
+            const form = document.getElementById('calculatorForm');
+            const resultCard = document.getElementById('resultCard');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+
+            // Avoid rebuilding if already built
+            if (document.querySelector('.tabs')) return;
+
+            const tabs = document.createElement('div');
+            tabs.className = 'tabs';
+
+            const tabNav = document.createElement('div');
+            tabNav.className = 'tab-nav';
+
+            const calcTabBtn = document.createElement('button');
+            calcTabBtn.className = 'tab-btn active';
+            calcTabBtn.id = 'calcTabBtn';
+            calcTabBtn.dataset.tab = 'calcTab';
+            calcTabBtn.textContent = 'Расчёт';
+
+            const resultTabBtn = document.createElement('button');
+            resultTabBtn.className = 'tab-btn';
+            resultTabBtn.id = 'resultTabBtn';
+            resultTabBtn.dataset.tab = 'resultTab';
+            resultTabBtn.textContent = 'Результат';
+
+            tabNav.append(calcTabBtn, resultTabBtn);
+
+            const panes = document.createElement('div');
+            panes.className = 'tab-panes';
+
+            const calcPane = document.createElement('div');
+            calcPane.className = 'tab-pane active';
+            calcPane.id = 'calcTab';
+
+            const resultPane = document.createElement('div');
+            resultPane.className = 'tab-pane';
+            resultPane.id = 'resultTab';
+
+            // Move existing nodes into panes
+            calcPane.appendChild(form);
+            calcPane.appendChild(loading);
+            calcPane.appendChild(error);
+
+            resultPane.appendChild(resultCard);
+
+            panes.append(calcPane, resultPane);
+            tabs.append(tabNav, panes);
+
+            // Insert tabs after header
+            header.insertAdjacentElement('afterend', tabs);
+
+            // Ensure a "back" button exists on the Results tab
+            let backBtn = document.getElementById('backToCalcBtn');
+            if (!backBtn) {
+                backBtn = document.createElement('button');
+                backBtn.id = 'backToCalcBtn';
+                backBtn.className = 'back-btn';
+                backBtn.textContent = '↩️ Вернуться к расчётам';
+                resultCard.appendChild(backBtn);
+            }
+
+            // Wire up events
+            calcTabBtn.addEventListener('click', () => {
+                hideResult();
+                showCalcTab();
+                if (telegram.isInTelegram()) {
+                    telegram.hideBackButton();
+                    telegram.showMainButton();
+                }
+            });
+            resultTabBtn.addEventListener('click', () => {
+                showResultsTab();
+                if (telegram.isInTelegram()) {
+                    const resultCardVisible = document.getElementById('resultCard').classList.contains('show');
+                    if (resultCardVisible) {
+                        telegram.hideMainButton();
+                        telegram.showBackButton();
+                    }
+                }
+            });
+            backBtn.addEventListener('click', () => {
+                hideResult();
+                showCalcTab();
+                if (telegram.isInTelegram()) {
+                    telegram.hideBackButton();
+                    telegram.showMainButton();
+                }
+            });
         }
 
         // Initialize API and Telegram integration
@@ -730,12 +892,31 @@
 
         // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
+            buildTabsUI();
             loadMetaData();
             setupEventListeners();
             setCurrentYear();
 
-            // Show main button in Telegram
+            // Patch result show/hide to switch tabs
+            const originalDisplayResult = window.displayResult;
+            const originalHideResult = window.hideResult;
+            if (typeof originalDisplayResult === 'function') {
+                window.displayResult = function(result) {
+                    originalDisplayResult(result);
+                    showResultsTab();
+                };
+            }
+            if (typeof originalHideResult === 'function') {
+                window.hideResult = function() {
+                    originalHideResult();
+                    showCalcTab();
+                };
+            }
+
             if (telegram.isInTelegram()) {
+                // Use only Telegram MainButton, hide in-page calculate button
+                const calcBtn = document.getElementById('calculateBtn');
+                if (calcBtn) calcBtn.style.display = 'none';
                 telegram.showMainButton();
             }
         });
@@ -1000,10 +1181,15 @@
             totalDiv.innerHTML=`<span class="breakdown-label">ИТОГО</span><span class="breakdown-amount">${formatNumber(breakdown.total_rub)} ₽</span>`;
             breakdownDiv.appendChild(totalDiv);
 
+            // Engine volume display: fallback to request.engine_cc if meta.volume_band is a placeholder (e.g., 'value_brackets')
+            const engineDisplay = (meta && meta.volume_band && meta.volume_band !== 'value_brackets' && meta.volume_band !== 'n/a')
+                ? meta.volume_band
+                : (result?.request?.engine_cc ? `${result.request.engine_cc} см³` : '—');
+
             const metaDiv = document.getElementById('metaInfo');
             metaDiv.innerHTML = `
                 <div>Возраст авто: ${meta.age_years} лет (${getAgeCategory(meta.age_category)})</div>
-                <div>Объем двигателя: ${meta.volume_band}</div>
+                <div>Объем двигателя: ${engineDisplay}</div>
                 ${meta.warnings && meta.warnings.length ? '<div style="color:#e74c3c;margin-top:8px;">⚠️ ' + meta.warnings.map(w=>w.message).join('<br>⚠️ ') + '</div>' : ''}
             `;
 
@@ -1014,26 +1200,118 @@
 
         function shareResult() {
             if (!window.lastCalculationResult) return;
-            const result = document.getElementById('totalAmount').textContent;
-            const shareText = `🚗 Расчет растаможки автомобиля из ${getCountryName(selectedCountry)}: ${result}`;
+            const res = window.lastCalculationResult;
+            const resultStr = document.getElementById('totalAmount').textContent;
+            const countryName = getCountryName(res.request?.country || selectedCountry);
 
-            if (telegram.isInTelegram()) {
-                telegram.sendData({
-                    action: 'share_result',
-                    text: shareText,
-                    total: window.lastCalculationResult.breakdown.total_rub,
-                    country: selectedCountry
-                });
-                showToast('Результат отправлен в чат','success');
-            } else if (navigator.share) {
-                navigator.share({
-                    title: 'Калькулятор растаможки',
-                    text: shareText,
-                    url: location.href
-                });
-            } else {
-                navigator.clipboard.writeText(shareText).then(()=>showToast('Результат скопирован','success'));
+            // Build full multi-line breakdown text
+            const b = res.breakdown || {};
+            const r = res.request || {};
+            const m = res.meta || {};
+            const fnum = (n) => (typeof n === 'number' ? new Intl.NumberFormat('ru-RU').format(n) : n);
+
+            const lines = [];
+            lines.push('🚗 Расчет растаможки');
+            lines.push(`Страна: ${countryName}`);
+            if (r.year) lines.push(`Год выпуска: ${r.year}`);
+            if (r.engine_cc) lines.push(`Объем двигателя: ${r.engine_cc} см³`);
+            if (r.purchase_price && r.currency) lines.push(`Цена покупки: ${fnum(r.purchase_price)} ${r.currency}`);
+            if (r.freight_type) lines.push(`Тип фрахта: ${r.freight_type}`);
+            if (m.age_years !== undefined && m.age_category) lines.push(`Возраст: ${m.age_years} лет (${getAgeCategory(m.age_category)})`);
+            lines.push('');
+            lines.push('Детализация:');
+            if (b.purchase_price_rub) lines.push(`• Цена покупки: ${fnum(b.purchase_price_rub)} ₽`);
+            if (b.duties_rub) lines.push(`• Таможенная пошлина: ${fnum(b.duties_rub)} ₽`);
+            if (b.utilization_fee_rub) lines.push(`• Утилизационный сбор: ${fnum(b.utilization_fee_rub)} ₽`);
+            if (b.customs_services_rub) lines.push(`• Таможенное оформление: ${fnum(b.customs_services_rub)} ₽`);
+            if (b.era_glonass_rub) lines.push(`• Эра-Глонасс: ${fnum(b.era_glonass_rub)} ₽`);
+            if (b.freight_rub) lines.push(`• Фрахт: ${fnum(b.freight_rub)} ₽`);
+            if (b.country_expenses_rub) lines.push(`• Расходы в стране: ${fnum(b.country_expenses_rub)} ₽`);
+            if (b.company_commission_rub) lines.push(`• Комиссия компании: ${fnum(b.company_commission_rub)} ₽`);
+            if (b.total_rub) {
+                lines.push('');
+                lines.push(`ИТОГО: ${fnum(b.total_rub)} ₽`);
             }
+            if (Array.isArray(m.warnings) && m.warnings.length) {
+                lines.push('');
+                lines.push('Предупреждения:');
+                m.warnings.forEach(w => lines.push(`• ${w.message}`));
+            }
+            const detailText = lines.join('\n');
+
+            const shareText = `🚗 Расчет растаможки автомобиля из ${countryName}: ${resultStr}`;
+
+            // Clipboard copy (with fallback)
+            const copyFallback = (text) => {
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.left = '-9999px';
+                    document.body.appendChild(ta);
+                    ta.focus();
+                    ta.select();
+                    const ok = document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    return ok;
+                } catch (e) {
+                    return false;
+                }
+            };
+
+            const doCopy = async (text) => {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    try {
+                        await navigator.clipboard.writeText(text);
+                        showToast('Полный расчет скопирован','success');
+                        return true;
+                    } catch (e) {
+                        const ok = copyFallback(text);
+                        showToast(ok ? 'Полный расчет скопирован' : 'Не удалось скопировать', ok ? 'success' : 'error');
+                        return ok;
+                    }
+                } else {
+                    const ok = copyFallback(text);
+                    showToast(ok ? 'Полный расчет скопирован' : 'Не удалось скопировать', ok ? 'success' : 'error');
+                    return ok;
+                }
+            };
+
+            // Always copy full detail; then try sending to chat if inside Telegram
+            doCopy(detailText).then(() => {
+                if (telegram.canSendData && telegram.canSendData()) {
+                    try {
+                        const totalVal = b.total_rub;
+                        telegram.sendData({
+                            action: 'share_result',
+                            text: shareText,
+                            summary: shareText,
+                            detail: detailText,
+                            total: totalVal,
+                            total_rub: totalVal,
+                            country: r.country || selectedCountry,
+                            year: r.year,
+                            engine_cc: r.engine_cc,
+                            currency: r.currency,
+                            freight_type: r.freight_type
+                        });
+                        showToast('Результат отправлен в чат','success');
+                        // Close to ensure Telegram delivers web_app_data in chat
+                        setTimeout(() => { try { telegram.close(); } catch (_) {} }, 50);
+                    } catch (e) {
+                        showToast('Не удалось отправить в чат','error');
+                        if (window.Telegram?.WebApp?.showAlert) {
+                            window.Telegram.WebApp.showAlert('Чтобы отправка работала, откройте калькулятор через кнопку в чате бота');
+                        }
+                    }
+                } else if (navigator.share) {
+                    // Optional: native share sheet (in addition to clipboard)
+                    navigator.share({ title: 'Калькулятор растаможки', text: shareText, url: location.href }).catch(()=>{});
+                } else {
+                    // Not in Telegram context
+                    console.info('Not in Telegram context: open via bot WebApp button to send result to chat.');
+                }
+            });
         }
 
         function getCountryName(country) {

@@ -25,7 +25,7 @@ async def cmd_start(message: Message) -> None:
     settings = get_settings()
     text = (
         "Здравствуйте! Это калькулятор стоимости ввоза авто.\n"
-        "Используйте /calc для тестового расчета."  # noqa: RUF001
+        "Используйте /calc для тестового расчета."
     )
     if settings.webapp_url.lower().startswith("https://"):
         await message.answer(
@@ -34,7 +34,7 @@ async def cmd_start(message: Message) -> None:
         )
     else:
         logger.warning(WARN_WEBAPP_HTTP_URL, url=settings.webapp_url)
-        await message.answer(text + "\n(Времено без WebApp кнопки: нужен HTTPS)")  # noqa: RUF001
+        await message.answer(text + "\n(Времено без WebApp кнопки: нужен HTTPS)")
 
 
 @router.message(Command("calc"))
@@ -58,15 +58,46 @@ async def cmd_calc(message: Message) -> None:
 @router.message(F.web_app_data)
 async def on_webapp_data(message: Message) -> None:
     raw = message.web_app_data.data  # type: ignore[attr-defined]
+    logger.info("webapp_data_received_raw", raw=raw)
     try:
         data = json.loads(raw)
+        logger.info("webapp_data_parsed", keys=list(data.keys()))
     except Exception:
+        logger.exception("webapp_data_parse_error")
         await message.answer("Получены данные WebApp (не JSON)")
         return
-    # Expect structure { summary: str, total_rub: number }
-    summary = data.get("summary") or "Результат получен"
+    # Prefer full detailed text if present
+    detail = data.get("detail")
+    if isinstance(detail, str) and detail.strip():
+        text = detail.strip()
+        # Split into chunks to avoid Telegram limits (~4096)
+        MAX_LEN = 3900
+        if len(text) <= MAX_LEN:
+            await message.answer(text)
+        else:
+            parts: list[str] = []
+            while text:
+                chunk = text[:MAX_LEN]
+                # try to split at last newline for nicer formatting
+                idx = chunk.rfind("\n")
+                if idx > 0:
+                    parts.append(chunk[:idx])
+                    text = text[idx+1:]
+                else:
+                    parts.append(chunk)
+                    text = text[MAX_LEN:]
+            for part in parts:
+                await message.answer(part)
+        return
+    # Accept both legacy and new fields
+    summary = data.get("summary") or data.get("text") or "Результат получен"
     total = data.get("total_rub")
-    line = f"{summary}\nИтого: {total:,.0f} RUB" if isinstance(total, (int, float)) else summary  # noqa: RUF001
+    if total is None:
+        total = data.get("total")
+    try:
+        line = f"{summary}\nИтого: {float(total):,.0f} RUB" if total is not None else summary  # noqa: RUF001
+    except Exception:
+        line = summary
     await message.answer(line)
 
 
