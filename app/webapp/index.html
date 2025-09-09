@@ -753,6 +753,10 @@
                 const LIMIT = 4096;
                 let payload = typeof data === 'string' ? data : JSON.stringify(data);
                 let size = this.byteLength(payload);
+
+                console.log('[DEBUG] Sending data to Telegram, size:', size, 'bytes');
+                console.log('[DEBUG] Payload preview:', payload.substring(0, 200) + (payload.length > 200 ? '...' : ''));
+
                 if (size > LIMIT) {
                     console.warn('[Telegram] Payload too large:', size, 'bytes. Trimming...');
                     // Build minimal payload
@@ -788,7 +792,9 @@
                     try { this.showAlert('Сообщение слишком большое — отправляем краткую сводку'); } catch (_) {}
                 }
                 try {
+                    console.log('[DEBUG] Calling tg.sendData...');
                     this.tg.sendData(payload);
+                    console.log('[DEBUG] tg.sendData completed successfully');
                     return true;
                 } catch (error) {
                     console.error('Failed to send data to Telegram:', error);
@@ -1431,3 +1437,4 @@
     </script>
 </body>
 </html>
+

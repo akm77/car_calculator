@@ -71,6 +71,9 @@ async def main_async() -> None:
             raise InvalidBotTokenError(ERR_BAD_BOT_TOKEN) from error
         logger.info(INFO_BOT_STARTED)
         started = True
+        # Явно указываем allowed_updates чтобы включить web_app_data
+
+
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
         if started:
