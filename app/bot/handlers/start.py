@@ -4,6 +4,7 @@ import json
 from typing import TYPE_CHECKING
 
 from aiogram import Dispatcher, F, Router
+from aiogram.enums import ContentType
 from aiogram.filters import Command
 
 from app.bot.keyboards import webapp_keyboard
@@ -66,7 +67,34 @@ async def on_webapp_data(message: Message) -> None:
         logger.exception("webapp_data_parse_error")
         await message.answer("Получены данные WebApp (не JSON)")
         return
-    # Prefer full detailed text if present
+
+    action = data.get("action")
+    if action == "share_result":
+        # Header/summary message
+        summary = data.get("summary") or data.get("text") or "Результат получен"
+        total = data.get("total_rub")
+        if total is None:
+            total = data.get("total")
+        try:
+            line = f"{summary}\nИтого: {float(total):,.0f} RUB" if total is not None else summary  # noqa: RUF001
+        except Exception:
+            line = summary
+        logger.info("webapp_share_result", has_total=total is not None)
+        await message.answer(line)
+        return
+
+    if action == "share_detail_part":
+        content = data.get("content")
+        idx = data.get("part_index")
+        total_parts = data.get("parts_total")
+        if isinstance(content, str) and content.strip():
+            logger.info("webapp_share_detail_part", idx=idx, total=total_parts, size=len(content))
+            await message.answer(content.strip())
+        else:
+            logger.warning("webapp_share_detail_part_empty", idx=idx, total=total_parts)
+        return
+
+    # Prefer full detailed text if present (single payload mode)
     detail = data.get("detail")
     if isinstance(detail, str) and detail.strip():
         text = detail.strip()
@@ -89,7 +117,8 @@ async def on_webapp_data(message: Message) -> None:
             for part in parts:
                 await message.answer(part)
         return
-    # Accept both legacy and new fields
+
+    # Accept both legacy and new fields (fallback)
     summary = data.get("summary") or data.get("text") or "Результат получен"
     total = data.get("total_rub")
     if total is None:

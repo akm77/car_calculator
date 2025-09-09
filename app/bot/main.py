@@ -71,7 +71,7 @@ async def main_async() -> None:
             raise InvalidBotTokenError(ERR_BAD_BOT_TOKEN) from error
         logger.info(INFO_BOT_STARTED)
         started = True
-        await dp.start_polling(bot)
+        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
         if started:
             logger.info(INFO_BOT_STOPPED)
