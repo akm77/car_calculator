@@ -4,10 +4,9 @@ import json
 from typing import TYPE_CHECKING
 
 from aiogram import Dispatcher, F, Router
-from aiogram.enums import ContentType
 from aiogram.filters import Command
 
-from app.bot.keyboards import webapp_keyboard
+from app.bot.keyboards import main_menu
 from app.calculation.engine import calculate
 from app.calculation.models import CalculationRequest
 from app.core.messages import WARN_WEBAPP_HTTP_URL
@@ -26,12 +25,11 @@ async def cmd_start(message: Message) -> None:
     settings = get_settings()
     text = (
         "Здравствуйте! Это калькулятор стоимости ввоза авто.\n"
-        "Используйте /calc для тестового расчета."
     )
     if settings.webapp_url.lower().startswith("https://"):
         await message.answer(
             text + "\nНажмите кнопку ниже для запуска WebApp.",  # noqa: RUF001
-            reply_markup=webapp_keyboard(settings.webapp_url),
+            reply_markup=main_menu(settings.webapp_url),
         )
     else:
         logger.warning(WARN_WEBAPP_HTTP_URL, url=settings.webapp_url)
@@ -69,65 +67,71 @@ async def on_webapp_data(message: Message) -> None:
         return
 
     action = data.get("action")
-    if action == "share_result":
-        # Header/summary message
-        summary = data.get("summary") or data.get("text") or "Результат получен"
-        total = data.get("total_rub")
-        if total is None:
-            total = data.get("total")
-        try:
-            line = f"{summary}\nИтого: {float(total):,.0f} RUB" if total is not None else summary  # noqa: RUF001
-        except Exception:
-            line = summary
-        logger.info("webapp_share_result", has_total=total is not None)
-        await message.answer(line)
-        return
 
-    if action == "share_detail_part":
-        content = data.get("content")
-        idx = data.get("part_index")
-        total_parts = data.get("parts_total")
-        if isinstance(content, str) and content.strip():
-            logger.info("webapp_share_detail_part", idx=idx, total=total_parts, size=len(content))
-            await message.answer(content.strip())
-        else:
-            logger.warning("webapp_share_detail_part_empty", idx=idx, total=total_parts)
-        return
+    # Process webapp data (any action)
+    logger.info("webapp_data_processing", data=data)
 
-    # Prefer full detailed text if present (single payload mode)
-    detail = data.get("detail")
-    if isinstance(detail, str) and detail.strip():
-        text = detail.strip()
-        # Split into chunks to avoid Telegram limits (~4096)
-        MAX_LEN = 3900
-        if len(text) <= MAX_LEN:
-            await message.answer(text)
-        else:
-            parts: list[str] = []
-            while text:
-                chunk = text[:MAX_LEN]
-                # try to split at last newline for nicer formatting
-                idx = chunk.rfind("\n")
-                if idx > 0:
-                    parts.append(chunk[:idx])
-                    text = text[idx+1:]
-                else:
-                    parts.append(chunk)
-                    text = text[MAX_LEN:]
-            for part in parts:
-                await message.answer(part)
-        return
+    # Extract basic info
+    total = data.get("total") or data.get("total_rub", 0)
+    country = data.get("country", "")
+    year = data.get("year", "")
+    engine_cc = data.get("engine_cc", "")
+    currency = data.get("currency", "")
 
-    # Accept both legacy and new fields (fallback)
-    summary = data.get("summary") or data.get("text") or "Результат получен"
-    total = data.get("total_rub")
-    if total is None:
-        total = data.get("total")
+    # Get country name in Russian
+    country_names = {
+        "japan": "Японии",
+        "korea": "Кореи",
+        "uae": "ОАЭ",
+        "china": "Китая",
+    }
+    country_name = country_names.get(country, country)
+
+    # Format the message
+    if total and country_name:
+        message_text = f"🚗 Расчет растаможки автомобиля из {country_name}\n\n"
+
+        if year:
+            message_text += f"📅 Год выпуска: {year}\n"
+        if engine_cc:
+            message_text += f"🔧 Объем двигателя: {engine_cc} см³\n"
+        if currency and data.get("purchase_price"):
+            purchase_price = data.get("purchase_price")
+            try:
+                # Convert to float for formatting, handle both string and numeric values
+                purchase_price_num = float(purchase_price)
+                message_text += f"💰 Цена покупки: {purchase_price_num:,.0f} {currency}\n"
+            except (ValueError, TypeError):
+                # Fallback if conversion fails
+                message_text += f"💰 Цена покупки: {purchase_price} {currency}\n"
+
+        message_text += f"\n💵 **Итоговая стоимость: {total:,.0f} ₽**"
+
+        # Add detailed breakdown if available
+        detail = data.get("detail", "")
+        if detail and len(detail) > 0:
+            # Telegram has message length limit, so we'll send summary + link to detailed breakdown
+            message_text += f"\n\n📊 Подробная детализация:\n{detail}"
+
+    else:
+        # Fallback to summary or text
+        message_text = data.get("summary") or data.get("text") or "Результат расчета получен"
+
+    # Send the message
     try:
-        line = f"{summary}\nИтого: {float(total):,.0f} RUB" if total is not None else summary  # noqa: RUF001
-    except Exception:
-        line = summary
-    await message.answer(line)
+        await message.answer(message_text, parse_mode="Markdown")
+        logger.info("webapp_data_sent", total=total, country=country, action=action)
+    except Exception as e:
+        # If markdown fails, try without formatting
+        logger.warning("webapp_data_markdown_failed", error=str(e))
+        try:
+            # Remove markdown formatting and send plain text
+            plain_text = message_text.replace("**", "").replace("*", "")
+            await message.answer(plain_text)
+            logger.info("webapp_data_sent_plain", total=total, country=country, action=action)
+        except Exception as e2:
+            logger.error("webapp_data_failed", error=str(e2))
+            await message.answer("Результат расчета получен, но произошла ошибка при форматировании.")
 
 
 def register(dp: Dispatcher) -> None:

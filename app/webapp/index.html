@@ -616,18 +616,6 @@
                 }
             }
 
-            canSendData() {
-                // Runtime check whether Telegram can accept sendData from this context
-                try {
-                    if (!this.tg) return false;
-                    const hasInitData = typeof this.tg.initData === 'string' && this.tg.initData.length > 0;
-                    const hasUser = !!this.tg.initDataUnsafe?.user;
-                    return hasInitData || hasUser;
-                } catch (e) {
-                    return false;
-                }
-            }
-
             init() {
                 if (!this.tg) {
                     console.warn('Telegram WebApp API not available');
@@ -738,7 +726,7 @@
 
             sendData(data) {
                 // Allow sendData if Telegram object is present and initData/user available now
-                if (!this.tg || !this.canSendData()) return;
+                if (!this.tg) return;
                 try {
                     this.tg.sendData(JSON.stringify(data));
                 } catch (error) {
@@ -749,7 +737,7 @@
 
             // Safe variant that keeps payload under Telegram limit (4096 bytes)
             sendDataSafe(data) {
-                if (!this.tg || !this.canSendData()) return false;
+                if (!this.tg) return false;
                 const LIMIT = 4096;
                 let payload = typeof data === 'string' ? data : JSON.stringify(data);
                 let size = this.byteLength(payload);
@@ -961,7 +949,7 @@
             buildTabsUI();
             loadMetaData();
             setupEventListeners();
-            setCurrentYear();
+            setDefaultValues(); // Устанавливаем значения по умолчанию
 
             // Patch result show/hide to switch tabs
             const originalDisplayResult = window.displayResult;
@@ -1029,6 +1017,24 @@
         function setCurrentYear() {
             const yearInput = document.getElementById('year');
             yearInput.value = new Date().getFullYear();
+        }
+
+        // Установка значений по умолчанию
+        function setDefaultValues() {
+            const currentYear = new Date().getFullYear();
+
+            // Устанавливаем год выпуска (текущий год - 3)
+            const yearInput = document.getElementById('year');
+            yearInput.value = currentYear - 3;
+
+            // Устанавливаем объем двигателя 1500 см³
+            const engineInput = document.getElementById('engineCc');
+            engineInput.value = 1500;
+
+            // Устанавливаем страну Япония по умолчанию
+            const countrySelect = document.getElementById('countrySelect');
+            countrySelect.value = 'japan';
+            selectCountry('japan');
         }
 
         // Настройка обработчиков событий
@@ -1304,10 +1310,12 @@
                 m.warnings.forEach(w => lines.push(`• ${w.message}`));
             }
             const detailText = lines.join('\n');
-
             const shareText = `🚗 Расчет растаможки автомобиля из ${countryName}: ${resultStr}`;
 
-            // Clipboard copy (with fallback)
+            // Check if we're in Telegram
+            const inTelegram = telegram.isInTelegram();
+
+            // Always copy to clipboard first
             const copyFallback = (text) => {
                 try {
                     const ta = document.createElement('textarea');
@@ -1329,60 +1337,75 @@
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     try {
                         await navigator.clipboard.writeText(text);
-                        showToast('Полный расчет скопирован','success');
                         return true;
                     } catch (e) {
-                        const ok = copyFallback(text);
-                        showToast(ok ? 'Полный расчет скопирован' : 'Не удалось скопировать', ok ? 'success' : 'error');
-                        return ok;
+                        return copyFallback(text);
                     }
                 } else {
-                    const ok = copyFallback(text);
-                    showToast(ok ? 'Полный расчет скопирован' : 'Не удалось скопировать', ok ? 'success' : 'error');
-                    return ok;
+                    return copyFallback(text);
                 }
             };
 
-            // Always copy full detail; then try sending to chat if inside Telegram
-            doCopy(detailText).then(() => {
-                if (telegram.canSendData && telegram.canSendData()) {
-                    try {
-                        const totalVal = b.total_rub;
-                        const sent = telegram.sendDataSafe({
-                            action: 'share_result',
-                            text: shareText,
-                            summary: shareText,
-                            detail: detailText,
-                            total: totalVal,
-                            total_rub: totalVal,
-                            country: r.country || selectedCountry,
-                            year: r.year,
-                            engine_cc: r.engine_cc,
-                            currency: r.currency,
-                            freight_type: r.freight_type
-                        });
-                        if (sent) {
-                            showToast('Результат отправлен в чат','success');
-                        } else {
-                            showToast('Не удалось отправить в чат','error');
-                        }
-                        // Close to ensure Telegram delivers web_app_data in chat
-                        setTimeout(() => { try { telegram.close(); } catch (_) {} }, 400);
-                    } catch (e) {
-                        showToast('Не удалось отправить в чат','error');
-                        if (window.Telegram?.WebApp?.showAlert) {
-                            window.Telegram.WebApp.showAlert('Чтобы отправка работала, откройте калькулятор через кнопку в чате бота');
-                        }
-                    }
-                } else if (navigator.share) {
-                    // Optional: native share sheet (in addition to clipboard)
-                    navigator.share({ title: 'Калькулятор растаможки', text: shareText, url: location.href }).catch(()=>{});
+            // Copy to clipboard
+            doCopy(detailText).then((copied) => {
+                if (copied) {
+                    showToast('Результат скопирован в буфер обмена', 'success');
                 } else {
-                    // Not in Telegram context
-                    console.info('Not in Telegram context: open via bot WebApp button to send result to chat.');
-                    try { if (window.Telegram?.WebApp?.showAlert) window.Telegram.WebApp.showAlert('Откройте калькулятор через кнопку в чате бота, чтобы отправить результат'); } catch (_) {}
+                    showToast('Не удалось скопировать', 'error');
                 }
             });
+
+            // If in Telegram, also try to send to chat
+            if (true) {
+                try {
+                    const totalVal = b.total_rub;
+
+                    // Prepare data for Telegram
+                    const telegramData = {
+                        action: 'share_result',
+                        text: shareText,
+                        summary: shareText,
+                        detail: detailText,
+                        total: totalVal,
+                        total_rub: totalVal,
+                        country: r.country || selectedCountry,
+                        year: r.year,
+                        engine_cc: r.engine_cc,
+                        currency: r.currency,
+                        purchase_price: r.purchase_price,
+                        freight_type: r.freight_type,
+                        formatted_total: fnum(totalVal),
+                        country_name: countryName
+                    };
+
+                    const sent = telegram.sendDataSafe(telegramData);
+
+                    if (sent) {
+                        showToast('Результат отправлен в чат', 'success');
+                        telegram.hapticFeedback('medium');
+
+                        // Close WebApp after successful send
+                        setTimeout(() => {
+                            try {
+                                telegram.close();
+                            } catch (e) {
+                                console.warn('Failed to close WebApp:', e);
+                            }
+                        }, 800);
+                    } else {
+                        showToast('Не удалось отправить в чат', 'error');
+                        telegram.hapticFeedback('heavy');
+                    }
+                } catch (e) {
+                    console.error('Exception while sending to Telegram:', e);
+                    showToast('Ошибка отправки в Telegram', 'error');
+                    telegram.hapticFeedback('heavy');
+
+                    if (window.Telegram?.WebApp?.showAlert) {
+                        window.Telegram.WebApp.showAlert('Чтобы отправка работала, откройте калькулятор через кнопку в чате бота');
+                    }
+                }
+            }
         }
 
         function getCountryName(country) {
@@ -1437,4 +1460,3 @@
     </script>
 </body>
 </html>
-
