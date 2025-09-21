@@ -21,6 +21,10 @@ dependencies = [
 ]
 
 [tool.poetry]
+name = "car-calculator"
+version = "0.1.0"
+description = "Car import cost calculator (Telegram Bot + WebApp + FastAPI API)"
+authors = ["akm77 <aleksey.kotryakhov@gmail.com>"]
 packages = [{ include = "app" }]
 # Removed package-mode=false so scripts are installed
 
