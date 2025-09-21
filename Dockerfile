@@ -51,7 +51,7 @@ COPY config ./config
 COPY README.md ./README.md
 
 # Copy supervisor script
-COPY run.sh /app/run.sh
+COPY scripts/run.sh /app/run.sh
 RUN chmod +x /app/run.sh
 
 # Environment

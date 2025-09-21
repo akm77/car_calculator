@@ -51,7 +51,6 @@ def _build_dispatcher() -> Dispatcher:
 async def _set_commands(bot: Bot) -> None:
     await bot.set_my_commands([
         BotCommand(command="start", description="Начать"),
-        BotCommand(command="calc", description="Быстрый расчёт"),
     ])
 
 
