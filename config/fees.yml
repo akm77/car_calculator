@@ -44,9 +44,9 @@ uae:
       description: "Фрахт в контейнере (Астрахань, Новороссийск, СПб)"
 
 china:
-  country_currency: "CNY"
+  country_currency: "USD"
   base_expenses:
-    inspection: 7000      # увеличиваю с 700 до 7000 CNY для соответствия тестам
+    inspection: 700       # выезд/осмотр/проверка/принятие денег (USD)
 
   freight:
     open:

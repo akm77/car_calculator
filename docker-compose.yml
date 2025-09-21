@@ -1,0 +1,64 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    image: car-calculator:latest
+    container_name: car-calculator-api
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - LOG_LEVEL=info
+      - ENABLE_LIVE_CBR=false
+      - PUBLIC_BASE_URL=https://${DOMAIN}
+    networks:
+      - web
+    restart: unless-stopped
+
+  bot:
+    image: car-calculator:latest
+    container_name: car-calculator-bot
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - PUBLIC_BASE_URL=https://${DOMAIN}
+      - LOG_LEVEL=info
+    depends_on:
+      - api
+    command: >
+      python -c "from app.bot.main import run_bot; run_bot()"
+    networks:
+      - web
+    restart: unless-stopped
+
+  nginx:
+    build: ./nginx
+    image: car-calculator-nginx:latest
+    container_name: car-calculator-nginx
+    environment:
+      - DOMAIN=${DOMAIN}
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./data/certbot/www:/var/www/certbot
+      - ./data/certbot/conf:/etc/letsencrypt
+    networks:
+      - web
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: car-calculator-certbot
+    volumes:
+      - ./data/certbot/www:/var/www/certbot
+      - ./data/certbot/conf:/etc/letsencrypt
+    entrypoint: sh -c "trap exit TERM; while :; do sleep 12h & wait $!; certbot renew --webroot -w /var/www/certbot --quiet || true; done"
+    networks:
+      - web
+    restart: unless-stopped
+
+networks:
+  web:
+    driver: bridge

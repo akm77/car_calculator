@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from decimal import Decimal
+from decimal import Decimal  # noqa: TC003
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
@@ -11,6 +11,7 @@ from app.core.messages import ERR_YEAR_FUTURE, ERR_YEAR_TOO_OLD
 
 Country = Literal["japan", "korea", "uae", "china"]
 FreightType = Literal["open", "container", "standard"]
+VehicleType = Literal["M1", "pickup", "bus", "motorhome", "other"]
 
 
 class CalculationRequest(BaseModel):
@@ -21,6 +22,7 @@ class CalculationRequest(BaseModel):
     currency: str = Field(description="ISO currency code of purchase price, e.g. JPY USD CNY AED")
     freight_type: FreightType | None = None
     sanctions_unknown: bool = False
+    vehicle_type: VehicleType = Field(default="M1")
 
     @field_validator("year")
     @classmethod
@@ -63,6 +65,15 @@ class CalculationMeta(BaseModel):
     duty_formula_mode: str | None = None
     eur_rate_used: str | None = None
     warnings: list[WarningItem] = Field(default_factory=list)
+    # New: Detailed duty info for transparency
+    customs_value_eur: float | None = None
+    duty_percent: float | None = None
+    duty_min_rate_eur_per_cc: float | None = None
+    duty_rate_eur_per_cc: float | None = None
+    duty_value_bracket_max_eur: float | None = None
+    vehicle_type: VehicleType | None = None
+    # New: Map of currency rates used in this calculation, e.g. {"USD_RUB": 90.0}
+    rates_used: dict[str, float] = Field(default_factory=dict)
 
 
 class CalculationResult(BaseModel):

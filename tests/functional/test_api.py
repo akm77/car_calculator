@@ -68,14 +68,14 @@ def test_calculate_japan_basic(client: TestClient) -> None:
     assert abs(breakdown["utilization_fee_rub"] - 5_200) < 0.5
     # customs services japan = 70_000
     assert abs(breakdown["customs_services_rub"] - 70_000) < 0.1
-    # era glonass = 35_000
-    assert abs(breakdown["era_glonass_rub"] - 35_000) < 0.1
-    # freight 350 USD * 90 = 31_500
+    # era glonass excluded
+    assert breakdown["era_glonass_rub"] == 0
+    # freight 350 USD * 90 = 31,500
     assert abs(breakdown["freight_rub"] - 31_500) < 1
-    # country expenses tier 150_000 JPY * 0.60 = 90_000
+    # country expenses tier 150_000 JPY * 0.60 = 90,000
     assert abs(breakdown["country_expenses_rub"] - 90_000) < 1
-    # commission threshold (<=1.5M) = 40_000
+    # commission threshold (<=1.5M) = 40,000
     assert abs(breakdown["company_commission_rub"] - 40_000) < 0.1
-    # total sum check
-    expected_total = 1_200_000 + 255_000 + 5_200 + 70_000 + 35_000 + 31_500 + 90_000 + 40_000
+    # total sum check (ERA excluded)
+    expected_total = 1_200_000 + 255_000 + 5_200 + 70_000 + 31_500 + 90_000 + 40_000
     assert abs(breakdown["total_rub"] - expected_total) < 2

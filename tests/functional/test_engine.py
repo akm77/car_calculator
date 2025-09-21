@@ -48,7 +48,7 @@ def test_calculation_cases(case: dict[str, Any]):
         exp = float(expected[key])
         got = float(breakdown[key])
         if not math.isclose(got, exp, rel_tol=rel_tol, abs_tol=abs_tol):
-            raise AssertionError(f"Mismatch {key}: expected {exp}, got {got}")
+            pytest.fail(f"Mismatch {key}: expected {exp}, got {got}")
 
     numeric_keys = [
         "purchase_price_rub",

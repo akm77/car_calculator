@@ -131,7 +131,10 @@ async def on_webapp_data(message: Message) -> None:
             logger.info("webapp_data_sent_plain", total=total, country=country, action=action)
         except Exception as e2:
             logger.error("webapp_data_failed", error=str(e2))
-            await message.answer("Результат расчета получен, но произошла ошибка при форматировании.")
+            await message.answer(
+                "Результат расчета получен, "
+                "но произошла ошибка при форматировании."
+            )
 
 
 def register(dp: Dispatcher) -> None:

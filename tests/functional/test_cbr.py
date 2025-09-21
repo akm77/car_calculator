@@ -3,7 +3,8 @@ from __future__ import annotations
 from app.services.cbr import get_effective_rates, parse_cbr_xml
 
 
-CBR_SAMPLE = """<ValCurs Date=\"06.09.2025\" name=\"Foreign Currency Market\">\n<Valute><CharCode>USD</CharCode><VunitRate>81,5556</VunitRate></Valute>\n<Valute><CharCode>EUR</CharCode><VunitRate>95,4792</VunitRate></Valute>\n<Valute><CharCode>JPY</CharCode><VunitRate>0,550271</VunitRate></Valute>\n<Valute><CharCode>CNY</CharCode><VunitRate>11,3884</VunitRate></Valute>\n<Valute><CharCode>AED</CharCode><VunitRate>22,2071</VunitRate></Valute>\n</ValCurs>"""
+CBR_SAMPLE = """<ValCurs Date=\"06.09.2025\" name=\"Foreign Currency Market\">\n<Valute><CharCode>USD</CharCode><VunitRate>81,5556</VunitRate></Valute>\n<Valute><CharCode>EUR</CharCode><VunitRate>95,4792</VunitRate></Valute>\n<Valute><CharCode>JPY</CharCode><VunitRate>0,550271</VunitRate></Valute>\n<Valute><CharCode>CNY</CharCode><VunitRate>11,3884</VunitRate></Valute>\n<Valute><CharCode>AED</CharCode><VunitRate>22,2071</VunitRate></Valute>\n</ValCurs>"""  # noqa: E501
+
 
 def test_parse_cbr_xml_basic():
     rates = parse_cbr_xml(CBR_SAMPLE)
@@ -28,4 +29,3 @@ def test_get_effective_rates_monkeypatch(monkeypatch):
     # Unchanged codes remain
     assert merged["currencies"]["JPY_RUB"] == 0.60
     assert merged.get("live_source") == "cbr"
-

@@ -12,7 +12,8 @@ ERR_YEAR_TOO_OLD = "year too old for calculation baseline"
 # Warning / info messages (still constants for consistency)
 WARN_NO_DUTY_RATE = "No duty rate for age category; duty set to 0"
 WARN_JAPAN_TIER_CURRENCY = (
-    "Japan tiers expect JPY purchase price; different currency provided"
+    "Для расчёта таможенных платежей для Японии "
+    "необходимо указывать стоимость товара в японских йенах (JPY)"
 )
 WARN_WEBAPP_HTTP_URL = "webapp url is not https; telegram webapp button skipped"
 

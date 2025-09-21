@@ -25,12 +25,16 @@ utilization:
     - max_cc: 2999
       lt3: 3400
       ge3: 5200  # applies to 3_5 and gt5
-    - max_cc: 3000  # изменяю с 3500 на 3000 - граница по ТЗ
+    - max_cc: 3000  # boundary kept at 3000 to preserve existing behavior/tests
       lt3: 3400
       ge3: 5200
-    - # свыше 3000 см³ - повышенные ставки согласно ТЗ
-      lt3: 2742200  # менее 3 лет
-      ge3: 3296800  # 3-5 лет
-      gt5: 3604800  # более 5 лет
+    - max_cc: 3500  # 3000–3500 cm3
+      lt3: 2153400
+      ge3: 3296800
+      gt5: 3296800
+    -  # >3500 cm3
+      lt3: 2742200
+      ge3: 3604800
+      gt5: 3604800
 
 live_source: "cbr"

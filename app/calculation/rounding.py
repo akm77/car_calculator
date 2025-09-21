@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping  # noqa: TC003
 from decimal import ROUND_HALF_UP, Decimal, getcontext
 
 
@@ -39,4 +39,3 @@ def sum_decimals(values: Iterable[Decimal]) -> Decimal:
     for v in values:
         total += v
     return total
-

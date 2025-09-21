@@ -441,6 +441,17 @@
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label for="vehicleType">Тип транспортного средства <span class="required">*</span></label>
+                    <select id="vehicleType" name="vehicleType" required>
+                        <option value="M1" selected>Легковой (M1)</option>
+                        <option value="pickup">Пикап</option>
+                        <option value="bus">Автобус</option>
+                        <option value="motorhome">Автодом</option>
+                        <option value="other">Другое</option>
+                    </select>
+                </div>
+
                 <div class="form-group freight-options" id="freightOptions">
                     <label>Тип фрахта</label>
                     <div class="freight-grid" id="freightGrid">
@@ -1002,7 +1013,7 @@
                         { code: 'japan', label: 'Япония', emoji: '🇯🇵', purchase_currency: 'JPY', freight_types: ['standard'] },
                         { code: 'korea', label: 'Корея', emoji: '🇰🇷', purchase_currency: 'USD', freight_types: ['standard'] },
                         { code: 'uae', label: 'ОАЭ', emoji: '🇦🇪', purchase_currency: 'AED', freight_types: ['open', 'container'] },
-                        { code: 'china', label: 'Китай', emoji: '🇨🇳', purchase_currency: 'CNY', freight_types: ['open'] }
+                        { code: 'china', label: 'Китай', emoji: '🇨🇳', purchase_currency: 'USD', freight_types: ['open'] }
                     ],
                     freight_type_labels: {
                         standard: 'Стандартный',
@@ -1035,6 +1046,10 @@
             const countrySelect = document.getElementById('countrySelect');
             countrySelect.value = 'japan';
             selectCountry('japan');
+
+            // Тип ТС по умолчанию — M1
+            const vehicleTypeSelect = document.getElementById('vehicleType');
+            vehicleTypeSelect.value = 'M1';
         }
 
         // Настройка обработчиков событий
@@ -1195,7 +1210,8 @@
                 engine_cc: parseInt(formData.get('engineCc')),
                 purchase_price: parseFloat(formData.get('purchasePrice')),
                 currency: formData.get('currency'),
-                freight_type: selectedFreightType
+                freight_type: selectedFreightType,
+                vehicle_type: formData.get('vehicleType') || 'M1'
             };
 
             showLoading(true);
@@ -1253,17 +1269,43 @@
             totalDiv.innerHTML=`<span class="breakdown-label">ИТОГО</span><span class="breakdown-amount">${formatNumber(breakdown.total_rub)} ₽</span>`;
             breakdownDiv.appendChild(totalDiv);
 
-            // Engine volume display: fallback to request.engine_cc if meta.volume_band is a placeholder (e.g., 'value_brackets')
+            // Engine/duty details
             const engineDisplay = (meta && meta.volume_band && meta.volume_band !== 'value_brackets' && meta.volume_band !== 'n/a')
                 ? meta.volume_band
                 : (result?.request?.engine_cc ? `${result.request.engine_cc} см³` : '—');
 
+            const parts = [];
+            parts.push(`<div>Возраст авто: ${meta.age_years} лет (${getAgeCategory(meta.age_category)})</div>`);
+            parts.push(`<div>Объем двигателя: ${engineDisplay}</div>`);
+
+            // Duty details
+            if (meta.customs_value_eur != null) {
+                parts.push(`<div>Таможенная стоимость: ${formatNumber(Math.round(meta.customs_value_eur))} €</div>`);
+            }
+            if (meta.duty_formula_mode === 'percent') {
+                if (meta.duty_percent != null) {
+                    parts.push(`<div>Пошлина: ${Math.round(meta.duty_percent * 100)}% от стоимости (минимум по €/см³)</div>`);
+                }
+                if (meta.duty_min_rate_eur_per_cc != null) {
+                    parts.push(`<div>Мин. ставка: ${meta.duty_min_rate_eur_per_cc} €/см³</div>`);
+                }
+                if (meta.duty_value_bracket_max_eur != null) {
+                    parts.push(`<div>Диапазон до: ${formatNumber(meta.duty_value_bracket_max_eur)} €</div>`);
+                }
+            } else if (meta.duty_formula_mode === 'per_cc' && meta.duty_rate_eur_per_cc != null) {
+                parts.push(`<div>Ставка пошлины: ${meta.duty_rate_eur_per_cc} €/см³</div>`);
+            }
+
+            if (meta.vehicle_type && meta.vehicle_type !== 'M1') {
+                parts.push('<div style="color:#e67e22;margin-top:8px;">Расчет выполнен с допущениями для не-M1. Уточните условия у поддержки.</div>');
+            }
+
+            if (meta.warnings && meta.warnings.length) {
+                parts.push('<div style="color:#e74c3c;margin-top:8px;">⚠️ ' + meta.warnings.map(w=>w.message).join('<br>⚠️ ') + '</div>');
+            }
+
             const metaDiv = document.getElementById('metaInfo');
-            metaDiv.innerHTML = `
-                <div>Возраст авто: ${meta.age_years} лет (${getAgeCategory(meta.age_category)})</div>
-                <div>Объем двигателя: ${engineDisplay}</div>
-                ${meta.warnings && meta.warnings.length ? '<div style="color:#e74c3c;margin-top:8px;">⚠️ ' + meta.warnings.map(w=>w.message).join('<br>⚠️ ') + '</div>' : ''}
-            `;
+            metaDiv.innerHTML = parts.join('');
 
             document.getElementById('resultCard').classList.add('show');
             document.getElementById('shareBtn').style.display='block';

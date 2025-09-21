@@ -17,11 +17,11 @@ cases:
       duties_rub: 450000
       utilization_fee_rub: 3400
       customs_services_rub: 70000
-      era_glonass_rub: 35000
+      era_glonass_rub: 0
       freight_rub: 49500
       country_expenses_rub: 153000
       company_commission_rub: 40000
-      total_rub: 1500900
+      total_rub: 1465900
   - name: lt3_percent_duty
     age_offset: 1
     request:
@@ -36,11 +36,11 @@ cases:
       duties_rub: 3840000
       utilization_fee_rub: 3400
       customs_services_rub: 70000
-      era_glonass_rub: 35000
+      era_glonass_rub: 0
       freight_rub: 45000
       country_expenses_rub: 63000
       company_commission_rub: 85000
-      total_rub: 12141400
+      total_rub: 12106400
   - name: band_3_5_mid
     age_offset: 4
     request:
@@ -55,11 +55,11 @@ cases:
       duties_rub: 255000
       utilization_fee_rub: 5200
       customs_services_rub: 70000
-      era_glonass_rub: 35000
+      era_glonass_rub: 0
       freight_rub: 31500
       country_expenses_rub: 90000
       company_commission_rub: 40000
-      total_rub: 1726700
+      total_rub: 1691700
   - name: gt5_large_engine
     age_offset: 6
     request:
@@ -74,11 +74,11 @@ cases:
       duties_rub: 2280000
       utilization_fee_rub: 3604800
       customs_services_rub: 120000
-      era_glonass_rub: 35000
+      era_glonass_rub: 0
       freight_rub: 225000
       country_expenses_rub: 108000
       company_commission_rub: 40000
-      total_rub: 7312800
+      total_rub: 7277800
   - name: japan_2022_1998cc
     # Explicit year provided; ignore age_offset for this case
     age_offset: 3
@@ -95,11 +95,11 @@ cases:
       duties_rub: 539460
       utilization_fee_rub: 5200
       customs_services_rub: 70000
-      era_glonass_rub: 35000
+      era_glonass_rub: 0
       freight_rub: 31500
       country_expenses_rub: 90000
       company_commission_rub: 40000
-      total_rub: 1531160
+      total_rub: 1496160
   # Boundary duty band tests (age category 3_5). All use same purchase price tier.
   - name: band_3_5_boundary_1000cc
     age_offset: 4
@@ -115,11 +115,11 @@ cases:
       duties_rub: 150000
       utilization_fee_rub: 5200
       customs_services_rub: 70000
-      era_glonass_rub: 35000
+      era_glonass_rub: 0
       freight_rub: 31500
       country_expenses_rub: 90000
       company_commission_rub: 40000
-      total_rub: 1621700
+      total_rub: 1586700
   - name: band_3_5_boundary_1800cc
     age_offset: 4
     request:
@@ -134,11 +134,11 @@ cases:
       duties_rub: 450000
       utilization_fee_rub: 5200
       customs_services_rub: 70000
-      era_glonass_rub: 35000
+      era_glonass_rub: 0
       freight_rub: 31500
       country_expenses_rub: 90000
       company_commission_rub: 40000
-      total_rub: 1921700
+      total_rub: 1886700
   - name: band_3_5_boundary_2300cc
     age_offset: 4
     request:
@@ -153,11 +153,11 @@ cases:
       duties_rub: 621000
       utilization_fee_rub: 5200
       customs_services_rub: 70000
-      era_glonass_rub: 35000
+      era_glonass_rub: 0
       freight_rub: 31500
       country_expenses_rub: 90000
       company_commission_rub: 40000
-      total_rub: 2092700
+      total_rub: 2057700
   - name: band_3_5_boundary_3000cc
     age_offset: 4
     request:
@@ -172,11 +172,11 @@ cases:
       duties_rub: 900000
       utilization_fee_rub: 5200
       customs_services_rub: 70000
-      era_glonass_rub: 35000
+      era_glonass_rub: 0
       freight_rub: 31500
       country_expenses_rub: 90000
       company_commission_rub: 40000
-      total_rub: 2371700
+      total_rub: 2336700
   - name: band_3_5_boundary_gt3000cc
     age_offset: 4
     request:
@@ -191,8 +191,8 @@ cases:
       duties_rub: 1152000
       utilization_fee_rub: 3296800
       customs_services_rub: 70000
-      era_glonass_rub: 35000
+      era_glonass_rub: 0
       freight_rub: 31500
       country_expenses_rub: 90000
       company_commission_rub: 40000
-      total_rub: 5915300
+      total_rub: 5880300
