@@ -32,10 +32,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-# Install minimal OS deps
+# Install minimal OS deps (include tini for signal handling)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
+    tini \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -49,19 +50,23 @@ COPY app ./app
 COPY config ./config
 COPY README.md ./README.md
 
+# Copy supervisor script
+COPY run.sh /app/run.sh
+RUN chmod +x /app/run.sh
+
 # Environment
 ENV API_HOST=0.0.0.0 \
     API_PORT=8000 \
     ENABLE_LIVE_CBR=false \
     LOG_LEVEL=info \
-    PUBLIC_BASE_URL=http://localhost:8000
+    PUBLIC_BASE_URL=http://localhost:8000 \
+    RUN_MODE=both
 
 EXPOSE 8000
 
 # Healthcheck (uses /ping)
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD curl -fsS http://127.0.0.1:8000/ping || exit 1
 
-# Start the API
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"]
-CMD ["python", "-m", "app.bot.main", "run_bot"]
-
+# Use tini as PID 1 and run supervisor script
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/app/run.sh"]
