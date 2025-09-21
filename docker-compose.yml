@@ -30,35 +30,6 @@ services:
       - web
     restart: unless-stopped
 
-  nginx:
-    build: ./nginx
-    image: car-calculator-nginx:latest
-    container_name: car-calculator-nginx
-    environment:
-      - DOMAIN=${DOMAIN}
-    depends_on:
-      - api
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./data/certbot/www:/var/www/certbot
-      - ./data/certbot/conf:/etc/letsencrypt
-    networks:
-      - web
-    restart: unless-stopped
-
-  certbot:
-    image: certbot/certbot:latest
-    container_name: car-calculator-certbot
-    volumes:
-      - ./data/certbot/www:/var/www/certbot
-      - ./data/certbot/conf:/etc/letsencrypt
-    entrypoint: sh -c "trap exit TERM; while :; do sleep 12h & wait $!; certbot renew --webroot -w /var/www/certbot --quiet || true; done"
-    networks:
-      - web
-    restart: unless-stopped
-
 networks:
   web:
     driver: bridge
