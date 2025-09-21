@@ -9,6 +9,6 @@ build:
   useCache: false
 run:
   command: "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-level
-    info&&python -m app.bot.main "
+    info&&python -m app.bot.main run_bot"
   persistenceMount: /data
   containerPort: 8000
