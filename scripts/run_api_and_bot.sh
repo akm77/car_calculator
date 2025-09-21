@@ -71,10 +71,7 @@ start_bot() {
     yellow "BOT_TOKEN is not set. Bot will likely fail to start. Export BOT_TOKEN or add it to .env."
   fi
   green "Starting Telegram bot (long polling)..."
-  "$PYTHON_BIN" - <<'PY' &
-from app.bot.main import run_bot
-run_bot()
-PY
+  "$PYTHON_BIN" -c 'from app.bot.main import run_bot; run_bot()' &
   BOT_PID=$!
   echo "$BOT_PID" > .bot.pid
   green "Bot PID: ${BOT_PID}"
@@ -125,4 +122,3 @@ if [[ -n "${API_PID}" || -n "${BOT_PID}" ]]; then
   wait 2>/dev/null || true
   exit "$EXIT_CODE"
 fi
-
