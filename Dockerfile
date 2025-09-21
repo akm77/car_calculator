@@ -63,4 +63,5 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD curl -fsS http://127.0.0
 
 # Start the API
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"]
+CMD ["python -m", "app.bot.main", "run_bot"]
 
