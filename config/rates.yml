@@ -18,7 +18,7 @@ customs_services:
   uae: 120000
   china: 70000
 
-era_glonass_rub: 35000
+era_glonass_rub: 0
 
 utilization:
   personal_m1:
