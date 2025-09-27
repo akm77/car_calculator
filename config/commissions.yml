@@ -1,6 +1,6 @@
 thresholds:
   - max_price: 1500000
-    amount: 40000
+    amount: 0
   - max_price: 3500000
-    amount: 65000
-  - amount: 85000
+    amount: 0
+  - amount: 0
