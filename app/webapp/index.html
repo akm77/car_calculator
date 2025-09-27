@@ -1466,6 +1466,53 @@
                 }
             }
         }
+
+        // ===== UI helper functions (restored) =====
+        function formatNumber(n){
+            return new Intl.NumberFormat('ru-RU').format(n);
+        }
+        function getAgeCategory(c){
+            return {
+                lt3:'до 3 лет',
+                '3_5':'3-5 лет (проходные)',
+                gt5:'свыше 5 лет'
+            }[c] || c;
+        }
+        function showLoading(show){
+            const el = document.getElementById('loading');
+            if (el) el.style.display = show ? 'block' : 'none';
+            const btn = document.getElementById('calculateBtn');
+            if (btn) btn.disabled = !!show;
+        }
+        function showError(msg){
+            const e = document.getElementById('error');
+            if (e){ e.textContent = msg; e.style.display='block'; }
+        }
+        function hideError(){
+            const e = document.getElementById('error');
+            if (e){ e.style.display='none'; }
+        }
+        function hideResult(){
+            const card = document.getElementById('resultCard');
+            if (card){ card.classList.remove('show'); }
+            const share = document.getElementById('shareBtn');
+            if (share){ share.style.display='none'; }
+        }
+        function showToast(message,type='info'){
+            const t=document.createElement('div');
+            t.className=`toast ${type}`;
+            t.textContent=message;
+            t.style.cssText=`position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:${type==='success'?'#10b981':type==='error'?'#ef4444':'#3b82f6'};color:#fff;padding:12px 24px;border-radius:8px;z-index:1000;animation:slideUp .3s ease-out;`;
+            document.body.appendChild(t);
+            setTimeout(()=>t.remove(),3000);
+        }
+
+        // Expose for compatibility with code that may reference window.*
+        window.hideResult = hideResult;
+        // displayResult is defined above; export it as well for potential wrappers
+        if (typeof displayResult === 'function') {
+            window.displayResult = displayResult;
+        }
     </script>
 </body>
 </html>
