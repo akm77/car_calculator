@@ -445,10 +445,6 @@
                     <label for="vehicleType">Тип транспортного средства <span class="required">*</span></label>
                     <select id="vehicleType" name="vehicleType" required>
                         <option value="M1" selected>Легковой (M1)</option>
-                        <option value="pickup">Пикап</option>
-                        <option value="bus">Автобус</option>
-                        <option value="motorhome">Автодом</option>
-                        <option value="other">Другое</option>
                     </select>
                 </div>
 
@@ -1275,6 +1271,14 @@
                 : (result?.request?.engine_cc ? `${result.request.engine_cc} см³` : '—');
 
             const parts = [];
+
+            // Country label on results page (from request or current selection)
+            const countryCode = result?.request?.country || selectedCountry;
+            if (countryCode) {
+                const countryLabel = getCountryLabel(countryCode);
+                parts.push(`<div>Страна покупки: ${countryLabel}</div>`);
+            }
+
             parts.push(`<div>Возраст авто: ${meta.age_years} лет (${getAgeCategory(meta.age_category)})</div>`);
             parts.push(`<div>Объем двигателя: ${engineDisplay}</div>`);
 
@@ -1312,11 +1316,21 @@
             window.lastCalculationResult = result;
         }
 
+        // Resolve country code to label (prefers API meta, falls back to local map)
+        function getCountryLabel(code) {
+            try {
+                if (metaData && Array.isArray(metaData.countries)) {
+                    const entry = metaData.countries.find(c => c.code === code);
+                    if (entry) return (entry.emoji ? entry.emoji + ' ' : '') + (entry.label || code);
+                }
+            } catch (e) { /* ignore */ }
+            const fallback = { japan: '🇯🇵 Япония', korea: '🇰🇷 Корея', uae: '🇦🇪 ОАЭ', china: '🇨🇳 Китай' };
+            return fallback[code] || code;
+        }
         function shareResult() {
             if (!window.lastCalculationResult) return;
             const res = window.lastCalculationResult;
             const resultStr = document.getElementById('totalAmount').textContent;
-            const countryName = getCountryName(res.request?.country || selectedCountry);
 
             // Build full multi-line breakdown text
             const b = res.breakdown || {};
@@ -1324,9 +1338,13 @@
             const m = res.meta || {};
             const fnum = (n) => (typeof n === 'number' ? new Intl.NumberFormat('ru-RU').format(n) : n);
 
+            // Resolve country for sharing
+            const countryCode = r.country || selectedCountry;
+            const countryLabel = countryCode ? getCountryLabel(countryCode) : '';
+
             const lines = [];
             lines.push('🚗 Расчет растаможки');
-            lines.push(`Страна: ${countryName}`);
+            if (countryLabel) lines.push(`Страна покупки: ${countryLabel}`);
             if (r.year) lines.push(`Год выпуска: ${r.year}`);
             if (r.engine_cc) lines.push(`Объем двигателя: ${r.engine_cc} см³`);
             if (r.purchase_price && r.currency) lines.push(`Цена покупки: ${fnum(r.purchase_price)} ${r.currency}`);
@@ -1352,7 +1370,11 @@
                 m.warnings.forEach(w => lines.push(`• ${w.message}`));
             }
             const detailText = lines.join('\n');
-            const shareText = `🚗 Расчет растаможки автомобиля из ${countryName}: ${resultStr}`;
+
+            // Short share text now contains country
+            const shareText = countryLabel
+                ? `🚗 Расчет растаможки из ${countryLabel}: ${resultStr}`
+                : `🚗 Расчет растаможки: ${resultStr}`;
 
             // Check if we're in Telegram
             const inTelegram = telegram.isInTelegram();
@@ -1402,7 +1424,7 @@
                 try {
                     const totalVal = b.total_rub;
 
-                    // Prepare data for Telegram
+                    // Prepare data for Telegram (includes country label)
                     const telegramData = {
                         action: 'share_result',
                         text: shareText,
@@ -1411,13 +1433,13 @@
                         total: totalVal,
                         total_rub: totalVal,
                         country: r.country || selectedCountry,
+                        country_label: countryLabel,
                         year: r.year,
                         engine_cc: r.engine_cc,
                         currency: r.currency,
                         purchase_price: r.purchase_price,
                         freight_type: r.freight_type,
-                        formatted_total: fnum(totalVal),
-                        country_name: countryName
+                        formatted_total: fnum(totalVal)
                     };
 
                     const sent = telegram.sendDataSafe(telegramData);
@@ -1426,13 +1448,8 @@
                         showToast('Результат отправлен в чат', 'success');
                         telegram.hapticFeedback('medium');
 
-                        // Close WebApp after successful send
                         setTimeout(() => {
-                            try {
-                                telegram.close();
-                            } catch (e) {
-                                console.warn('Failed to close WebApp:', e);
-                            }
+                            try { telegram.close(); } catch (e) { console.warn('Failed to close WebApp:', e); }
                         }, 800);
                     } else {
                         showToast('Не удалось отправить в чат', 'error');
@@ -1448,56 +1465,6 @@
                     }
                 }
             }
-        }
-
-        function getCountryName(country) {
-            return {
-                japan:'Японии',
-                korea:'Кореи',
-                uae:'ОАЭ',
-                china:'Китая'
-            }[country] || country;
-        }
-
-        function formatNumber(n){
-            return new Intl.NumberFormat('ru-RU').format(n);
-        }
-
-        function getAgeCategory(c){
-            return {
-                lt3:'до 3 лет',
-                '3_5':'3-5 лет (проходные)',
-                gt5:'свыше 5 лет'
-            }[c] || c;
-        }
-
-        function showLoading(show){
-            document.getElementById('loading').style.display = show?'block':'none';
-            document.getElementById('calculateBtn').disabled=show;
-        }
-
-        function showError(msg){
-            const e=document.getElementById('error');
-            e.textContent=msg;
-            e.style.display='block';
-        }
-
-        function hideError(){
-            document.getElementById('error').style.display='none';
-        }
-
-        function hideResult(){
-            document.getElementById('resultCard').classList.remove('show');
-            document.getElementById('shareBtn').style.display='none';
-        }
-
-        function showToast(message,type='info'){
-            const t=document.createElement('div');
-            t.className=`toast ${type}`;
-            t.textContent=message;
-            t.style.cssText=`position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:${type==='success'?'#10b981':type==='error'?'#ef4444':'#3b82f6'};color:#fff;padding:12px 24px;border-radius:8px;z-index:1000;animation:slideUp .3s ease-out;`;
-            document.body.appendChild(t);
-            setTimeout(()=>t.remove(),3000);
         }
     </script>
 </body>
