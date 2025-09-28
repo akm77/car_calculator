@@ -68,6 +68,7 @@ async def get_rates() -> dict[str, object]:
         "currencies": effective_rates.get("currencies", {}),
         "live_source": effective_rates.get("live_source"),
         "commissions": commissions_conf.get("thresholds", []),
+        "commissions_by_country": commissions_conf.get("by_country", {}),
         "utilization": rates_conf.get("utilization", {}),
         "duties": duties_conf.get("age_categories", {}),  # pass-through bands
         "customs_services": rates_conf.get("customs_services", {}),

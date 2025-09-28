@@ -156,7 +156,26 @@ def _utilization_fee(age_category: str, engine_cc: int, rates_conf: dict[str, An
     return Decimal("0")
 
 
-def _commission(amount_rub: Decimal, commissions_conf: dict[str, Any]) -> Decimal:
+def _commission(amount_rub: Decimal, commissions_conf: dict[str, Any], country: str | None = None) -> Decimal:
+    """Return commission in RUB based on thresholds; supports optional per-country override.
+
+    Selection order:
+    1) if by_country[country] thresholds exist -> use them
+    2) else use global thresholds
+    """
+    # Prefer country-specific thresholds if available
+    if country:
+        by_country = commissions_conf.get("by_country") or {}
+        thresholds = by_country.get(country)
+        if isinstance(thresholds, list) and thresholds:
+            for th in thresholds:
+                max_price = th.get("max_price")
+                max_price_dec = to_decimal(max_price) if max_price is not None else None
+                if max_price_dec is None or amount_rub <= max_price_dec:
+                    return to_decimal(th.get("amount", 0.0))
+            return Decimal("0")
+
+    # Fallback to global thresholds
     thresholds = commissions_conf.get("thresholds", [])
     for th in thresholds:
         max_price = th.get("max_price")
@@ -264,7 +283,7 @@ def calculate(req: CalculationRequest) -> CalculationResult:
         utilization_fee_rub_dec = _utilization_fee(age_category, req.engine_cc, rates_conf)
 
     # Commission based ONLY on purchase price in RUB (business rule)
-    commission_rub_dec = _commission(purchase_price_rub, commissions_conf)
+    commission_rub_dec = _commission(purchase_price_rub, commissions_conf, req.country)
 
     total_rub_dec = (
         purchase_price_rub
