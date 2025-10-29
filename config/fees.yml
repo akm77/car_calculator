@@ -17,6 +17,11 @@ japan:
 
 korea:
   country_currency: "USD"
+
+  tiers:
+    - max_price: 3000000  # до 3 млн USD
+      expenses: 500    # 150,000 USD
+
   base_expenses:
     inspection: 1000      # выезд/осмотр/проверка/принятие денег
     delivery: 700         # доставка до порта отгрузки
