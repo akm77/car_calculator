@@ -1241,14 +1241,14 @@
             breakdownDiv.innerHTML = '';
 
             const items = [
-                { label: 'Цена покупки', amount: breakdown.purchase_price_rub },
-                { label: 'Таможенная пошлина', amount: breakdown.duties_rub },
-                { label: 'Утилизационный сбор', amount: breakdown.utilization_fee_rub },
-                { label: 'Таможенное оформление', amount: breakdown.customs_services_rub },
-                { label: 'Эра-Глонасс', amount: breakdown.era_glonass_rub },
-                { label: 'Фрахт', amount: breakdown.freight_rub },
+                { label: 'Закупочная стоимость', amount: breakdown.purchase_price_rub },
                 { label: 'Расходы в стране', amount: breakdown.country_expenses_rub },
-                { label: 'Комиссия компании', amount: breakdown.company_commission_rub }
+                { label: 'Фрахт', amount: breakdown.freight_rub },
+                { label: 'Таможенная пошлина', amount: breakdown.duties_rub },
+                { label: 'Таможенное оформление', amount: breakdown.customs_services_rub },
+                { label: 'Утилизационный сбор', amount: breakdown.utilization_fee_rub },
+                { label: 'Эра-Глонасс', amount: breakdown.era_glonass_rub },
+                { label: 'Вознаграждение компании', amount: breakdown.company_commission_rub }
             ];
 
             items.forEach(item => {
