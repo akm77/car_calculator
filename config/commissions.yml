@@ -27,10 +27,9 @@ by_country:
 #     - max_price: 3500000
 #       amount: 65000
 #     - amount: 85000
-#   china:
-#     - max_price: 1500000
-#       amount: 40000
-#     - max_price: 3500000
-#       amount: 65000
-#     - amount: 85000
+  china:
+    - amount: 80000
+
+  georgia:
+    - amount: 80000
 # ---------------------------------------------------------------------------
