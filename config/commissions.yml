@@ -19,12 +19,8 @@ by_country:
     - max_price: 3500000
       amount: 65000
     - amount: 85000   # for prices > 3.5M
-#   korea:
-#     - max_price: 1500000
-#       amount: 40000
-#     - max_price: 3500000
-#       amount: 65000
-#     - amount: 85000
+  korea:
+    - amount: 1000
 #   uae:
 #     - max_price: 1500000
 #       amount: 40000

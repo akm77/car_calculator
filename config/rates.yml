@@ -15,8 +15,9 @@ live_currency_codes:
 customs_services:
   japan: 70000
   korea: 70000
-  uae: 140000
+  uae: 150000
   china: 70000
+  georgia: 120000
 
 era_glonass_rub: 0
 
