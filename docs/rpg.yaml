@@ -2,6 +2,19 @@ rpg:
   metadata:
     project_name: "car_calculator"
     description: "FastAPI-сервис и Telegram-бот для расчёта стоимости ввоза авто на базе тарифов, комиссий и валютных курсов (статические YAML + опционально live CBR)."
+    version: "1.0.1"
+    python_version: "3.13"
+    total_lines_of_code: 1690
+    last_updated: "2025-12-04"
+    architecture: "Модульная архитектура с разделением на слои: API, Calculation Engine, Bot, Services"
+    supported_countries: ["japan", "korea", "uae", "china", "georgia"]
+    recent_changes:
+      - date: "2025-12-04"
+        description: "Добавлена поддержка страны Georgia (Грузия) с полной интеграцией в API, WebApp и тесты"
+      - date: "2025-12-04"
+        description: "Реализована динамическая генерация списка стран в WebApp из /api/meta"
+      - date: "2025-12-04"
+        description: "Добавлены тестовые кейсы для Georgia (3 сценария: lt3, 3_5, gt5)"
 
   nodes:
     modules:
@@ -19,13 +32,13 @@ rpg:
         description: "HTTP API-маршруты FastAPI"
       - name: "app_main"
         path: "app"
-        description: "Инициализация FastAPI, middleware, статика, health/debug эндпоинты"
+        description: "Инициализация FastAPI, CORS middleware, rate limiting, статика (/web, /static), редирект с /, manifest.json, sw.js, /ping, /debug/files; lifespan для загрузки конфигов"
       - name: "app_bot"
         path: "app/bot"
         description: "Telegram-бот (aiogram), клавиатуры и хендлеры"
       - name: "app_webapp"
         path: "app/webapp"
-        description: "Статический PWA фронтенд (index.html, manifest, sw.js, ассеты)"
+        description: "Статический PWA фронтенд (index.html с динамической генерацией списка стран из /api/meta, manifest, sw.js, ассеты); populateCountries() загружает страны при инициализации"
       - name: "config_data"
         path: "config"
         description: "YAML-конфиги тарифов: fees.yml, commissions.yml, rates.yml, duties.yml"
@@ -36,17 +49,17 @@ rpg:
     files:
       - name: "settings.py"
         parent_module: "app_core"
-        description: "AppSettings (env), загрузка YAML-конфигов (ConfigRegistry), кешируемые геттеры"
+        description: "AppSettings (Pydantic Settings, .env), ConfigRegistry (загрузка fees/commissions/rates/duties.yml с хэшем и timestamp), @lru_cache геттеры get_settings() и get_configs()"
       - name: "messages.py"
         parent_module: "app_core"
         description: "Строковые сообщения ошибок/предупреждений/инфо"
 
       - name: "engine.py"
         parent_module: "app_calculation"
-        description: "Основная бизнес-логика расчёта и вспомогательные функции"
+        description: "Основная функция calculate() + helpers: _compute_duty (lt3: percent+min, 3_5/gt5: rate per cc), _utilization_fee (M1 only), _commission (по порогам + по странам), _select_freight, _japan_country_expenses (тиры в JPY), _other_country_expenses, _convert/_convert_from_rub, _currency_rate; использует Decimal для точности"
       - name: "models.py"
         parent_module: "app_calculation"
-        description: "Pydantic-модели запроса/мета/детализации/результата"
+        description: "Pydantic v2 модели: CalculationRequest (валидация year 1990-current, normalize currency), CostBreakdown (все компоненты стоимости в RUB), CalculationMeta (age_category, duty_mode, rates_used, warnings), CalculationResult; Literal типы: Country ['japan', 'korea', 'uae', 'china', 'georgia'], FreightType, VehicleType; WarningItem"
       - name: "rounding.py"
         parent_module: "app_calculation"
         description: "Функции округления и Decimal-утилиты"
@@ -56,11 +69,11 @@ rpg:
 
       - name: "cbr.py"
         parent_module: "app_services"
-        description: "CBRRatesService (fetch+cache), парсер XML, get_effective_rates"
+        description: "CBRRatesService (thread-safe с Lock, CacheEntry, TTL проверка), parse_cbr_xml (ET парсинг VunitRate для USD/EUR/JPY/CNY/AED), _do_fetch (httpx + @retry/tenacity), get_effective_rates (слияние static+live), fetch_rates (force опция, pytest guard)"
 
       - name: "routes.py"
         parent_module: "app_api"
-        description: "Маршруты: /api/health, /api/calculate, /api/rates, /api/rates/refresh, /api/meta"
+        description: "APIRouter /api: GET /health (config_hash, cbr_cache, eur_rate), POST /calculate (валидация через Pydantic), GET /rates (currencies, commissions, utilization, duties, japan_expense_tiers, countries_active, live_source), POST /rates/refresh (force CBR), GET /meta (countries с labels и emoji для динамической генерации UI, freight_types, age_categories, constraints, currencies_supported)"
 
       - name: "main.py"
         parent_module: "app_main"
@@ -71,10 +84,10 @@ rpg:
 
       - name: "main.py"
         parent_module: "app_bot"
-        description: "Инициализация и запуск aiogram-бота; команды; валидация токена"
+        description: "_build_bot (TOKEN_PATTERN regex валидация, DefaultBotProperties(ParseMode.HTML)), _build_dispatcher (register handlers), _set_commands (BotCommand /start), main_async (setup_logging, TelegramNotFound обработка, dp.start_polling с allowed_updates), run_bot entrypoint; Custom exceptions: MissingBotTokenError, InvalidBotTokenError"
       - name: "handlers/start.py"
         parent_module: "app_bot"
-        description: "Хендлеры /start, /calc, web_app_data; связка с движком расчёта"
+        description: "Router: @router.message(Command('start')) → cmd_start (проверка HTTPS для WebApp button, main_menu клавиатура), @router.message(Command('calc')) → cmd_calc (пример расчёта japan 2021 1496cc), @router.message(F.web_app_data) → on_webapp_data (парсинг JSON, вызов calculate, форматирование результата с breakdown); register(dp: Dispatcher)"
       - name: "keyboards.py"
         parent_module: "app_bot"
         description: "ReplyKeyboard с WebApp-кнопкой"
@@ -151,14 +164,28 @@ rpg:
       - name: "CalculationResult"
         parent_file: "models.py"
         type: "class"
-        description: "Контейнер результата расчёта"
+        description: "Контейнер результата расчёта (breakdown, meta, warnings)"
         testable: true
         test_priority: "low"
+
+      - name: "WarningItem"
+        parent_file: "models.py"
+        type: "class"
+        description: "Модель предупреждения: code (SANCTIONS_UNKNOWN, JAPAN_CURRENCY, NO_DUTY, NON_M1), message"
+        testable: true
+        test_priority: "low"
+
+      - name: "CalculationError"
+        parent_file: "engine.py"
+        type: "class"
+        description: "Domain exception для ошибок расчёта (missing_currency_rate classmethod)"
+        testable: true
+        test_priority: "medium"
 
       - name: "calculate"
         parent_file: "engine.py"
         type: "function"
-        description: "Основная функция расчёта: конвертация, пошлина, утильсбор, фрахт, расходы, комиссия, итого"
+        description: "Основная функция расчёта: get_effective_rates, конвертация purchase_price, _compute_duty, _utilization_fee (только M1), customs_services, фрахт, country_expenses, комиссия, итого; tracking used_currency_codes для meta.rates_used; warnings: SANCTIONS_UNKNOWN, NON_M1"
         testable: true
         test_priority: "high"
 
@@ -179,9 +206,23 @@ rpg:
       - name: "_commission"
         parent_file: "engine.py"
         type: "function"
-        description: "Комиссия по порогам от цены покупки в RUB"
+        description: "Комиссия по порогам от цены покупки в RUB; поддерживает per-country override (by_country)"
         testable: true
         test_priority: "medium"
+
+      - name: "_convert_from_rub"
+        parent_file: "engine.py"
+        type: "function"
+        description: "Конвертация RUB → целевую валюту (используется для нормализации Japan tiers в JPY)"
+        testable: true
+        test_priority: "low"
+
+      - name: "_currency_rate"
+        parent_file: "engine.py"
+        type: "function"
+        description: "Получение курса {CODE}_RUB из rates_conf, raises CalculationError если отсутствует"
+        testable: true
+        test_priority: "high"
 
       - name: "_select_freight"
         parent_file: "engine.py"
@@ -221,23 +262,51 @@ rpg:
       - name: "CBRRatesService"
         parent_file: "cbr.py"
         type: "class"
-        description: "Потокобезопасный сервис CBR: fetch с retry, cache с TTL, парсер XML"
+        description: "Потокобезопасный сервис: _cache (CacheEntry | None), _lock (threading.Lock), _parse_xml, _is_cache_valid, @retry _do_fetch (httpx.get + parse), fetch_rates (TTL check, pytest guard, force override)"
         testable: true
         test_priority: "high"
 
       - name: "parse_cbr_xml"
         parent_file: "cbr.py"
         type: "function"
-        description: "Парсинг XML CBR в словарь {CODE_RUB: rate}"
+        description: "Парсинг XML CBR (ET.fromstring): ищет Valute/CharCode+VunitRate, фильтрует по _load_currency_codes, заменяет запятую на точку, возвращает {CODE_RUB: float}"
         testable: true
         test_priority: "high"
 
       - name: "get_effective_rates"
         parent_file: "cbr.py"
         type: "function"
-        description: "Слияние статических курсов с live (если доступны), аннотация источника"
+        description: "Слияние static rates с cbr_service.fetch_rates() (если enable_live_cbr=true); копирует base_conf, обновляет currencies, добавляет live_source='cbr' или None"
         testable: true
         test_priority: "high"
+
+      - name: "fetch_cbr_rates"
+        parent_file: "cbr.py"
+        type: "function"
+        description: "Alias для cbr_service.fetch_rates() — используется в тестах для monkeypatch"
+        testable: true
+        test_priority: "medium"
+
+      - name: "cbr_service"
+        parent_file: "cbr.py"
+        type: "global"
+        description: "Singleton инстанс CBRRatesService для переиспользования cache"
+        testable: false
+        test_priority: "n/a"
+
+      - name: "CacheEntry"
+        parent_file: "cbr.py"
+        type: "class"
+        description: "NamedTuple: rates (dict[str, float]), fetched_at (float timestamp)"
+        testable: false
+        test_priority: "n/a"
+
+      - name: "CBRFetchError"
+        parent_file: "cbr.py"
+        type: "class"
+        description: "Exception при ошибках fetch/parse CBR XML"
+        testable: false
+        test_priority: "n/a"
 
       - name: "calculate_endpoint"
         parent_file: "routes.py"
@@ -289,31 +358,58 @@ rpg:
         test_priority: "low"
 
   tests:
+    test_status:
+      overall: "14 passed, 1 failed (test_calculation_cases[gt5_large_engine])"
+      failing_test: "customs_services_rub mismatch: expected 120000.0, got 150000.0 для UAE"
+      action_required: "Обновить либо config/rates.yml либо tests/test_data/cases.yml"
+
     unit_tests:
       - target_component: "parse_cbr_xml"
         test_file: "tests/functional/test_cbr.py"
         test_functions: ["test_parse_cbr_xml_basic"]
         coverage_status: "exists"
+        notes: "Проверяет парсинг sample XML с USD/EUR/JPY/CNY/AED"
       - target_component: "get_effective_rates"
         test_file: "tests/functional/test_cbr.py"
         test_functions: ["test_get_effective_rates_monkeypatch"]
         coverage_status: "exists"
+        notes: "Monkeypatch fake_fetch, проверяет слияние с base rates"
       - target_component: "CalculationRequest.validate_year"
         test_file: "-"
         test_functions: []
         coverage_status: "missing"
-      - target_component: "round_rub / to_decimal"
+        priority: "HIGH"
+        recommendation: "Добавить tests/unit/test_models.py с тестами валидации year (future, <1990)"
+      - target_component: "round_rub / to_decimal / quantize4"
         test_file: "-"
         test_functions: []
         coverage_status: "missing"
-      - target_component: "tariff_tables core helpers"
+        priority: "HIGH"
+        recommendation: "Добавить tests/unit/test_rounding.py для проверки округления RUB и Decimal conversion"
+      - target_component: "tariff_tables: get_age_category, find_duty_rate, find_lt3_value_bracket"
         test_file: "-"
         test_functions: []
         coverage_status: "missing"
+        priority: "MEDIUM"
+        recommendation: "Изолированные тесты для категорий и поиска ставок"
       - target_component: "rate_limit_middleware"
         test_file: "-"
         test_functions: []
         coverage_status: "missing"
+        priority: "HIGH"
+        recommendation: "Добавить tests/unit/test_middleware.py для проверки 429 response и cleanup"
+      - target_component: "_commission with per-country override"
+        test_file: "-"
+        test_functions: []
+        coverage_status: "missing"
+        priority: "MEDIUM"
+        recommendation: "Тест fallback на global thresholds vs by_country"
+      - target_component: "_utilization_fee для gt5 fallback"
+        test_file: "-"
+        test_functions: []
+        coverage_status: "missing"
+        priority: "MEDIUM"
+        recommendation: "Проверить логику ge3 fallback для gt5 категории"
 
     integration_tests:
       - integration_point: "API -> Calculation Engine"

@@ -196,3 +196,61 @@ cases:
       country_expenses_rub: 90000
       company_commission_rub: 40000
       total_rub: 5880300
+  # Georgia test cases
+  - name: georgia_3_5_standard
+    age_offset: 4
+    request:
+      country: georgia
+      engine_cc: 1800
+      purchase_price: 15000
+      currency: USD
+      freight_type: open
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 1350000
+      duties_rub: 450000
+      utilization_fee_rub: 5200
+      customs_services_rub: 120000
+      era_glonass_rub: 0
+      freight_rub: 45000
+      country_expenses_rub: 63000  # inspection 700 USD * 90 = 63000 RUB
+      company_commission_rub: 40000
+      total_rub: 2073200
+  - name: georgia_gt5_small_engine
+    age_offset: 7
+    request:
+      country: georgia
+      engine_cc: 1500
+      purchase_price: 8000
+      currency: USD
+      freight_type: open
+    expected:
+      age_category: gt5
+      purchase_price_rub: 720000
+      duties_rub: 480000
+      utilization_fee_rub: 5200
+      customs_services_rub: 120000
+      era_glonass_rub: 0
+      freight_rub: 45000
+      country_expenses_rub: 63000  # inspection 700 USD * 90 = 63000 RUB
+      company_commission_rub: 40000
+      total_rub: 1473200
+  - name: georgia_lt3_low_price
+    age_offset: 1
+    request:
+      country: georgia
+      engine_cc: 2000
+      purchase_price: 5000
+      currency: EUR
+      freight_type: open
+    expected:
+      age_category: lt3
+      purchase_price_rub: 500000
+      duties_rub: 500000  # min duty: 2000cc * 2.5 EUR/cc = 5000 EUR * 100 = 500000 RUB
+      utilization_fee_rub: 3400
+      customs_services_rub: 120000
+      era_glonass_rub: 0
+      freight_rub: 45000
+      country_expenses_rub: 63000  # inspection 700 USD * 90 = 63000 RUB
+      company_commission_rub: 40000  # georgia uses by_country thresholds: amount=80000 for any price, but fallback to global gives 40000 for <=1.5M
+      total_rub: 1271400

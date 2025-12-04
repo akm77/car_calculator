@@ -57,9 +57,6 @@ china:
 
 georgia:
   country_currency: "USD"
-  tiers:
-    - max_price: 3000000  # до 3 млн USD
-      expenses: 500    # 500 USD
 
   base_expenses:
     inspection: 700       # выезд/осмотр/проверка/принятие денег (USD)

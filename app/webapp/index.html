@@ -409,10 +409,7 @@
                     <div class="country-selector">
                         <select id="countrySelect" class="country-dropdown" required>
                             <option value="">Выберите страну</option>
-                            <option value="japan" class="country-option">🇯🇵 Япония</option>
-                            <option value="korea" class="country-option">🇰🇷 Корея</option>
-                            <option value="uae" class="country-option">🇦🇪 ОАЭ</option>
-                            <option value="china" class="country-option">🇨🇳 Китай</option>
+                            <!-- Страны загружаются динамически из /api/meta -->
                         </select>
                     </div>
                 </div>
@@ -1001,6 +998,7 @@
                 const response = await api.get('/api/meta');
                 metaData = response;
                 console.log('Meta data loaded:', metaData);
+                populateCountries(); // Заполняем список стран после загрузки
             } catch (error) {
                 console.error('Failed to load meta data:', error);
                 // Fallback data for offline usage
@@ -1009,7 +1007,8 @@
                         { code: 'japan', label: 'Япония', emoji: '🇯🇵', purchase_currency: 'JPY', freight_types: ['standard'] },
                         { code: 'korea', label: 'Корея', emoji: '🇰🇷', purchase_currency: 'USD', freight_types: ['standard'] },
                         { code: 'uae', label: 'ОАЭ', emoji: '🇦🇪', purchase_currency: 'AED', freight_types: ['open', 'container'] },
-                        { code: 'china', label: 'Китай', emoji: '🇨🇳', purchase_currency: 'USD', freight_types: ['open'] }
+                        { code: 'china', label: 'Китай', emoji: '🇨🇳', purchase_currency: 'USD', freight_types: ['open'] },
+                        { code: 'georgia', label: 'Грузия', emoji: '🇬🇪', purchase_currency: 'USD', freight_types: ['open'] }
                     ],
                     freight_type_labels: {
                         standard: 'Стандартный',
@@ -1017,7 +1016,37 @@
                         container: 'Контейнер'
                     }
                 };
+                populateCountries(); // Заполняем список стран из fallback данных
             }
+        }
+
+        // Динамическое заполнение списка стран из метаданных
+        function populateCountries() {
+            if (!metaData || !metaData.countries) return;
+
+            const select = document.getElementById('countrySelect');
+            // Сохраняем первую опцию "Выберите страну"
+            const placeholder = select.querySelector('option[value=""]');
+            select.innerHTML = '';
+            if (placeholder) {
+                select.appendChild(placeholder);
+            } else {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = 'Выберите страну';
+                select.appendChild(opt);
+            }
+
+            // Добавляем страны из метаданных
+            metaData.countries.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country.code;
+                option.className = 'country-option';
+                option.textContent = `${country.emoji} ${country.label}`;
+                select.appendChild(option);
+            });
+
+            console.log('Countries populated:', metaData.countries.length);
         }
 
         // Установка текущего года по умолчанию

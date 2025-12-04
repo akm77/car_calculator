@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, field_validator
 from app.core.messages import ERR_YEAR_FUTURE, ERR_YEAR_TOO_OLD
 
 
-Country = Literal["japan", "korea", "uae", "china"]
+Country = Literal["japan", "korea", "uae", "china", "georgia"]
 FreightType = Literal["open", "container", "standard"]
 VehicleType = Literal["M1", "pickup", "bus", "motorhome", "other"]
 
