@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test: Formatters & DOM Utils</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 { color: #333; }
+        h2 {
+            color: #666;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 8px;
+            margin-top: 30px;
+        }
+        .test-case {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .test-input {
+            color: #666;
+            font-family: monospace;
+            margin: 5px 0;
+        }
+        .test-result {
+            color: #0066cc;
+            font-weight: 500;
+            margin: 5px 0;
+        }
+        .pass { color: #10b981; font-weight: bold; }
+        .fail { color: #ef4444; font-weight: bold; }
+        .summary {
+            background: #e3f2fd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #2196f3;
+        }
+        #testElement {
+            padding: 10px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            margin: 10px 0;
+            display: none;
+        }
+        #testElement.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Manual Test: Formatters & DOM Utils</h1>
+    <p>Testing pure functions from formatters.js and dom.js modules</p>
+
+    <div class="summary" id="summary">
+        <strong>Test Summary:</strong> Running tests...
+    </div>
+
+    <h2>Formatter Tests</h2>
+    <div id="formatterTests"></div>
+
+    <h2>DOM Utils Tests</h2>
+    <div id="domTests"></div>
+    <div id="testElement">Test Element for DOM manipulation</div>
+
+    <script type="module">
+        import * as formatters from '../../app/webapp/js/utils/formatters.js';
+        import * as dom from '../../app/webapp/js/utils/dom.js';
+
+        let passCount = 0;
+        let failCount = 0;
+
+        function assert(condition, testName, input, expected, actual) {
+            const passed = condition;
+            if (passed) passCount++;
+            else failCount++;
+
+            return `
+                <div class="test-case">
+                    <div class="test-name">${passed ? '✅' : '❌'} ${testName}</div>
+                    <div class="test-input">Input: ${JSON.stringify(input)}</div>
+                    <div class="test-result">Expected: ${expected}</div>
+                    <div class="test-result">Actual: ${actual}</div>
+                    <div class="${passed ? 'pass' : 'fail'}">${passed ? 'PASS' : 'FAIL'}</div>
+                </div>
+            `;
+        }
+
+        // Formatter Tests
+        const formatterTestsHTML = [];
+
+        // Test formatNumber
+        formatterTestsHTML.push(assert(
+            formatters.formatNumber(1234567) === '1 234 567',
+            'formatNumber() - large number',
+            1234567,
+            '1 234 567',
+            formatters.formatNumber(1234567)
+        ));
+
+        formatterTestsHTML.push(assert(
+            formatters.formatNumber(null) === '—',
+            'formatNumber() - null value',
+            null,
+            '—',
+            formatters.formatNumber(null)
+        ));
+
+        formatterTestsHTML.push(assert(
+            formatters.formatNumber('invalid') === '—',
+            'formatNumber() - invalid string',
+            'invalid',
+            '—',
+            formatters.formatNumber('invalid')
+        ));
+
+        // Test formatCurrency
+        formatterTestsHTML.push(assert(
+            formatters.formatCurrency(1500000, 'RUB') === '1 500 000 ₽',
+            'formatCurrency() - RUB',
+            [1500000, 'RUB'],
+            '1 500 000 ₽',
+            formatters.formatCurrency(1500000, 'RUB')
+        ));
+
+        formatterTestsHTML.push(assert(
+            formatters.formatCurrency(5000, 'USD') === '$5 000',
+            'formatCurrency() - USD',
+            [5000, 'USD'],
+            '$5 000',
+            formatters.formatCurrency(5000, 'USD')
+        ));
+
+        formatterTestsHTML.push(assert(
+            formatters.formatCurrency(null, 'RUB') === '—',
+            'formatCurrency() - null value',
+            [null, 'RUB'],
+            '—',
+            formatters.formatCurrency(null, 'RUB')
+        ));
+
+        // Test getAgeCategory
+        formatterTestsHTML.push(assert(
+            formatters.getAgeCategory('lt3') === 'до 3 лет',
+            'getAgeCategory() - lt3',
+            'lt3',
+            'до 3 лет',
+            formatters.getAgeCategory('lt3')
+        ));
+
+        formatterTestsHTML.push(assert(
+            formatters.getAgeCategory('3_5') === '3-5 лет (проходные)',
+            'getAgeCategory() - 3_5',
+            '3_5',
+            '3-5 лет (проходные)',
+            formatters.getAgeCategory('3_5')
+        ));
+
+        formatterTestsHTML.push(assert(
+            formatters.getAgeCategory('gt5') === 'свыше 5 лет',
+            'getAgeCategory() - gt5',
+            'gt5',
+            'свыше 5 лет',
+            formatters.getAgeCategory('gt5')
+        ));
+
+        // Test formatEngineVolume
+        formatterTestsHTML.push(assert(
+            formatters.formatEngineVolume(1500) === '1 500 см³',
+            'formatEngineVolume() - 1500cc',
+            1500,
+            '1 500 см³',
+            formatters.formatEngineVolume(1500)
+        ));
+
+        formatterTestsHTML.push(assert(
+            formatters.formatEngineVolume(null) === '—',
+            'formatEngineVolume() - null',
+            null,
+            '—',
+            formatters.formatEngineVolume(null)
+        ));
+
+        // Test formatYear
+        formatterTestsHTML.push(assert(
+            formatters.formatYear(2023) === '2023',
+            'formatYear() - valid year',
+            2023,
+            '2023',
+            formatters.formatYear(2023)
+        ));
+
+        formatterTestsHTML.push(assert(
+            formatters.formatYear(1800) === '—',
+            'formatYear() - too old',
+            1800,
+            '—',
+            formatters.formatYear(1800)
+        ));
+
+        // Test formatPercent
+        formatterTestsHTML.push(assert(
+            formatters.formatPercent(12.5) === '12,5%',
+            'formatPercent() - decimal',
+            12.5,
+            '12,5%',
+            formatters.formatPercent(12.5)
+        ));
+
+        // Test truncateToBytes
+        const longString = 'A'.repeat(100);
+        const truncated = formatters.truncateToBytes(longString, 20);
+        formatterTestsHTML.push(assert(
+            formatters.byteLength(truncated) <= 20,
+            'truncateToBytes() - respects byte limit',
+            [longString, 20],
+            '<= 20 bytes',
+            `${formatters.byteLength(truncated)} bytes`
+        ));
+
+        formatterTestsHTML.push(assert(
+            truncated.endsWith('…'),
+            'truncateToBytes() - adds ellipsis',
+            [longString, 20],
+            'ends with …',
+            truncated
+        ));
+
+        // Test byteLength
+        formatterTestsHTML.push(assert(
+            formatters.byteLength('Hello') === 5,
+            'byteLength() - ASCII',
+            'Hello',
+            '5',
+            formatters.byteLength('Hello')
+        ));
+
+        formatterTestsHTML.push(assert(
+            formatters.byteLength('Привет') === 12,
+            'byteLength() - Cyrillic (2 bytes per char)',
+            'Привет',
+            '12',
+            formatters.byteLength('Привет')
+        ));
+
+        document.getElementById('formatterTests').innerHTML = formatterTestsHTML.join('');
+
+        // DOM Utils Tests
+        const domTestsHTML = [];
+
+        // Test show/hide
+        const testEl = document.getElementById('testElement');
+        dom.hide(testEl);
+        domTestsHTML.push(assert(
+            !testEl.classList.contains('show'),
+            'hide() - removes show class',
+            'testElement',
+            'no show class',
+            testEl.classList.contains('show') ? 'has show class' : 'no show class'
+        ));
+
+        dom.show(testEl);
+        domTestsHTML.push(assert(
+            testEl.classList.contains('show'),
+            'show() - adds show class',
+            'testElement',
+            'has show class',
+            testEl.classList.contains('show') ? 'has show class' : 'no show class'
+        ));
+
+        // Test setText
+        dom.setText(testEl, 'Test Content');
+        domTestsHTML.push(assert(
+            testEl.textContent === 'Test Content',
+            'setText() - sets text content',
+            'Test Content',
+            'Test Content',
+            testEl.textContent
+        ));
+
+        // Test setContent
+        dom.setContent(testEl, '<strong>Bold</strong>');
+        domTestsHTML.push(assert(
+            testEl.innerHTML === '<strong>Bold</strong>',
+            'setContent() - sets HTML',
+            '<strong>Bold</strong>',
+            '<strong>Bold</strong>',
+            testEl.innerHTML
+        ));
+
+        // Test addClass/removeClass
+        dom.addClass(testEl, 'custom-class');
+        domTestsHTML.push(assert(
+            testEl.classList.contains('custom-class'),
+            'addClass() - adds class',
+            'custom-class',
+            'has custom-class',
+            testEl.classList.contains('custom-class') ? 'has custom-class' : 'no custom-class'
+        ));
+
+        dom.removeClass(testEl, 'custom-class');
+        domTestsHTML.push(assert(
+            !testEl.classList.contains('custom-class'),
+            'removeClass() - removes class',
+            'custom-class',
+            'no custom-class',
+            testEl.classList.contains('custom-class') ? 'has custom-class' : 'no custom-class'
+        ));
+
+        // Test hasClass
+        dom.addClass(testEl, 'test-class');
+        domTestsHTML.push(assert(
+            dom.hasClass(testEl, 'test-class'),
+            'hasClass() - detects class',
+            'test-class',
+            'true',
+            String(dom.hasClass(testEl, 'test-class'))
+        ));
+
+        // Test getEl
+        domTestsHTML.push(assert(
+            dom.getEl('testElement') === testEl,
+            'getEl() - gets element by ID',
+            'testElement',
+            'returns element',
+            dom.getEl('testElement') ? 'returns element' : 'null'
+        ));
+
+        // Test createElement
+        const newEl = dom.createElement('div', { className: 'new-div', textContent: 'New Div' });
+        domTestsHTML.push(assert(
+            newEl.className === 'new-div' && newEl.textContent === 'New Div',
+            'createElement() - creates with props',
+            { className: 'new-div', textContent: 'New Div' },
+            'div with class and text',
+            `${newEl.tagName.toLowerCase()}.${newEl.className} with text "${newEl.textContent}"`
+        ));
+
+        // Test debounce
+        let debounceCounter = 0;
+        const debouncedFn = dom.debounce(() => debounceCounter++, 100);
+        debouncedFn();
+        debouncedFn();
+        debouncedFn();
+        setTimeout(() => {
+            domTestsHTML.push(assert(
+                debounceCounter === 1,
+                'debounce() - executes once after delay',
+                '3 calls with 100ms delay',
+                '1 execution',
+                `${debounceCounter} execution(s)`
+            ));
+            document.getElementById('domTests').innerHTML = domTestsHTML.join('');
+            updateSummary();
+        }, 150);
+
+        document.getElementById('domTests').innerHTML = domTestsHTML.join('') +
+            '<div class="test-case"><div class="test-name">⏳ Waiting for debounce test...</div></div>';
+
+        function updateSummary() {
+            const total = passCount + failCount;
+            const percentage = total > 0 ? Math.round((passCount / total) * 100) : 0;
+            const summaryEl = document.getElementById('summary');
+            summaryEl.innerHTML = `
+                <strong>Test Summary:</strong><br>
+                Total: ${total} tests<br>
+                <span class="pass">Passed: ${passCount}</span><br>
+                <span class="fail">Failed: ${failCount}</span><br>
+                Success Rate: ${percentage}%
+            `;
+            summaryEl.style.borderLeftColor = failCount === 0 ? '#10b981' : '#ef4444';
+        }
+    </script>
+</body>
+</html>
+

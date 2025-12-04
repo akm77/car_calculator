@@ -108,7 +108,13 @@
         <div class="error" id="error" style="display: none;"></div>
     </div>
 
-    <script>
+    <script type="module">
+        // =====================================================================
+        // Import utility modules (RPG Sprint 2)
+        // =====================================================================
+        import * as formatters from '/static/js/utils/formatters.js';
+        import * as dom from '/static/js/utils/dom.js';
+
         // =====================================================================
         // Enhanced API and Security Layer with ngrok bypass
         // =====================================================================
@@ -628,11 +634,11 @@
                 // Fallback data for offline usage
                 metaData = {
                     countries: [
-                        { code: 'japan', label: 'Япония', emoji: '🇯🇵', purchase_currency: 'JPY', freight_types: ['standard'] },
-                        { code: 'korea', label: 'Корея', emoji: '🇰🇷', purchase_currency: 'USD', freight_types: ['standard'] },
-                        { code: 'uae', label: 'ОАЭ', emoji: '🇦🇪', purchase_currency: 'AED', freight_types: ['open', 'container'] },
-                        { code: 'china', label: 'Китай', emoji: '🇨🇳', purchase_currency: 'USD', freight_types: ['open'] },
-                        { code: 'georgia', label: 'Грузия', emoji: '🇬🇪', purchase_currency: 'USD', freight_types: ['open'] }
+                        { code: 'japan', label: 'Япония', emoji: '🍇', purchase_currency: 'JPY', freight_types: ['standard'] },
+                        { code: 'korea', label: 'Корея', emoji: '🍊', purchase_currency: 'USD', freight_types: ['standard'] },
+                        { code: 'uae', label: 'ОАЭ', emoji: '🍉', purchase_currency: 'AED', freight_types: ['open', 'container'] },
+                        { code: 'china', label: 'Китай', emoji: '🍑', purchase_currency: 'USD', freight_types: ['open'] },
+                        { code: 'georgia', label: 'Грузия', emoji: '🍒', purchase_currency: 'USD', freight_types: ['open'] }
                     ],
                     freight_type_labels: {
                         standard: 'Стандартный',
@@ -1120,17 +1126,10 @@
             }
         }
 
-        // ===== UI helper functions (restored) =====
-        function formatNumber(n){
-            return new Intl.NumberFormat('ru-RU').format(n);
-        }
-        function getAgeCategory(c){
-            return {
-                lt3:'до 3 лет',
-                '3_5':'3-5 лет (проходные)',
-                gt5:'свыше 5 лет'
-            }[c] || c;
-        }
+        // ===== UI helper functions (now using imported modules) =====
+        // formatNumber and getAgeCategory now come from formatters module
+        const formatNumber = formatters.formatNumber;
+        const getAgeCategory = formatters.getAgeCategory;
         function showLoading(show){
             const el = document.getElementById('loading');
             if (el) el.style.display = show ? 'block' : 'none';

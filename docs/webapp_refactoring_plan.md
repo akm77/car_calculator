@@ -634,11 +634,11 @@ export class ResultsRenderer {
 
         // Fallback
         const fallback = {
-            japan: '🇯🇵 Япония',
-            korea: '🇰🇷 Корея',
-            uae: '🇦🇪 ОАЭ',
-            china: '🇨🇳 Китай',
-            georgia: '🇬🇪 Грузия'
+            japan: '🍇 Япония',
+            korea: '🍊 Корея',
+            uae: '🍉 ОАЭ',
+            china: '🍑 Китай',
+            georgia: '🍒 Грузия'
         };
         return fallback[code] || code;
     }

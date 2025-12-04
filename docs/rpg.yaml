@@ -10,6 +10,10 @@ rpg:
     supported_countries: ["japan", "korea", "uae", "china", "georgia"]
     recent_changes:
       - date: "2025-12-05"
+        description: "SPRINT 2 завершён: Созданы утилиты formatters.js и dom.js, обновлён index.html с импортами модулей, создан manual test"
+      - date: "2025-12-05"
+        description: "SPRINT 1 завершён: Извлечён CSS в 4 модуля (variables, base, components, telegram)"
+      - date: "2025-12-05"
         description: "SPRINT 0 завершён: Создана модульная структура webapp (css/, js/{config,utils,modules}/), бэкап index.html, обновлён main.py для раздачи статики"
       - date: "2025-12-04"
         description: "Добавлена поддержка страны Georgia (Грузия) с полной интеграцией в API, WebApp и тесты"
@@ -77,10 +81,14 @@ rpg:
           - "manifest.json, sw.js - PWA манифест и service worker"
           - "*.png - иконки и скриншоты"
         refactoring_status:
-          stage: "SPRINT_0_COMPLETED"
+          stage: "SPRINT_2_COMPLETED"
           date: "2025-12-05"
-          description: "Создана базовая структура папок, бэкап, README.md, обновлён main.py"
-          next_stage: "SPRINT_1_CSS_EXTRACTION"
+          description: "Созданы утилиты formatters.js (17 функций) и dom.js (18 функций), обновлён index.html"
+          components_created:
+            - "js/utils/formatters.js - форматирование данных (числа, валюта, проценты, объем двигателя)"
+            - "js/utils/dom.js - DOM манипуляции (show/hide, setText, debounce, throttle, createElement)"
+            - "tests/manual/test_formatters.html - мануальные тесты (26 test cases)"
+          next_stage: "SPRINT_3_CONFIG_MODULES"
       - name: "config_data"
         path: "config"
         description: "YAML-конфиги тарифов: fees.yml, commissions.yml, rates.yml, duties.yml"
