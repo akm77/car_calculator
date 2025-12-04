@@ -90,13 +90,13 @@ def create_app() -> FastAPI:
     # API routes
     app.include_router(api_router)
 
-
-
-    # Static files for web interface - исправляем путь
+    # Static files for web interface
     if WEB_DIR.exists():
+        # Mount static assets (CSS, JS, images) with proper content types
         app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
         # html=True allows returning index.html for /web/ automatically
         app.mount("/web", StaticFiles(directory=WEB_DIR, html=True), name="webapp")
+        logger.info("static_files_mounted", web_dir=str(WEB_DIR))
     else:
         logger.warning("webapp_dir_not_found", path=str(WEB_DIR))
 
