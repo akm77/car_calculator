@@ -1,4 +1,4 @@
-# Техника Repository Planning Graph (RPG) для работы с большими проектами
+Bpexb vtnjlbre # Техника Repository Planning Graph (RPG) для работы с большими проектами
 
 ## Основная идея
 

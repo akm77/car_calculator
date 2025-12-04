@@ -56,7 +56,13 @@ nginx/
   Dockerfile, entrypoint.sh, conf.d/*.template
 Dockerfile, docker-compose.yml
 tests/ (unit + functional)
-docs/ (formulas)
+docs/ (formulas, RPG methodology, webapp refactoring plan)
+```
+
+## 📚 Documentation
+- **WebApp Refactoring Plan**: See `docs/README_WEBAPP_REFACTORING.md` for the modular architecture refactoring plan (10 stages, 22-35h)
+- **RPG Methodology**: See `docs/rpg_intro.txt` for the Repository Planning Graph approach used in this project
+- **Project Graph**: See `docs/rpg.yaml` for the complete dependency graph and architecture overview
 ```
 
 ## Quick Start (local, Poetry)

@@ -15,6 +15,31 @@ rpg:
         description: "Реализована динамическая генерация списка стран в WebApp из /api/meta"
       - date: "2025-12-04"
         description: "Добавлены тестовые кейсы для Georgia (3 сценария: lt3, 3_5, gt5)"
+      - date: "2025-12-04"
+        description: "Создан план рефакторинга WebApp (docs/webapp_refactoring_plan.md) - 10 этапов, 22-35ч"
+
+    planned_improvements:
+      - priority: "HIGH"
+        component: "app_webapp"
+        description: "Рефакторинг монолитного index.html (1548 строк) на модульную структуру"
+        reference: "docs/webapp_refactoring_plan.md"
+        estimated_time: "3-5 дней"
+        benefits:
+          - "Каждый модуль < 300 строк"
+          - "Время добавления страны: 30 мин (было 4ч)"
+          - "Единый источник валидации/констант"
+          - "Браузерное кэширование CSS/JS"
+        stages:
+          - "CSS extraction (variables, base, components)"
+          - "Utils modules (formatters, dom helpers, debounce)"
+          - "Config modules (messages, constants)"
+          - "Validator module (form validation logic)"
+          - "API client (improved error handling, retry, timeout)"
+          - "UI module (show/hide helpers)"
+          - "Results renderer (display calculation results)"
+          - "Calculator controller (orchestration)"
+          - "Minimal index.html (structure only)"
+          - "Basic unit tests (optional)"
 
   nodes:
     modules:
