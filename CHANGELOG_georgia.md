@@ -1,4 +1,57 @@
-feat: Add Georgia (🇬🇪) country support with dynamic country loading
+# CHANGELOG
+
+## [2025-12-05] SPRINT 0: WebApp Infrastructure Setup ✅
+
+### Summary
+Completed infrastructure preparation for webapp refactoring. Created modular
+structure for vanilla JavaScript + ES6 modules, following RPG methodology.
+
+### Changes
+
+#### Structure
+- Created directory structure:
+  * `app/webapp/css/` - for extracted styles
+  * `app/webapp/js/config/` - for constants and messages
+  * `app/webapp/js/utils/` - for formatters, DOM helpers, debounce
+  * `app/webapp/js/modules/` - for business logic modules
+
+#### Backup
+- Created `app/webapp/index.html.backup` - full backup of monolithic version (1548 lines)
+
+#### Documentation
+- Created `app/webapp/js/README.md`:
+  * Module structure description
+  * Dependency graph (topological order)
+  * Data flow diagram
+  * Extension guidelines (adding countries: 30 min vs 4h)
+  * Performance notes
+
+#### Backend
+- app/main.py:
+  * Added logging for static files mounting
+  * Confirmed /static/ serves css/, js/ subdirectories correctly
+
+#### Project Documentation
+- docs/rpg.yaml:
+  * Updated app_webapp module with refactoring_status
+  * Added structure field describing new folders
+  * Added recent_changes entry for SPRINT 0
+
+### Testing
+- ✅ Server starts without errors
+- ✅ /ping returns ok
+- ✅ /debug/files shows css/ and js/ directories
+- ✅ Static files are accessible via /static/
+
+### Next Steps
+- SPRINT 1: CSS Extraction (Этап 1 из webapp_refactoring_plan.md)
+  * Extract CSS to variables.css, base.css, components.css, telegram.css
+  * Update index.html to use <link> tags
+  * Verify styles work identically
+
+---
+
+## [2025-12-04] feat: Add Georgia (🇬🇪) country support with dynamic country loading
 
 BREAKING CHANGES: None
 VERSION: 1.0.0 → 1.0.1
@@ -23,6 +76,24 @@ to simplify future country additions.
   * Implemented populateCountries() function for dynamic loading
   * Countries now loaded from /api/meta at initialization
   * Added fallback data including Georgia for offline PWA mode
+
+### Documentation (RPG-based Refactoring Plan)
+- docs/webapp_refactoring_sprints.md
+  * Created comprehensive sprint breakdown for webapp refactoring
+  * 11 sprints with clear goals, roles, and acceptance criteria
+  * Each sprint designed to fit within AI model context (~3000 tokens)
+  * Addresses "lost in the middle" problem
+  * Total estimated time: 22-35 hours (3-5 days)
+  
+- docs/webapp_refactoring_prompts.md
+  * Ready-to-use prompts for each sprint
+  * Copy-paste format for AI model execution
+  * Includes context, role, tasks, and success criteria
+  * Facilitates consistent execution across sprints
+
+- Updated references in:
+  * docs/webapp_refactoring_summary.md
+  * docs/rpg.yaml (planned_improvements section)
 
 ### Configuration
 - config/fees.yml

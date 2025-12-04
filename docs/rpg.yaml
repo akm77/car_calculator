@@ -9,6 +9,8 @@ rpg:
     architecture: "Модульная архитектура с разделением на слои: API, Calculation Engine, Bot, Services"
     supported_countries: ["japan", "korea", "uae", "china", "georgia"]
     recent_changes:
+      - date: "2025-12-05"
+        description: "SPRINT 0 завершён: Создана модульная структура webapp (css/, js/{config,utils,modules}/), бэкап index.html, обновлён main.py для раздачи статики"
       - date: "2025-12-04"
         description: "Добавлена поддержка страны Georgia (Грузия) с полной интеграцией в API, WebApp и тесты"
       - date: "2025-12-04"
@@ -22,7 +24,8 @@ rpg:
       - priority: "HIGH"
         component: "app_webapp"
         description: "Рефакторинг монолитного index.html (1548 строк) на модульную структуру"
-        reference: "docs/webapp_refactoring_plan.md"
+        reference: "docs/webapp_refactoring_sprints.md"
+        detailed_plan: "docs/webapp_refactoring_plan.md"
         estimated_time: "3-5 дней"
         benefits:
           - "Каждый модуль < 300 строк"
@@ -64,6 +67,20 @@ rpg:
       - name: "app_webapp"
         path: "app/webapp"
         description: "Статический PWA фронтенд (index.html с динамической генерацией списка стран из /api/meta, manifest, sw.js, ассеты); populateCountries() загружает страны при инициализации"
+        structure:
+          - "index.html - главная страница (будет минимизирована после рефакторинга)"
+          - "index.html.backup - резервная копия монолитной версии (1548 строк)"
+          - "css/ - стили (variables, base, components, telegram)"
+          - "js/config/ - конфигурация (constants.js, messages.js)"
+          - "js/utils/ - утилиты (formatters.js, dom.js, debounce.js)"
+          - "js/modules/ - бизнес-логика (validator.js, api.js, ui.js, results.js, calculator.js)"
+          - "manifest.json, sw.js - PWA манифест и service worker"
+          - "*.png - иконки и скриншоты"
+        refactoring_status:
+          stage: "SPRINT_0_COMPLETED"
+          date: "2025-12-05"
+          description: "Создана базовая структура папок, бэкап, README.md, обновлён main.py"
+          next_stage: "SPRINT_1_CSS_EXTRACTION"
       - name: "config_data"
         path: "config"
         description: "YAML-конфиги тарифов: fees.yml, commissions.yml, rates.yml, duties.yml"
