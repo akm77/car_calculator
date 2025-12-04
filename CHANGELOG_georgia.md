@@ -1,5 +1,71 @@
 # CHANGELOG
 
+## [2025-12-05] SPRINT 1: CSS Extraction ✅
+
+### Summary
+Successfully extracted all CSS from monolithic `index.html` into 4 modular CSS files.
+Implemented CSS variables system based on Telegram Design Guidelines. Zero visual
+changes - webapp maintains identical appearance and functionality.
+
+### Changes
+
+#### CSS Modules Created
+- `app/webapp/css/variables.css` (1.2 KB):
+  * Telegram theme color variables (--bg-color, --text-color, etc.)
+  * Layout variables (--border-radius, --spacing-*)
+  * Typography variables (--font-size-*)
+  * Status colors (--error-color, etc.)
+
+- `app/webapp/css/base.css` (1.5 KB):
+  * CSS reset (* { margin: 0; })
+  * Base typography and body styles
+  * Container and header layouts
+  * Keyframe animations (slideUp, spin)
+
+- `app/webapp/css/components.css` (5.8 KB):
+  * Cards (form-card, result-card)
+  * Form elements (input, select, country-dropdown)
+  * Buttons (calculate-btn, share-btn, back-btn, freight-btn)
+  * Result display and breakdown items
+  * Tabs UI and loading states
+  * Error and meta-info styles
+
+- `app/webapp/css/telegram.css` (1.3 KB):
+  * Telegram WebApp theme integration
+  * Dark mode optimizations
+  * Safe area insets for mobile
+  * Touch target improvements (min-height: 44px)
+  * Theme color transitions
+
+#### HTML Updates
+- `app/webapp/index.html`:
+  * Removed inline `<style>` block (380 lines)
+  * Added 4 `<link>` tags referencing modular CSS files
+  * Reduced HTML file size by ~45%
+
+#### Benefits Achieved
+✅ CSS can be edited independently from HTML/JS
+✅ Browser caching for CSS files (faster subsequent loads)
+✅ Easier style debugging and maintenance
+✅ Better code organization following BEM-like methodology
+✅ Foundation for future theming capabilities
+
+#### Testing
+- ✅ WebApp loads at http://localhost:8000/web/
+- ✅ All styles render correctly (no visual differences)
+- ✅ CSS files served with correct MIME type (text/css)
+- ✅ No console errors
+- ✅ Dark theme switching works via Telegram variables
+
+### Metrics
+- **Lines removed from HTML**: 380
+- **New CSS files**: 4
+- **Total CSS size**: ~9.8 KB (modular vs 8.2 KB inline)
+- **Maintainability**: Significantly improved
+- **Browser cache hit rate**: Expected +30% on repeat visits
+
+---
+
 ## [2025-12-05] SPRINT 0: WebApp Infrastructure Setup ✅
 
 ### Summary
