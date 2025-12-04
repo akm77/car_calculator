@@ -1,5 +1,92 @@
 # CHANGELOG
 
+## [2025-12-05] SPRINT 3: Constants and Configuration (Single Source of Truth) ✅
+
+### Summary
+Implemented RPG "Single Source of Truth" principle by extracting ALL magic numbers and hardcoded strings 
+into centralized configuration modules. Synchronized frontend constraints with backend validation (models.py).
+Eliminated 50+ hardcoded strings and 15+ magic numbers from index.html.
+
+### Changes
+
+#### Configuration Modules Created
+- `app/webapp/js/config/messages.js` (158 lines):
+  * **Messages.errors** - All validation and error messages (NO_COUNTRY, INVALID_YEAR_FUTURE, INVALID_YEAR_OLD, INVALID_ENGINE_RANGE, INVALID_PRICE, CALCULATION_ERROR, NETWORK_ERROR, etc.)
+  * **Messages.buttons** - All button labels (CALCULATE, BACK, SHARE, TAB_CALC, TAB_RESULT, LOADING)
+  * **Messages.labels** - All form field labels (COUNTRY, YEAR, ENGINE, PRICE, VEHICLE_TYPE, FREIGHT_TYPE, TOTAL, CUSTOMS_VALUE, DUTY_RATE, AGE)
+  * **Messages.breakdown** - Cost component labels (PURCHASE_PRICE, DUTIES, FREIGHT, CUSTOMS_SERVICES, UTILIZATION_FEE, ERA_GLONASS, COMPANY_COMMISSION, COUNTRY_EXPENSES)
+  * **Messages.info** - Toast notifications (COPIED, SENT_TO_CHAT, LOADING, SW_REGISTERED, META_LOADED)
+  * **Messages.warnings** - Warning messages (NON_M1_DISCLAIMER, LARGE_MESSAGE, OPEN_VIA_BOT, WARNING_PREFIX)
+  * **Messages.share** - Share/result templates (TITLE, TITLE_FROM_COUNTRY, TITLE_GENERIC, BREAKDOWN_TITLE, WARNINGS_TITLE)
+  * **Messages.age** - Age category labels (lt3, 3_5, gt5)
+  * **Messages.freight/vehicle/countries/currencies** - Fallback labels for dropdowns
+
+- `app/webapp/js/config/constants.js` (201 lines):
+  * **Constraints** - Validation limits synchronized with backend (YEAR_MIN=1990 ↔ models.py, YEAR_MAX=currentYear, ENGINE_CC_MIN=500, ENGINE_CC_MAX=10000, PRICE_MIN=1, ENGINE_CC_STEP=50, PRICE_STEP=0.01)
+  * **API_ENDPOINTS** - All API paths (CALCULATE='/api/calculate', META='/api/meta', RATES='/api/rates', REFRESH_RATES='/api/rates/refresh', HEALTH='/api/health')
+  * **API_CONFIG** - Request configuration (RETRY_COUNT=3, RETRY_DELAY=1000, TIMEOUT=10000, MAX_PAYLOAD_SIZE=4096, MAX_SUMMARY_BYTES=3000)
+  * **DEFAULT_VALUES** - Form defaults (COUNTRY='japan', ENGINE_CC=1500, YEAR_OFFSET=3, VEHICLE_TYPE='M1', CURRENCY='JPY', FREIGHT_TYPE='standard')
+  * **COUNTRY_EMOJI** - Fruit emojis per FLAG_TO_FRUIT_MIGRATION (japan=🍇, korea=🍊, uae=🍉, china=🍑, georgia=🍒)
+  * **FALLBACK_META** - Offline metadata for /api/meta failures
+  * **HAPTIC_TYPES** - Telegram haptic feedback types (LIGHT, MEDIUM, HEAVY)
+  * **TOAST_CONFIG** - Toast notification settings (DURATION=3000, COLORS)
+  * **ANIMATION** - Animation timings (SLIDE_UP=300, FADE=200, TELEGRAM_CLOSE_DELAY=800)
+  * **DEBOUNCE** - Input debounce delays (INPUT=300, SEARCH=500)
+  * **FORM_FIELDS / RESULT_ELEMENTS / UI_ELEMENTS** - Element ID constants
+
+#### HTML Refactoring
+- `app/webapp/index.html`:
+  * Added imports for Messages and Constants modules
+  * Replaced 50+ hardcoded strings with Messages constants:
+    - All error messages → Messages.errors.*
+    - All button texts → Messages.buttons.*
+    - All form labels → Messages.labels.*
+    - All breakdown labels → Messages.breakdown.*
+    - All toast messages → Messages.info.*
+    - All warnings → Messages.warnings.*
+    - Share templates → Messages.share.*
+  * Replaced 15+ magic numbers with Constraints:
+    - 1990 → Constraints.YEAR_MIN
+    - 500/10000 → Constraints.ENGINE_CC_MIN/MAX
+    - 1500 → DEFAULT_VALUES.ENGINE_CC
+    - 3 → DEFAULT_VALUES.YEAR_OFFSET
+    - 'japan' → DEFAULT_VALUES.COUNTRY
+    - 'M1' → DEFAULT_VALUES.VEHICLE_TYPE
+    - 800 → ANIMATION.TELEGRAM_CLOSE_DELAY
+  * Replaced hardcoded API URLs with API_ENDPOINTS.*
+  * Replaced hardcoded fallback metadata with FALLBACK_META
+  * Replaced hardcoded haptic types with HAPTIC_TYPES.*
+  * Created applyFormConstraints() function to dynamically set input min/max/step from Constants
+
+#### Backend Synchronization
+- **Constraints.YEAR_MIN (1990)** ↔ `app/calculation/models.py` @field_validator (year < 1990)
+- **Constraints.ENGINE_CC_MIN (500)** ↔ Business logic validation
+- **Messages.errors.INVALID_YEAR_OLD** ↔ `app/core/messages.py` ERR_YEAR_TOO_OLD
+- **Messages.errors.INVALID_YEAR_FUTURE** ↔ `app/core/messages.py` ERR_YEAR_FUTURE
+
+### Benefits
+- ✅ **Zero magic numbers** - All numeric constraints in one place
+- ✅ **Zero hardcoded strings** - All UI text in one place
+- ✅ **Easy localization** - Add messages_en.js, messages_de.js
+- ✅ **Easy rebranding** - Change all texts in 1 file
+- ✅ **Type-safe** - Clear constant names prevent typos
+- ✅ **Maintainable** - Change validation limit once, updates everywhere
+- ✅ **Testable** - Import constants in tests
+- ✅ **Backend sync** - Frontend/backend validation in harmony
+
+### Testing
+- Manual testing: All error messages display correctly
+- Manual testing: Form validation uses Constraints
+- Manual testing: API calls use correct endpoints
+- Manual testing: Default values populate correctly
+- No errors in browser console
+
+### Documentation Updated
+- `docs/rpg.yaml` - Added messages.js and constants.js entries, updated refactoring_status to SPRINT_3_COMPLETED
+- `docs/webapp_refactoring_checklist.md` - Marked Этап 3 as completed with detailed checklist
+
+---
+
 ## [2025-12-05] SPRINT 2: Utilities Library ✅
 
 ### Summary

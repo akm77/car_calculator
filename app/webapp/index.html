@@ -32,7 +32,7 @@
                     <label>Страна покупки <span class="required">*</span></label>
                     <div class="country-selector">
                         <select id="countrySelect" class="country-dropdown" required>
-                            <option value="">Выберите страну</option>
+                            <option value="" id="countryPlaceholder">Выберите страну</option>
                             <!-- Страны загружаются динамически из /api/meta -->
                         </select>
                     </div>
@@ -40,12 +40,12 @@
 
                 <div class="form-group">
                     <label for="year">Год выпуска <span class="required">*</span></label>
-                    <input type="number" id="year" name="year" min="1990" max="2025" required>
+                    <input type="number" id="year" name="year" min="1990" max="2025" required data-constraint-year>
                 </div>
 
                 <div class="form-group">
                     <label for="engineCc">Объем двигателя (см³) <span class="required">*</span></label>
-                    <input type="number" id="engineCc" name="engineCc" min="500" max="10000" step="50" required>
+                    <input type="number" id="engineCc" name="engineCc" min="500" max="10000" step="50" required data-constraint-engine>
                 </div>
 
                 <div class="form-group">
@@ -116,14 +116,28 @@
         import * as dom from '/static/js/utils/dom.js';
 
         // =====================================================================
+        // Import configuration modules (RPG Sprint 3)
+        // =====================================================================
+        import { Messages } from '/static/js/config/messages.js';
+        import {
+            Constraints,
+            API_ENDPOINTS,
+            API_CONFIG,
+            DEFAULT_VALUES,
+            FALLBACK_META,
+            HAPTIC_TYPES,
+            ANIMATION
+        } from '/static/js/config/constants.js';
+
+        // =====================================================================
         // Enhanced API and Security Layer with ngrok bypass
         // =====================================================================
         class SecureAPI {
             constructor() {
                 this.baseURL = this.resolveBaseURL();
-                this.retryAttempts = 3;
-                this.retryDelay = 1000;
-                this.timeout = 10000;
+                this.retryAttempts = API_CONFIG.RETRY_COUNT;
+                this.retryDelay = API_CONFIG.RETRY_DELAY;
+                this.timeout = API_CONFIG.TIMEOUT;
                 this.csrfToken = null;
                 this.initCSRF();
             }
@@ -292,7 +306,7 @@
             }
 
             setupEventListeners() {
-                this.tg.MainButton.setText('Рассчитать стоимость');
+                this.tg.MainButton.setText(Messages.buttons.CALCULATE);
                 this.tg.MainButton.onClick(() => {
                     const event = new Event('submit', { bubbles: true, cancelable: true });
                     document.getElementById('calculatorForm').dispatchEvent(event);
@@ -314,7 +328,7 @@
                 });
             }
 
-            showMainButton(text = 'Рассчитать стоимость') {
+            showMainButton(text = Messages.buttons.CALCULATE) {
                 if (!this.isValid) return;
                 this.tg.MainButton.setText(text);
                 this.tg.MainButton.show();
@@ -411,7 +425,7 @@
                     payload = JSON.stringify(minimal);
                     size = this.byteLength(payload);
                     console.warn('[Telegram] Trimmed payload size:', size, 'bytes');
-                    try { this.showAlert('Сообщение слишком большое — отправляем краткую сводку'); } catch (_) {}
+                    try { this.showAlert(Messages.warnings.LARGE_MESSAGE); } catch (_) {}
                 }
                 try {
                     console.log('[DEBUG] Calling tg.sendData...');
@@ -420,7 +434,7 @@
                     return true;
                 } catch (error) {
                     console.error('Failed to send data to Telegram:', error);
-                    try { this.showAlert('Ошибка отправки данных'); } catch (_) {}
+                    try { this.showAlert(Messages.errors.SEND_DATA_FAILED); } catch (_) {}
                     return false;
                 }
             }
@@ -496,13 +510,13 @@
             calcTabBtn.className = 'tab-btn active';
             calcTabBtn.id = 'calcTabBtn';
             calcTabBtn.dataset.tab = 'calcTab';
-            calcTabBtn.textContent = 'Расчёт';
+            calcTabBtn.textContent = Messages.buttons.TAB_CALC;
 
             const resultTabBtn = document.createElement('button');
             resultTabBtn.className = 'tab-btn';
             resultTabBtn.id = 'resultTabBtn';
             resultTabBtn.dataset.tab = 'resultTab';
-            resultTabBtn.textContent = 'Результат';
+            resultTabBtn.textContent = Messages.buttons.TAB_RESULT;
 
             tabNav.append(calcTabBtn, resultTabBtn);
 
@@ -536,7 +550,7 @@
                 backBtn = document.createElement('button');
                 backBtn.id = 'backToCalcBtn';
                 backBtn.className = 'back-btn';
-                backBtn.textContent = '↩️ Вернуться к расчётам';
+                backBtn.textContent = Messages.buttons.BACK;
                 resultCard.appendChild(backBtn);
             }
 
@@ -581,6 +595,7 @@
         // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
             buildTabsUI();
+            applyFormConstraints(); // Применяем константы валидации из config
             loadMetaData();
             setupEventListeners();
             setDefaultValues(); // Устанавливаем значения по умолчанию
@@ -625,27 +640,14 @@
         // Загрузка метаданных о странах и типах фрахта
         async function loadMetaData() {
             try {
-                const response = await api.get('/api/meta');
+                const response = await api.get(API_ENDPOINTS.META);
                 metaData = response;
                 console.log('Meta data loaded:', metaData);
                 populateCountries(); // Заполняем список стран после загрузки
             } catch (error) {
                 console.error('Failed to load meta data:', error);
-                // Fallback data for offline usage
-                metaData = {
-                    countries: [
-                        { code: 'japan', label: 'Япония', emoji: '🍇', purchase_currency: 'JPY', freight_types: ['standard'] },
-                        { code: 'korea', label: 'Корея', emoji: '🍊', purchase_currency: 'USD', freight_types: ['standard'] },
-                        { code: 'uae', label: 'ОАЭ', emoji: '🍉', purchase_currency: 'AED', freight_types: ['open', 'container'] },
-                        { code: 'china', label: 'Китай', emoji: '🍑', purchase_currency: 'USD', freight_types: ['open'] },
-                        { code: 'georgia', label: 'Грузия', emoji: '🍒', purchase_currency: 'USD', freight_types: ['open'] }
-                    ],
-                    freight_type_labels: {
-                        standard: 'Стандартный',
-                        open: 'Открытый',
-                        container: 'Контейнер'
-                    }
-                };
+                // Fallback data for offline usage (from constants.js)
+                metaData = FALLBACK_META;
                 populateCountries(); // Заполняем список стран из fallback данных
             }
         }
@@ -663,7 +665,7 @@
             } else {
                 const opt = document.createElement('option');
                 opt.value = '';
-                opt.textContent = 'Выберите страну';
+                opt.textContent = Messages.placeholders.SELECT_COUNTRY;
                 select.appendChild(opt);
             }
 
@@ -685,26 +687,48 @@
             yearInput.value = new Date().getFullYear();
         }
 
+        // Apply constraint values to form inputs from Constants
+        function applyFormConstraints() {
+            const yearInput = document.getElementById('year');
+            if (yearInput) {
+                yearInput.min = Constraints.YEAR_MIN;
+                yearInput.max = Constraints.YEAR_MAX();
+            }
+
+            const engineInput = document.getElementById('engineCc');
+            if (engineInput) {
+                engineInput.min = Constraints.ENGINE_CC_MIN;
+                engineInput.max = Constraints.ENGINE_CC_MAX;
+                engineInput.step = Constraints.ENGINE_CC_STEP;
+            }
+
+            const priceInput = document.getElementById('purchasePrice');
+            if (priceInput) {
+                priceInput.min = Constraints.PRICE_MIN;
+                priceInput.step = Constraints.PRICE_STEP;
+            }
+        }
+
         // Установка значений по умолчанию
         function setDefaultValues() {
             const currentYear = new Date().getFullYear();
 
-            // Устанавливаем год выпуска (текущий год - 3)
+            // Устанавливаем год выпуска (текущий год - DEFAULT_VALUES.YEAR_OFFSET)
             const yearInput = document.getElementById('year');
-            yearInput.value = currentYear - 3;
+            yearInput.value = currentYear - DEFAULT_VALUES.YEAR_OFFSET;
 
-            // Устанавливаем объем двигателя 1500 см³
+            // Устанавливаем объем двигателя (DEFAULT_VALUES.ENGINE_CC)
             const engineInput = document.getElementById('engineCc');
-            engineInput.value = 1500;
+            engineInput.value = DEFAULT_VALUES.ENGINE_CC;
 
-            // Устанавливаем страну Япония по умолчанию
+            // Устанавливаем страну по умолчанию (DEFAULT_VALUES.COUNTRY)
             const countrySelect = document.getElementById('countrySelect');
-            countrySelect.value = 'japan';
-            selectCountry('japan');
+            countrySelect.value = DEFAULT_VALUES.COUNTRY;
+            selectCountry(DEFAULT_VALUES.COUNTRY);
 
-            // Тип ТС по умолчанию — M1
+            // Тип ТС по умолчанию (DEFAULT_VALUES.VEHICLE_TYPE)
             const vehicleTypeSelect = document.getElementById('vehicleType');
-            vehicleTypeSelect.value = 'M1';
+            vehicleTypeSelect.value = DEFAULT_VALUES.VEHICLE_TYPE;
         }
 
         // Настройка обработчиков событий
@@ -714,7 +738,7 @@
                 const country = this.value;
                 if (country) {
                     selectCountry(country);
-                    telegram.hapticFeedback('light');
+                    telegram.hapticFeedback(HAPTIC_TYPES.LIGHT);
                 }
             });
 
@@ -791,7 +815,7 @@
 
                 btn.addEventListener('click', function() {
                     selectFreightType(type);
-                    telegram.hapticFeedback('light');
+                    telegram.hapticFeedback(HAPTIC_TYPES.LIGHT);
                 });
 
                 freightGrid.appendChild(btn);
@@ -821,7 +845,7 @@
             const formData = new FormData(document.getElementById('calculatorForm'));
             const isValid = formData.get('year') && formData.get('engineCc') && formData.get('purchasePrice');
             if (isValid) {
-                telegram.showMainButton('Рассчитать стоимость');
+                telegram.showMainButton(Messages.buttons.CALCULATE);
             } else {
                 telegram.hideMainButton();
             }
@@ -831,21 +855,21 @@
             const year = parseInt(document.getElementById('year').value);
             const currentYear = new Date().getFullYear();
             if (year > currentYear) {
-                showError('Год выпуска не может быть больше текущего');
+                showError(Messages.errors.INVALID_YEAR_FUTURE);
                 return false;
             }
-            if (year < 1990) {
-                showError('Год выпуска должен быть не менее 1990');
+            if (year < Constraints.YEAR_MIN) {
+                showError(Messages.errors.INVALID_YEAR_OLD);
                 return false;
             }
             const engineCc = parseInt(document.getElementById('engineCc').value);
-            if (engineCc < 500 || engineCc > 10000) {
-                showError('Объем двигателя должен быть от 500 до 10000 см³');
+            if (engineCc < Constraints.ENGINE_CC_MIN || engineCc > Constraints.ENGINE_CC_MAX) {
+                showError(Messages.errors.INVALID_ENGINE_RANGE);
                 return false;
             }
             const price = parseFloat(document.getElementById('purchasePrice').value);
             if (price <= 0) {
-                showError('Цена покупки должна быть больше 0');
+                showError(Messages.errors.INVALID_PRICE);
                 return false;
             }
             return true;
@@ -853,7 +877,7 @@
 
         async function calculateCost() {
             if (!selectedCountry) {
-                showError('Пожалуйста, выберите страну покупки');
+                showError(Messages.errors.NO_COUNTRY);
                 return;
             }
             if (!validateForm()) return;
@@ -866,7 +890,7 @@
                 purchase_price: parseFloat(formData.get('purchasePrice')),
                 currency: formData.get('currency'),
                 freight_type: selectedFreightType,
-                vehicle_type: formData.get('vehicleType') || 'M1'
+                vehicle_type: formData.get('vehicleType') || DEFAULT_VALUES.VEHICLE_TYPE
             };
 
             showLoading(true);
@@ -875,17 +899,17 @@
 
             try {
                 telegram.setMainButtonLoading(true);
-                const result = await api.post('/api/calculate', requestData);
+                const result = await api.post(API_ENDPOINTS.CALCULATE, requestData);
                 displayResult(result);
                 if (telegram.isInTelegram()) {
-                    telegram.hapticFeedback('medium');
+                    telegram.hapticFeedback(HAPTIC_TYPES.MEDIUM);
                     telegram.hideMainButton();
                     telegram.showBackButton();
                 }
             } catch (error) {
                 console.error('Calculation error:', error);
-                showError('Ошибка расчета: ' + error.message);
-                telegram.hapticFeedback('heavy');
+                showError(Messages.errors.CALCULATION_ERROR + ': ' + error.message);
+                telegram.hapticFeedback(HAPTIC_TYPES.HEAVY);
             } finally {
                 showLoading(false);
                 telegram.setMainButtonLoading(false);
@@ -900,14 +924,14 @@
             breakdownDiv.innerHTML = '';
 
             const items = [
-                { label: 'Закупочная стоимость', amount: breakdown.purchase_price_rub },
-                { label: 'Расходы в стране', amount: breakdown.country_expenses_rub },
-                { label: 'Фрахт', amount: breakdown.freight_rub },
-                { label: 'Таможенная пошлина', amount: breakdown.duties_rub },
-                { label: 'Таможенное оформление', amount: breakdown.customs_services_rub },
-                { label: 'Утилизационный сбор', amount: breakdown.utilization_fee_rub },
-                { label: 'Эра-Глонасс', amount: breakdown.era_glonass_rub },
-                { label: 'Вознаграждение компании', amount: breakdown.company_commission_rub }
+                { label: Messages.breakdown.PURCHASE_PRICE, amount: breakdown.purchase_price_rub },
+                { label: Messages.breakdown.COUNTRY_EXPENSES, amount: breakdown.country_expenses_rub },
+                { label: Messages.breakdown.FREIGHT, amount: breakdown.freight_rub },
+                { label: Messages.breakdown.DUTIES, amount: breakdown.duties_rub },
+                { label: Messages.breakdown.CUSTOMS_SERVICES, amount: breakdown.customs_services_rub },
+                { label: Messages.breakdown.UTILIZATION_FEE, amount: breakdown.utilization_fee_rub },
+                { label: Messages.breakdown.ERA_GLONASS, amount: breakdown.era_glonass_rub },
+                { label: Messages.breakdown.COMPANY_COMMISSION, amount: breakdown.company_commission_rub }
             ];
 
             items.forEach(item => {
@@ -921,7 +945,7 @@
 
             const totalDiv = document.createElement('div');
             totalDiv.className='breakdown-item';
-            totalDiv.innerHTML=`<span class="breakdown-label">ИТОГО</span><span class="breakdown-amount">${formatNumber(breakdown.total_rub)} ₽</span>`;
+            totalDiv.innerHTML=`<span class="breakdown-label">${Messages.labels.TOTAL}</span><span class="breakdown-amount">${formatNumber(breakdown.total_rub)} ₽</span>`;
             breakdownDiv.appendChild(totalDiv);
 
             // Engine/duty details
@@ -935,36 +959,36 @@
             const countryCode = result?.request?.country || selectedCountry;
             if (countryCode) {
                 const countryLabel = getCountryLabel(countryCode);
-                parts.push(`<div>Страна покупки: ${countryLabel}</div>`);
+                parts.push(`<div>${Messages.labels.COUNTRY}: ${countryLabel}</div>`);
             }
 
-            parts.push(`<div>Возраст авто: ${meta.age_years} лет (${getAgeCategory(meta.age_category)})</div>`);
-            parts.push(`<div>Объем двигателя: ${engineDisplay}</div>`);
+            parts.push(`<div>${Messages.labels.AGE}: ${meta.age_years} лет (${getAgeCategory(meta.age_category)})</div>`);
+            parts.push(`<div>${Messages.labels.ENGINE}: ${engineDisplay}</div>`);
 
             // Duty details
             if (meta.customs_value_eur != null) {
-                parts.push(`<div>Таможенная стоимость: ${formatNumber(Math.round(meta.customs_value_eur))} €</div>`);
+                parts.push(`<div>${Messages.labels.CUSTOMS_VALUE}: ${formatNumber(Math.round(meta.customs_value_eur))} €</div>`);
             }
             if (meta.duty_formula_mode === 'percent') {
                 if (meta.duty_percent != null) {
-                    parts.push(`<div>Пошлина: ${Math.round(meta.duty_percent * 100)}% от стоимости (минимум по €/см³)</div>`);
+                    parts.push(`<div>${Messages.labels.DUTY}: ${Math.round(meta.duty_percent * 100)}% от стоимости (минимум по €/см³)</div>`);
                 }
                 if (meta.duty_min_rate_eur_per_cc != null) {
-                    parts.push(`<div>Мин. ставка: ${meta.duty_min_rate_eur_per_cc} €/см³</div>`);
+                    parts.push(`<div>${Messages.labels.MIN_RATE}: ${meta.duty_min_rate_eur_per_cc} €/см³</div>`);
                 }
                 if (meta.duty_value_bracket_max_eur != null) {
-                    parts.push(`<div>Диапазон до: ${formatNumber(meta.duty_value_bracket_max_eur)} €</div>`);
+                    parts.push(`<div>${Messages.duty.VALUE_BRACKET}: ${formatNumber(meta.duty_value_bracket_max_eur)} €</div>`);
                 }
             } else if (meta.duty_formula_mode === 'per_cc' && meta.duty_rate_eur_per_cc != null) {
-                parts.push(`<div>Ставка пошлины: ${meta.duty_rate_eur_per_cc} €/см³</div>`);
+                parts.push(`<div>${Messages.labels.DUTY_RATE}: ${meta.duty_rate_eur_per_cc} €/см³</div>`);
             }
 
-            if (meta.vehicle_type && meta.vehicle_type !== 'M1') {
-                parts.push('<div style="color:#e67e22;margin-top:8px;">Расчет выполнен с допущениями для не-M1. Уточните условия у поддержки.</div>');
+            if (meta.vehicle_type && meta.vehicle_type !== DEFAULT_VALUES.VEHICLE_TYPE) {
+                parts.push(`<div style="color:#e67e22;margin-top:8px;">${Messages.warnings.NON_M1_DISCLAIMER}</div>`);
             }
 
             if (meta.warnings && meta.warnings.length) {
-                parts.push('<div style="color:#e74c3c;margin-top:8px;">⚠️ ' + meta.warnings.map(w=>w.message).join('<br>⚠️ ') + '</div>');
+                parts.push('<div style="color:#e74c3c;margin-top:8px;">' + Messages.warnings.WARNING_PREFIX + meta.warnings.map(w=>w.message).join('<br>' + Messages.warnings.WARNING_PREFIX) + '</div>');
             }
 
             const metaDiv = document.getElementById('metaInfo');
@@ -975,7 +999,7 @@
             window.lastCalculationResult = result;
         }
 
-        // Resolve country code to label (prefers API meta, falls back to local map)
+        // Resolve country code to label (prefers API meta, falls back to Messages.countries)
         function getCountryLabel(code) {
             try {
                 if (metaData && Array.isArray(metaData.countries)) {
@@ -983,8 +1007,7 @@
                     if (entry) return (entry.emoji ? entry.emoji + ' ' : '') + (entry.label || code);
                 }
             } catch (e) { /* ignore */ }
-            const fallback = { japan: '🇯🇵 Япония', korea: '🇰🇷 Корея', uae: '🇦🇪 ОАЭ', china: '🇨🇳 Китай' };
-            return fallback[code] || code;
+            return Messages.countries[code] || code;
         }
         function shareResult() {
             if (!window.lastCalculationResult) return;
@@ -1002,38 +1025,38 @@
             const countryLabel = countryCode ? getCountryLabel(countryCode) : '';
 
             const lines = [];
-            lines.push('🚗 Расчет растаможки');
-            if (countryLabel) lines.push(`Страна покупки: ${countryLabel}`);
-            if (r.year) lines.push(`Год выпуска: ${r.year}`);
-            if (r.engine_cc) lines.push(`Объем двигателя: ${r.engine_cc} см³`);
-            if (r.purchase_price && r.currency) lines.push(`Цена покупки: ${fnum(r.purchase_price)} ${r.currency}`);
-            if (r.freight_type) lines.push(`Тип фрахта: ${r.freight_type}`);
-            if (m.age_years !== undefined && m.age_category) lines.push(`Возраст: ${m.age_years} лет (${getAgeCategory(m.age_category)})`);
+            lines.push(Messages.share.TITLE);
+            if (countryLabel) lines.push(`${Messages.labels.COUNTRY}: ${countryLabel}`);
+            if (r.year) lines.push(`${Messages.labels.YEAR}: ${r.year}`);
+            if (r.engine_cc) lines.push(`${Messages.labels.ENGINE}: ${r.engine_cc} см³`);
+            if (r.purchase_price && r.currency) lines.push(`${Messages.labels.PRICE}: ${fnum(r.purchase_price)} ${r.currency}`);
+            if (r.freight_type) lines.push(`${Messages.labels.FREIGHT_TYPE}: ${r.freight_type}`);
+            if (m.age_years !== undefined && m.age_category) lines.push(`${Messages.labels.AGE}: ${m.age_years} лет (${getAgeCategory(m.age_category)})`);
             lines.push('');
-            lines.push('Детализация:');
-            if (b.purchase_price_rub) lines.push(`• Цена покупки: ${fnum(b.purchase_price_rub)} ₽`);
-            if (b.duties_rub) lines.push(`• Таможенная пошлина: ${fnum(b.duties_rub)} ₽`);
-            if (b.utilization_fee_rub) lines.push(`• Утилизационный сбор: ${fnum(b.utilization_fee_rub)} ₽`);
-            if (b.customs_services_rub) lines.push(`• Таможенное оформление: ${fnum(b.customs_services_rub)} ₽`);
-            if (b.era_glonass_rub) lines.push(`• Эра-Глонасс: ${fnum(b.era_glonass_rub)} ₽`);
-            if (b.freight_rub) lines.push(`• Фрахт: ${fnum(b.freight_rub)} ₽`);
-            if (b.country_expenses_rub) lines.push(`• Расходы в стране: ${fnum(b.country_expenses_rub)} ₽`);
-            if (b.company_commission_rub) lines.push(`• Комиссия компании: ${fnum(b.company_commission_rub)} ₽`);
+            lines.push(Messages.share.BREAKDOWN_TITLE);
+            if (b.purchase_price_rub) lines.push(`• ${Messages.breakdown.PURCHASE_PRICE}: ${fnum(b.purchase_price_rub)} ₽`);
+            if (b.duties_rub) lines.push(`• ${Messages.breakdown.DUTIES}: ${fnum(b.duties_rub)} ₽`);
+            if (b.utilization_fee_rub) lines.push(`• ${Messages.breakdown.UTILIZATION_FEE}: ${fnum(b.utilization_fee_rub)} ₽`);
+            if (b.customs_services_rub) lines.push(`• ${Messages.breakdown.CUSTOMS_SERVICES}: ${fnum(b.customs_services_rub)} ₽`);
+            if (b.era_glonass_rub) lines.push(`• ${Messages.breakdown.ERA_GLONASS}: ${fnum(b.era_glonass_rub)} ₽`);
+            if (b.freight_rub) lines.push(`• ${Messages.breakdown.FREIGHT}: ${fnum(b.freight_rub)} ₽`);
+            if (b.country_expenses_rub) lines.push(`• ${Messages.breakdown.COUNTRY_EXPENSES}: ${fnum(b.country_expenses_rub)} ₽`);
+            if (b.company_commission_rub) lines.push(`• ${Messages.breakdown.COMPANY_COMMISSION}: ${fnum(b.company_commission_rub)} ₽`);
             if (b.total_rub) {
                 lines.push('');
-                lines.push(`ИТОГО: ${fnum(b.total_rub)} ₽`);
+                lines.push(`${Messages.labels.TOTAL}: ${fnum(b.total_rub)} ₽`);
             }
             if (Array.isArray(m.warnings) && m.warnings.length) {
                 lines.push('');
-                lines.push('Предупреждения:');
+                lines.push(Messages.share.WARNINGS_TITLE);
                 m.warnings.forEach(w => lines.push(`• ${w.message}`));
             }
             const detailText = lines.join('\n');
 
             // Short share text now contains country
             const shareText = countryLabel
-                ? `🚗 Расчет растаможки из ${countryLabel}: ${resultStr}`
-                : `🚗 Расчет растаможки: ${resultStr}`;
+                ? Messages.share.TITLE_FROM_COUNTRY.replace('{country}', countryLabel).replace('{total}', resultStr)
+                : Messages.share.TITLE_GENERIC.replace('{total}', resultStr);
 
             // Check if we're in Telegram
             const inTelegram = telegram.isInTelegram();
@@ -1072,9 +1095,9 @@
             // Copy to clipboard
             doCopy(detailText).then((copied) => {
                 if (copied) {
-                    showToast('Результат скопирован в буфер обмена', 'success');
+                    showToast(Messages.info.COPIED, 'success');
                 } else {
-                    showToast('Не удалось скопировать', 'error');
+                    showToast(Messages.errors.COPY_FAILED, 'error');
                 }
             });
 
@@ -1104,23 +1127,23 @@
                     const sent = telegram.sendDataSafe(telegramData);
 
                     if (sent) {
-                        showToast('Результат отправлен в чат', 'success');
-                        telegram.hapticFeedback('medium');
+                        showToast(Messages.info.SENT_TO_CHAT, 'success');
+                        telegram.hapticFeedback(HAPTIC_TYPES.MEDIUM);
 
                         setTimeout(() => {
                             try { telegram.close(); } catch (e) { console.warn('Failed to close WebApp:', e); }
-                        }, 800);
+                        }, ANIMATION.TELEGRAM_CLOSE_DELAY);
                     } else {
-                        showToast('Не удалось отправить в чат', 'error');
-                        telegram.hapticFeedback('heavy');
+                        showToast(Messages.errors.SEND_FAILED, 'error');
+                        telegram.hapticFeedback(HAPTIC_TYPES.HEAVY);
                     }
                 } catch (e) {
                     console.error('Exception while sending to Telegram:', e);
-                    showToast('Ошибка отправки в Telegram', 'error');
-                    telegram.hapticFeedback('heavy');
+                    showToast(Messages.errors.TELEGRAM_SEND_ERROR, 'error');
+                    telegram.hapticFeedback(HAPTIC_TYPES.HEAVY);
 
                     if (window.Telegram?.WebApp?.showAlert) {
-                        window.Telegram.WebApp.showAlert('Чтобы отправка работала, откройте калькулятор через кнопку в чате бота');
+                        window.Telegram.WebApp.showAlert(Messages.warnings.OPEN_VIA_BOT);
                     }
                 }
             }

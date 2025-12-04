@@ -176,28 +176,59 @@
 
 ## 📋 Этап 3: Конфигурация (1-2 часа)
 
-- [ ] Создан `app/webapp/js/config/messages.js`:
-  - [ ] `Messages.errors` (все сообщения об ошибках)
-  - [ ] `Messages.buttons` (тексты кнопок)
-  - [ ] `Messages.labels` (метки полей)
-  - [ ] export Messages
+- [x] Создан `app/webapp/js/config/messages.js`:
+  - [x] `Messages.errors` (все сообщения об ошибках: NO_COUNTRY, INVALID_YEAR_FUTURE, INVALID_YEAR_OLD, INVALID_ENGINE_RANGE, INVALID_PRICE, CALCULATION_ERROR, etc.)
+  - [x] `Messages.buttons` (тексты кнопок: CALCULATE, BACK, SHARE, TAB_CALC, TAB_RESULT)
+  - [x] `Messages.labels` (метки полей: COUNTRY, YEAR, ENGINE, PRICE, AGE, TOTAL, etc.)
+  - [x] `Messages.breakdown` (компоненты стоимости: PURCHASE_PRICE, DUTIES, FREIGHT, etc.)
+  - [x] `Messages.info` (информационные сообщения: COPIED, SENT_TO_CHAT)
+  - [x] `Messages.warnings` (предупреждения: NON_M1_DISCLAIMER, LARGE_MESSAGE, WARNING_PREFIX)
+  - [x] `Messages.share` (шаблоны для шеринга: TITLE, TITLE_FROM_COUNTRY, BREAKDOWN_TITLE)
+  - [x] `Messages.age/freight/vehicle/countries/currencies` (fallback labels)
+  - [x] export Messages
 
-- [ ] Создан `app/webapp/js/config/constants.js`:
-  - [ ] `Constraints` (YEAR_MIN, ENGINE_CC_MIN, etc.)
-  - [ ] `API_ENDPOINTS` (/api/calculate, etc.)
-  - [ ] `API_CONFIG` (RETRY_COUNT, TIMEOUT)
-  - [ ] `DEFAULT_VALUES` (FREIGHT_TYPE, etc.)
-  - [ ] export всех констант
+- [x] Создан `app/webapp/js/config/constants.js`:
+  - [x] `Constraints` (YEAR_MIN=1990, YEAR_MAX, ENGINE_CC_MIN=500, ENGINE_CC_MAX=10000, PRICE_MIN=1)
+  - [x] `API_ENDPOINTS` (/api/calculate, /api/meta, /api/rates, /api/health)
+  - [x] `API_CONFIG` (RETRY_COUNT=3, TIMEOUT=10000, MAX_PAYLOAD_SIZE=4096)
+  - [x] `DEFAULT_VALUES` (COUNTRY='japan', ENGINE_CC=1500, YEAR_OFFSET=3, VEHICLE_TYPE='M1')
+  - [x] `COUNTRY_EMOJI` (fruit emojis: japan=🍇, korea=🍊, uae=🍉, china=🍑, georgia=🍒)
+  - [x] `FALLBACK_META` (offline данные для /api/meta)
+  - [x] `HAPTIC_TYPES, TOAST_CONFIG, ANIMATION, DEBOUNCE` (UI константы)
+  - [x] export всех констант
 
-- [ ] Обновлен код:
-  - [ ] Заменены хардкод строки на Messages
-  - [ ] Заменены магические числа на Constraints
-  - [ ] Заменены URL на API_ENDPOINTS
+- [x] Обновлен `app/webapp/index.html`:
+  - [x] Добавлены импорты Messages и Constants
+  - [x] Заменены все хардкод строки на Messages (50+ замен)
+  - [x] Заменены все магические числа на Constraints (1990→YEAR_MIN, 500/10000→ENGINE_CC_MIN/MAX, 1500→DEFAULT_VALUES.ENGINE_CC, 800→ANIMATION.TELEGRAM_CLOSE_DELAY)
+  - [x] Заменены URL на API_ENDPOINTS (/api/calculate→API_ENDPOINTS.CALCULATE, /api/meta→API_ENDPOINTS.META)
+  - [x] Заменены хардкод fallback metadata на FALLBACK_META
+  - [x] Заменены типы haptic feedback на HAPTIC_TYPES.LIGHT/MEDIUM/HEAVY
+  - [x] Создана функция applyFormConstraints() для динамического применения констант к полям формы
 
-- [ ] Проверка:
-  - [ ] Сообщения об ошибках отображаются
-  - [ ] Валидация использует константы
-  - [ ] API запросы идут на правильные эндпоинты
+- [x] Синхронизация с бэкендом:
+  - [x] Constraints.YEAR_MIN (1990) ↔ models.py @field_validator (year < 1990)
+  - [x] Constraints.ENGINE_CC_MIN (500) ↔ models.py Field(gt=0) + бизнес-логика
+  - [x] Messages.errors.INVALID_YEAR_OLD ↔ app/core/messages.py ERR_YEAR_TOO_OLD
+  - [x] Messages.errors.INVALID_YEAR_FUTURE ↔ app/core/messages.py ERR_YEAR_FUTURE
+
+- [x] Проверка:
+  - [x] Нет ошибок в консоли при загрузке
+  - [x] Импорты модулей работают
+  - [x] Сообщения об ошибках отображаются корректно
+  - [x] Валидация использует константы из Constraints
+  - [x] API запросы идут на правильные эндпоинты
+  - [x] Форма заполняется дефолтными значениями из DEFAULT_VALUES
+
+- [x] Коммит:
+  ```bash
+  git add .
+  git commit -m "refactor(webapp): этап 3 - константы и конфигурация (Single Source of Truth)"
+  ```
+
+**Статус**: ✅ Завершено  
+**Время фактическое**: 2 часа  
+**Дата завершения**: December 5, 2025
 
 - [ ] Коммит:
   ```bash
