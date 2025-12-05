@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Client Test Suite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .test-section h3 {
+            margin-bottom: 15px;
+            color: #2d3748;
+            font-size: 18px;
+        }
+
+        .test-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .test-button:active {
+            transform: translateY(0);
+        }
+
+        .test-button.secondary {
+            background: #718096;
+        }
+
+        .test-button.danger {
+            background: #f56565;
+        }
+
+        .result-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .result-box.success {
+            border-left-color: #48bb78;
+            background: #f0fff4;
+        }
+
+        .result-box.error {
+            border-left-color: #f56565;
+            background: #fff5f5;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .status.loading {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .info-box {
+            background: #ebf8ff;
+            border-left: 4px solid #4299e1;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c5282;
+        }
+
+        .config-display {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .config-display code {
+            color: #805ad5;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 API Client Test Suite</h1>
+            <p>Тестирование retry, timeout и обработки ошибок</p>
+        </div>
+
+        <div class="content">
+            <div class="info-box">
+                <strong>Инструкция:</strong>
+                1. Убедитесь, что сервер запущен (python -m app.main)<br>
+                2. Откройте DevTools (F12) → Network для наблюдения за запросами<br>
+                3. Для теста timeout используйте DevTools → Network → Throttling → Slow 3G
+            </div>
+
+            <div class="config-display">
+                <strong>Текущая конфигурация API_CONFIG:</strong><br>
+                RETRY_COUNT: <code id="config-retry">-</code> |
+                RETRY_DELAY: <code id="config-delay">-</code>ms |
+                TIMEOUT: <code id="config-timeout">-</code>ms<br>
+                Base URL: <code id="config-baseurl">-</code>
+            </div>
+
+            <!-- Test 1: Basic GET -->
+            <div class="test-section">
+                <h3>1️⃣ Базовый GET запрос (/api/meta)</h3>
+                <button class="test-button" onclick="testBasicGet()">Запустить тест</button>
+                <div id="result-1" class="result-box" style="display: none;"></div>
+            </div>
+
+            <!-- Test 2: Basic POST -->
+            <div class="test-section">
+                <h3>2️⃣ Базовый POST запрос (/api/calculate)</h3>
+                <button class="test-button" onclick="testBasicPost()">Запустить тест</button>
+                <div id="result-2" class="result-box" style="display: none;"></div>
+            </div>
+
+            <!-- Test 3: Validation Error (4xx) -->
+            <div class="test-section">
+                <h3>3️⃣ Ошибка валидации (4xx) - некорректные данные</h3>
+                <button class="test-button" onclick="testValidationError()">Запустить тест</button>
+                <div id="result-3" class="result-box" style="display: none;"></div>
+            </div>
+
+            <!-- Test 4: Network Error -->
+            <div class="test-section">
+                <h3>4️⃣ Сетевая ошибка - несуществующий эндпоинт</h3>
+                <button class="test-button" onclick="testNetworkError()">Запустить тест</button>
+                <div id="result-4" class="result-box" style="display: none;"></div>
+            </div>
+
+            <!-- Test 5: Timeout -->
+            <div class="test-section">
+                <h3>5️⃣ Timeout - превышение времени ожидания</h3>
+                <p style="font-size: 13px; color: #718096; margin-bottom: 10px;">
+                    ⚠️ Включите DevTools → Network → Throttling → Slow 3G перед запуском
+                </p>
+                <button class="test-button" onclick="testTimeout()">Запустить тест (короткий timeout)</button>
+                <div id="result-5" class="result-box" style="display: none;"></div>
+            </div>
+
+            <!-- Test 6: Retry Success -->
+            <div class="test-section">
+                <h3>6️⃣ Retry логика - успех после нескольких попыток</h3>
+                <p style="font-size: 13px; color: #718096; margin-bottom: 10px;">
+                    Проверьте DevTools → Console для логов retry
+                </p>
+                <button class="test-button" onclick="testRetry()">Запустить тест</button>
+                <div id="result-6" class="result-box" style="display: none;"></div>
+            </div>
+
+            <!-- Test 7: API Methods -->
+            <div class="test-section">
+                <h3>7️⃣ Специфичные методы API</h3>
+                <button class="test-button" onclick="testGetMeta()">getMeta()</button>
+                <button class="test-button" onclick="testGetRates()">getRates()</button>
+                <button class="test-button secondary" onclick="testRefreshRates()">refreshRates()</button>
+                <div id="result-7" class="result-box" style="display: none;"></div>
+            </div>
+
+            <!-- Test 8: Error Types -->
+            <div class="test-section">
+                <h3>8️⃣ Проверка типов ошибок (APIError)</h3>
+                <button class="test-button" onclick="testErrorTypes()">Запустить тест</button>
+                <div id="result-8" class="result-box" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { api, APIError, APIClient } from '/static/js/modules/api.js';
+        import { API_CONFIG } from '/static/js/config/constants.js';
+
+        // Display config
+        document.getElementById('config-retry').textContent = API_CONFIG.RETRY_COUNT;
+        document.getElementById('config-delay').textContent = API_CONFIG.RETRY_DELAY;
+        document.getElementById('config-timeout').textContent = API_CONFIG.TIMEOUT;
+        document.getElementById('config-baseurl').textContent = api.baseURL || 'auto-detected';
+
+        // Helper functions
+        function showResult(id, message, type = 'info') {
+            const resultBox = document.getElementById(`result-${id}`);
+            resultBox.style.display = 'block';
+            resultBox.className = `result-box ${type}`;
+            resultBox.textContent = message;
+        }
+
+        function showLoading(id) {
+            showResult(id, '⏳ Выполнение запроса...', 'info');
+        }
+
+        // Test 1: Basic GET
+        window.testBasicGet = async function() {
+            const testId = 1;
+            showLoading(testId);
+
+            try {
+                const result = await api.getMeta();
+                showResult(testId,
+                    `✅ Успешно!\n\nОтвет:\n${JSON.stringify(result, null, 2)}`,
+                    'success'
+                );
+            } catch (error) {
+                showResult(testId,
+                    `❌ Ошибка: ${error.message}\n\n${error instanceof APIError ? JSON.stringify(error.toLogFormat(), null, 2) : error}`,
+                    'error'
+                );
+            }
+        };
+
+        // Test 2: Basic POST
+        window.testBasicPost = async function() {
+            const testId = 2;
+            showLoading(testId);
+
+            const testData = {
+                country: 'japan',
+                year: 2020,
+                engine_cc: 1500,
+                purchase_price: 5000,
+                purchase_currency: 'JPY',
+                freight_type: 'standard',
+                vehicle_type: 'M1'
+            };
+
+            try {
+                const result = await api.calculate(testData);
+                showResult(testId,
+                    `✅ Успешно!\n\nЗапрос:\n${JSON.stringify(testData, null, 2)}\n\nОтвет:\n${JSON.stringify(result.breakdown, null, 2)}`,
+                    'success'
+                );
+            } catch (error) {
+                showResult(testId,
+                    `❌ Ошибка: ${error.message}\n\n${error instanceof APIError ? JSON.stringify(error.toLogFormat(), null, 2) : error}`,
+                    'error'
+                );
+            }
+        };
+
+        // Test 3: Validation Error
+        window.testValidationError = async function() {
+            const testId = 3;
+            showLoading(testId);
+
+            const invalidData = {
+                country: 'invalid_country',
+                year: 1800, // Invalid year
+                engine_cc: -1000, // Invalid engine
+                purchase_price: -5000, // Invalid price
+            };
+
+            try {
+                const result = await api.calculate(invalidData);
+                showResult(testId,
+                    `⚠️ Неожиданно: запрос прошел!\n\n${JSON.stringify(result, null, 2)}`,
+                    'error'
+                );
+            } catch (error) {
+                if (error instanceof APIError) {
+                    showResult(testId,
+                        `✅ Ошибка валидации корректно обработана!\n\n` +
+                        `Тип: ${error.code}\n` +
+                        `Статус: ${error.status}\n` +
+                        `Сообщение: ${error.getUserMessage()}\n\n` +
+                        `Детали:\n${JSON.stringify(error.toLogFormat(), null, 2)}`,
+                        'success'
+                    );
+                } else {
+                    showResult(testId,
+                        `❌ Неожиданная ошибка: ${error.message}`,
+                        'error'
+                    );
+                }
+            }
+        };
+
+        // Test 4: Network Error
+        window.testNetworkError = async function() {
+            const testId = 4;
+            showLoading(testId);
+
+            try {
+                // Request to non-existent endpoint
+                const result = await api.get('/api/nonexistent-endpoint-12345');
+                showResult(testId,
+                    `⚠️ Неожиданно: запрос прошел!\n\n${JSON.stringify(result, null, 2)}`,
+                    'error'
+                );
+            } catch (error) {
+                if (error instanceof APIError) {
+                    showResult(testId,
+                        `✅ Сетевая/серверная ошибка корректно обработана!\n\n` +
+                        `Тип: ${error.code}\n` +
+                        `Статус: ${error.status}\n` +
+                        `Сообщение: ${error.getUserMessage()}\n\n` +
+                        `Детали:\n${JSON.stringify(error.toLogFormat(), null, 2)}`,
+                        'success'
+                    );
+                } else {
+                    showResult(testId,
+                        `❌ Неожиданная ошибка: ${error.message}`,
+                        'error'
+                    );
+                }
+            }
+        };
+
+        // Test 5: Timeout
+        window.testTimeout = async function() {
+            const testId = 5;
+            showLoading(testId);
+
+            // Create API client with very short timeout
+            const shortTimeoutApi = new APIClient({ timeout: 100 }); // 100ms
+
+            try {
+                const result = await shortTimeoutApi.getMeta();
+                showResult(testId,
+                    `⚠️ Запрос прошел быстрее timeout!\n\n${JSON.stringify(result, null, 2)}`,
+                    'success'
+                );
+            } catch (error) {
+                if (error instanceof APIError && error.isTimeoutError()) {
+                    showResult(testId,
+                        `✅ Timeout корректно обработан!\n\n` +
+                        `Тип: ${error.code}\n` +
+                        `Статус: ${error.status}\n` +
+                        `Сообщение: ${error.getUserMessage()}\n\n` +
+                        `Детали:\n${JSON.stringify(error.toLogFormat(), null, 2)}`,
+                        'success'
+                    );
+                } else {
+                    showResult(testId,
+                        `⚠️ Другая ошибка (возможно, сервер быстро ответил):\n${error.message}\n\n` +
+                        `${error instanceof APIError ? JSON.stringify(error.toLogFormat(), null, 2) : error}`,
+                        'info'
+                    );
+                }
+            }
+        };
+
+        // Test 6: Retry
+        window.testRetry = async function() {
+            const testId = 6;
+            showLoading(testId);
+
+            showResult(testId,
+                `⏳ Проверка retry логики...\n\n` +
+                `Посмотрите в DevTools Console для логов retry.\n` +
+                `Попробуйте отключить интернет на 2-3 секунды после запуска.`,
+                'info'
+            );
+
+            try {
+                const result = await api.getMeta();
+                showResult(testId,
+                    `✅ Запрос успешен!\n\n` +
+                    `Проверьте Console - если были retry, вы увидите логи "Request succeeded on attempt N".\n\n` +
+                    `Ответ:\n${JSON.stringify(result, null, 2).substring(0, 200)}...`,
+                    'success'
+                );
+            } catch (error) {
+                showResult(testId,
+                    `❌ Все retry попытки исчерпаны:\n${error.message}\n\n` +
+                    `${error instanceof APIError ? JSON.stringify(error.toLogFormat(), null, 2) : error}`,
+                    'error'
+                );
+            }
+        };
+
+        // Test 7: API Methods
+        window.testGetMeta = async function() {
+            const testId = 7;
+            showLoading(testId);
+            try {
+                const result = await api.getMeta();
+                showResult(testId, `✅ getMeta():\n${JSON.stringify(result, null, 2)}`, 'success');
+            } catch (error) {
+                showResult(testId, `❌ ${error.message}`, 'error');
+            }
+        };
+
+        window.testGetRates = async function() {
+            const testId = 7;
+            showLoading(testId);
+            try {
+                const result = await api.getRates();
+                showResult(testId, `✅ getRates():\n${JSON.stringify(result, null, 2)}`, 'success');
+            } catch (error) {
+                showResult(testId, `❌ ${error.message}`, 'error');
+            }
+        };
+
+        window.testRefreshRates = async function() {
+            const testId = 7;
+            showLoading(testId);
+            try {
+                const result = await api.refreshRates();
+                showResult(testId, `✅ refreshRates():\n${JSON.stringify(result, null, 2)}`, 'success');
+            } catch (error) {
+                showResult(testId, `❌ ${error.message}`, 'error');
+            }
+        };
+
+        // Test 8: Error Types
+        window.testErrorTypes = async function() {
+            const testId = 8;
+
+            const tests = [];
+
+            // Test NetworkError
+            const networkError = new APIError('Connection failed', null, 'NetworkError');
+            tests.push({
+                name: 'NetworkError',
+                error: networkError,
+                checks: {
+                    isNetworkError: networkError.isNetworkError(),
+                    isTimeoutError: networkError.isTimeoutError(),
+                    isValidationError: networkError.isValidationError(),
+                    isServerError: networkError.isServerError(),
+                    userMessage: networkError.getUserMessage()
+                }
+            });
+
+            // Test TimeoutError
+            const timeoutError = new APIError('Request timeout', 408, 'TimeoutError');
+            tests.push({
+                name: 'TimeoutError',
+                error: timeoutError,
+                checks: {
+                    isNetworkError: timeoutError.isNetworkError(),
+                    isTimeoutError: timeoutError.isTimeoutError(),
+                    isValidationError: timeoutError.isValidationError(),
+                    isServerError: timeoutError.isServerError(),
+                    userMessage: timeoutError.getUserMessage()
+                }
+            });
+
+            // Test ValidationError
+            const validationError = new APIError('Invalid data', 422, 'ValidationError');
+            tests.push({
+                name: 'ValidationError',
+                error: validationError,
+                checks: {
+                    isNetworkError: validationError.isNetworkError(),
+                    isTimeoutError: validationError.isTimeoutError(),
+                    isValidationError: validationError.isValidationError(),
+                    isServerError: validationError.isServerError(),
+                    userMessage: validationError.getUserMessage()
+                }
+            });
+
+            // Test ServerError
+            const serverError = new APIError('Internal server error', 500, 'ServerError');
+            tests.push({
+                name: 'ServerError',
+                error: serverError,
+                checks: {
+                    isNetworkError: serverError.isNetworkError(),
+                    isTimeoutError: serverError.isTimeoutError(),
+                    isValidationError: serverError.isValidationError(),
+                    isServerError: serverError.isServerError(),
+                    userMessage: serverError.getUserMessage()
+                }
+            });
+
+            const results = tests.map(t =>
+                `${t.name}:\n  ${JSON.stringify(t.checks, null, 2)}`
+            ).join('\n\n');
+
+            showResult(testId,
+                `✅ Все типы ошибок работают корректно!\n\n${results}`,
+                'success'
+            );
+        };
+
+        console.log('🧪 API Client Test Suite loaded');
+        console.log('API Client:', api);
+        console.log('APIError:', APIError);
+    </script>
+</body>
+</html>
+

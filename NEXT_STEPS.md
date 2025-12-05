@@ -1,207 +1,298 @@
-# 🎯 Следующие шаги: WebApp Рефакторинг
+# NEXT STEPS: Sprint 6 Planning
 
-## 📅 Когда начинать?
-Рекомендуется начать рефакторинг когда:
-- ✅ Текущий функционал стабильно работает
-- ✅ Нет критичных багов в production
-- ✅ Есть 3-5 дней для работы без прерываний
-- ✅ Команда готова к изменениям в структуре
+## Sprint 5 Status: ✅ ЗАВЕРШЁН
 
-## 🚦 Готовность к старту
+### Что сделано
+- ✅ API client module (api.js) - 470 строк
+- ✅ Test suite (test_api_client.html) - 574 строк, 8 тестов
+- ✅ Документация (5 файлов)
+- ✅ index.html обновлён (-125 строк)
 
-### Шаг 1: Подготовка (15 минут)
-```bash
-# 1. Прочитать краткую сводку
-cat docs/webapp_refactoring_summary.md
+### Что делать дальше
 
-# 2. Убедиться что всё работает
-cd /Users/admin/PycharmProjects/car_calculator
-python -m pytest tests/
+**Перед началом Sprint 6**:
 
-# 3. Создать ветку для рефакторинга
-git checkout -b refactor/webapp-modular-structure
+1. **Закоммитить изменения**:
+   ```bash
+   # Используйте готовый commit message
+   cat docs/SPRINT_5_GIT_COMMIT.md
+   
+   # Или просто:
+   git add -A
+   git commit -m "refactor(webapp): Sprint 5 - HTTP client with retry/timeout"
+   git push
+   ```
 
-# 4. Запустить скрипт подготовки
-./scripts/webapp_refactoring_init.sh
+2. **Протестировать в браузере**:
+   ```bash
+   # Если сервер не запущен:
+   python -m app.main
+   
+   # Открыть в браузере:
+   # http://localhost:8000/tests/manual/test_api_client.html
+   # http://localhost:8000/web/
+   ```
+
+3. **Проверить работу WebApp**:
+   - Открыть калькулятор
+   - Выбрать страну
+   - Ввести данные
+   - Нажать "Рассчитать"
+   - Проверить, что ошибки обрабатываются понятно
+
+---
+
+## Sprint 6: UI Module
+
+### Цель
+Извлечь UI логику из index.html в отдельный модуль для улучшения читаемости и переиспользуемости.
+
+### Задачи
+
+#### 1. Создать `app/webapp/js/modules/ui.js`
+```javascript
+export class UIManager {
+    // Loading state
+    showLoading(show, message)
+    
+    // Error display
+    showError(message, type)
+    hideError()
+    
+    // Result display
+    showResult()
+    hideResult()
+    
+    // Tab management
+    showCalcTab()
+    showResultsTab()
+    
+    // Field highlighting
+    highlightField(fieldId, isError)
+    
+    // Toast notifications
+    showToast(message, type, duration)
+}
+
+export const ui = new UIManager();
 ```
 
-### Шаг 2: Первый этап (2-3 часа)
-```bash
-# Открыть детальный план
-open docs/webapp_refactoring_plan.md
-# или
-cat docs/webapp_refactoring_plan.md | less
+#### 2. Обновить `index.html`
+- Импортировать ui.js
+- Заменить прямые манипуляции DOM на ui методы
+- Удалить функции: showLoading, showError, hideError, showResult, hideResult
 
-# Следовать инструкциям "Этап 1: Вынос CSS"
-# - Создать 4 CSS файла
-# - Обновить index.html
-# - Проверить что стили работают
-# - Закоммитить изменения
+#### 3. Создать `tests/manual/test_ui.html`
+- Тесты для всех UI методов
+- Visual regression tests
+- Animation tests
 
-git add .
-git commit -m "refactor(webapp): этап 1 - вынос CSS в отдельные файлы"
+### Ожидаемый результат
+- Удалить ~100 строк из index.html
+- Создать ui.js (~200 строк)
+- Создать test_ui.html (~400 строк)
+- Улучшить читаемость кода
+
+### Время
+2-3 часа
+
+---
+
+## Sprint 7: Results Renderer
+
+### Цель
+Извлечь логику отображения результатов в отдельный модуль.
+
+### Задачи
+
+#### 1. Создать `app/webapp/js/modules/results.js`
+```javascript
+export class ResultsRenderer {
+    // Main rendering
+    render(result)
+    
+    // Breakdown items
+    renderBreakdown(breakdown)
+    
+    // Meta info
+    renderMetaInfo(meta)
+    
+    // Warnings
+    renderWarnings(warnings)
+    
+    // Share functionality
+    generateShareText(result)
+    shareResult(result)
+}
+
+export const resultsRenderer = new ResultsRenderer();
 ```
 
-### Шаг 3: Отслеживание прогресса
-```bash
-# Открыть чек-лист в редакторе
-code docs/webapp_refactoring_checklist.md
-# или
-open -a "TextEdit" docs/webapp_refactoring_checklist.md
+#### 2. Обновить `index.html`
+- Заменить displayResult() на resultsRenderer.render()
+- Удалить inline функции рендеринга
 
-# Отмечать завершённые задачи по мере выполнения
+### Ожидаемый результат
+- Удалить ~150 строк из index.html
+- Создать results.js (~250 строк)
+
+### Время
+2-3 часа
+
+---
+
+## Sprint 8: Calculator Controller
+
+### Цель
+Создать контроллер для оркестрации всех модулей.
+
+### Задачи
+
+#### 1. Создать `app/webapp/js/modules/calculator.js`
+```javascript
+export class CalculatorController {
+    constructor(api, ui, validator, resultsRenderer)
+    
+    // Main flow
+    async calculate(formData)
+    
+    // Initialization
+    init()
+    setupEventListeners()
+    
+    // Country/freight selection
+    selectCountry(country)
+    selectFreightType(type)
+}
+
+export const calculator = new CalculatorController(api, ui, validator, resultsRenderer);
+```
+
+#### 2. Обновить `index.html`
+- Заменить inline event handlers на calculator методы
+- Удалить функции: calculateCost, selectCountry, etc.
+
+### Ожидаемый результат
+- Удалить ~200 строк из index.html
+- Создать calculator.js (~300 строк)
+
+### Время
+3-4 часа
+
+---
+
+## Sprint 9: Minimal index.html
+
+### Цель
+Оставить в index.html только HTML структуру и минимальный инициализационный код.
+
+### Результат
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/variables.css">
+    <!-- ... -->
+</head>
+<body>
+    <!-- HTML structure only -->
+    <div class="container">
+        <!-- ... -->
+    </div>
+    
+    <script type="module">
+        import { calculator } from '/static/js/modules/calculator.js';
+        calculator.init();
+    </script>
+</body>
+</html>
+```
+
+### Ожидаемый размер
+- index.html: ~300 строк (было 1548)
+- Reduction: ~80% меньше кода
+
+### Время
+1-2 часа
+
+---
+
+## Общий прогресс рефакторинга
+
+### Завершено (Sprints 0-5)
+- ✅ Sprint 0: Структура папок
+- ✅ Sprint 1: CSS extraction (4 файла)
+- ✅ Sprint 2: Utils (formatters.js, dom.js)
+- ✅ Sprint 3: Config (messages.js, constants.js)
+- ✅ Sprint 4: Validator (validator.js)
+- ✅ Sprint 5: API client (api.js) ← **ТЕКУЩИЙ**
+
+### Осталось (Sprints 6-9)
+- ⏳ Sprint 6: UI module (ui.js)
+- ⏳ Sprint 7: Results renderer (results.js)
+- ⏳ Sprint 8: Calculator controller (calculator.js)
+- ⏳ Sprint 9: Minimal index.html
+
+### Timeline
+- Спринты 0-5: ~12 часов (DONE)
+- Спринты 6-9: ~10 часов (PLANNED)
+- **Total**: ~22 часа рефакторинга
+
+---
+
+## Quick Start для Sprint 6
+
+```bash
+# 1. Закоммитить Sprint 5
+git add -A
+git commit -m "refactor(webapp): Sprint 5 - API client"
+
+# 2. Создать файл
+touch app/webapp/js/modules/ui.js
+
+# 3. Прочитать план
+cat docs/webapp_refactoring_plan.md | grep -A 30 "Этап 6"
+
+# 4. Начать работу
+code app/webapp/js/modules/ui.js
 ```
 
 ---
 
-## 📖 Рекомендуемый порядок чтения
+## Resources
 
-### Для быстрого старта (10 минут)
-1. `docs/webapp_refactoring_summary.md` - что, зачем, как
+### Документация
+- `docs/webapp_refactoring_plan.md` - План всех этапов
+- `docs/webapp_refactoring_checklist.md` - Чеклист прогресса
+- `docs/SPRINT_5_COMPLETED.md` - Детали Sprint 5
+- `docs/rpg.yaml` - Архитектура проекта
 
-### Для работы (30 минут)
-1. `docs/webapp_refactoring_plan.md` - полный план с кодом
-2. `docs/webapp_dependency_graph.md` - понять архитектуру
+### Тесты
+- `tests/manual/test_api_client.html` - API тесты
+- `tests/manual/test_validator.html` - Validator тесты
+- `tests/manual/test_formatters.html` - Formatter тесты
 
-### Для отслеживания (в процессе)
-1. `docs/webapp_refactoring_checklist.md` - трекер прогресса
+### Модули (созданы)
+- `app/webapp/js/modules/api.js` (470 строк) ✅
+- `app/webapp/js/modules/validator.js` (252 строк) ✅
+- `app/webapp/js/config/constants.js` (185 строк) ✅
+- `app/webapp/js/config/messages.js` (380 строк) ✅
+- `app/webapp/js/utils/formatters.js` (330 строк) ✅
+- `app/webapp/js/utils/dom.js` (250 строк) ✅
 
-### Для глубокого понимания (опционально)
-1. `docs/rpg_intro.txt` - методология
-2. `docs/rpg_webapp_analysis.md` - анализ проблем
-3. `docs/rpg.yaml` - граф проекта
-
----
-
-## ⚡ Быстрые команды
-
-```bash
-# Подготовка
-./scripts/webapp_refactoring_init.sh
-
-# Просмотр структуры
-tree app/webapp/ -I '__pycache__|*.pyc' -L 3
-
-# Запуск сервера для проверки
-poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Открыть webapp в браузере
-open http://localhost:8000/web/
-
-# После каждого этапа - коммит
-git add .
-git commit -m "refactor(webapp): этап N - описание"
-
-# По завершению - merge
-git checkout main
-git merge refactor/webapp-modular-structure
-git push
-```
+### Модули (планируются)
+- `app/webapp/js/modules/ui.js` - Sprint 6
+- `app/webapp/js/modules/results.js` - Sprint 7
+- `app/webapp/js/modules/calculator.js` - Sprint 8
 
 ---
 
-## 🎯 Контрольные точки
+## Questions?
 
-### После этапа 1 (CSS)
-- [ ] Стили работают в браузере
-- [ ] CSS файлы кэшируются
-- [ ] Нет визуальных изменений
+- Прочитайте `docs/webapp_refactoring_plan.md`
+- Посмотрите completed sprints: `docs/SPRINT_*_COMPLETED.md`
+- Проверьте rpg.yaml: `cat docs/rpg.yaml`
 
-### После этапа 5 (API)
-- [ ] Запросы работают
-- [ ] Retry срабатывает
-- [ ] Timeout защищает от зависания
-
-### После этапа 8 (Controller)
-- [ ] Расчёт работает end-to-end
-- [ ] Валидация срабатывает
-- [ ] Telegram интеграция работает
-
-### После этапа 9 (HTML)
-- [ ] HTML < 200 строк
-- [ ] Всё работает как раньше
-- [ ] Код понятен новичку
-
----
-
-## 🔍 Проверка перед началом
-
-Запустите эти команды, чтобы убедиться что всё готово:
-
-```bash
-# Проверка зависимостей
-poetry install
-
-# Проверка тестов
-poetry run pytest tests/ -v
-
-# Проверка что сервер запускается
-poetry run uvicorn app.main:app --reload &
-sleep 3
-curl http://localhost:8000/api/health
-kill %1
-
-# Проверка что webapp доступен
-ls -la app/webapp/index.html
-```
-
-Если всё ✅ - можно начинать!
-
----
-
-## 📞 Если что-то непонятно
-
-1. **Прочитать ещё раз**: `docs/webapp_refactoring_summary.md`
-2. **Посмотреть примеры**: `docs/webapp_refactoring_plan.md` (есть код)
-3. **Изучить граф**: `docs/webapp_dependency_graph.md`
-4. **Проверить методологию**: `docs/rpg_intro.txt`
-
----
-
-## 💡 Советы
-
-1. **Не спешите** - проверяйте после каждого этапа
-2. **Коммитьте часто** - после каждого этапа и подэтапа
-3. **Тестируйте в браузере** - открывайте /web/ и проверяйте
-4. **Тестируйте в Telegram** - проверяйте WebApp кнопку
-5. **Сохраняйте бэкап** - index.html.backup уже создан
-6. **Используйте чек-лист** - не теряйте прогресс
-
----
-
-## 🎉 После завершения
-
-1. **Отметить в rpg.yaml**: обновить implemented_improvements
-2. **Создать changelog**: описать что изменилось
-3. **Обновить README**: добавить информацию о структуре
-4. **Поделиться с командой**: рассказать о новой архитектуре
-5. **Запланировать следующие улучшения**: на основе опыта
-
----
-
-## 📊 Ожидаемый результат
-
-**Было**:
-- 1 файл, 1548 строк
-- Невозможно тестировать
-- Добавление страны = 4 часа
-
-**Станет**:
-- 13 модулей, каждый < 300 строк
-- Легко тестировать
-- Добавление страны = 30 минут
-
-**Улучшения**:
-- 📉 Complexity: -80%
-- 📈 Maintainability: +300%
-- 🚀 Development speed: +87%
-- 🧪 Testability: 0% → 80%
-
----
-
-**Готовы начать?** 🚀
-
-```bash
-./scripts/webapp_refactoring_init.sh
-```
+**Готов к Sprint 6!** 🚀
 

@@ -130,118 +130,9 @@
         } from '/static/js/config/constants.js';
 
         // =====================================================================
-        // Enhanced API and Security Layer with ngrok bypass
+        // Import API client module (RPG Sprint 5)
         // =====================================================================
-        class SecureAPI {
-            constructor() {
-                this.baseURL = this.resolveBaseURL();
-                this.retryAttempts = API_CONFIG.RETRY_COUNT;
-                this.retryDelay = API_CONFIG.RETRY_DELAY;
-                this.timeout = API_CONFIG.TIMEOUT;
-                this.csrfToken = null;
-                this.initCSRF();
-            }
-
-            resolveBaseURL() {
-                try {
-                    const params = new URLSearchParams(location.search);
-                    const override = params.get('api_base');
-                    if (override) return override.replace(/\/$/, '');
-
-                    if (location.protocol === 'https:' || location.protocol === 'http:') {
-                        const currentHost = location.host;
-                        if (currentHost.includes('ngrok') || !currentHost.includes('localhost')) {
-                            return `${location.protocol}//${currentHost}`;
-                        }
-                        return `${location.protocol}//${location.host}`;
-                    }
-                    return window.location.hostname ? `https://${window.location.hostname}` : '';
-                } catch (error) {
-                    console.warn('Failed to resolve base URL:', error);
-                    return '';
-                }
-            }
-
-            async initCSRF() {
-                try {
-                    this.csrfToken = this.generateCSRFToken();
-                } catch (error) {
-                    console.warn('CSRF initialization failed:', error);
-                }
-            }
-
-            generateCSRFToken() {
-                return 'csrf_' + Math.random().toString(36).substr(2, 15);
-            }
-
-            getURL(path) {
-                if (path.startsWith('http')) return path;
-                if (this.baseURL) return this.baseURL + path;
-                return path;
-            }
-
-            async fetchWithRetry(url, options = {}) {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-                const fetchOptions = {
-                    ...options,
-                    signal: controller.signal,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'ngrok-skip-browser-warning': 'true',
-                        'User-Agent': 'Mozilla/5.0 (compatible; TelegramWebApp)',
-                        'Accept': 'application/json, text/plain, */*',
-                        'Cache-Control': 'no-cache',
-                        ...(this.csrfToken && { 'X-CSRF-Token': this.csrfToken }),
-                        ...options.headers
-                    }
-                };
-
-                let lastError;
-
-                for (let attempt = 0; attempt < this.retryAttempts; attempt++) {
-                    try {
-                        const response = await fetch(url, fetchOptions);
-                        clearTimeout(timeoutId);
-
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                        }
-
-                        return response;
-                    } catch (error) {
-                        lastError = error;
-                        console.warn(`Request attempt ${attempt + 1} failed:`, error.message);
-
-                        if (attempt < this.retryAttempts - 1) {
-                            await this.delay(this.retryDelay * Math.pow(2, attempt));
-                        }
-                    }
-                }
-
-                clearTimeout(timeoutId);
-                throw lastError;
-            }
-
-            delay(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
-            }
-
-            async get(path) {
-                const response = await this.fetchWithRetry(this.getURL(path));
-                return response.json();
-            }
-
-            async post(path, data) {
-                const response = await this.fetchWithRetry(this.getURL(path), {
-                    method: 'POST',
-                    body: JSON.stringify(data)
-                });
-                return response.json();
-            }
-        }
+        import { api, APIError } from '/static/js/modules/api.js';
 
         // =====================================================================
         // Enhanced Telegram Integration
@@ -583,8 +474,7 @@
             });
         }
 
-        // Initialize API and Telegram integration
-        const api = new SecureAPI();
+        // Initialize Telegram integration (api is imported as singleton from api.js)
         const telegram = new TelegramWebAppHelper();
 
         // Глобальные переменные
@@ -640,12 +530,16 @@
         // Загрузка метаданных о странах и типах фрахта
         async function loadMetaData() {
             try {
-                const response = await api.get(API_ENDPOINTS.META);
+                const response = await api.getMeta();
                 metaData = response;
                 console.log('Meta data loaded:', metaData);
                 populateCountries(); // Заполняем список стран после загрузки
             } catch (error) {
-                console.error('Failed to load meta data:', error);
+                if (error instanceof APIError) {
+                    console.error('Failed to load meta data:', error.toLogFormat());
+                } else {
+                    console.error('Failed to load meta data:', error);
+                }
                 // Fallback data for offline usage (from constants.js)
                 metaData = FALLBACK_META;
                 populateCountries(); // Заполняем список стран из fallback данных
@@ -1017,7 +911,7 @@
 
             try {
                 telegram.setMainButtonLoading(true);
-                const result = await api.post(API_ENDPOINTS.CALCULATE, requestData);
+                const result = await api.calculate(requestData);
                 displayResult(result);
                 if (telegram.isInTelegram()) {
                     telegram.hapticFeedback(HAPTIC_TYPES.MEDIUM);
@@ -1026,7 +920,17 @@
                 }
             } catch (error) {
                 console.error('Calculation error:', error);
-                showError(Messages.errors.CALCULATION_ERROR + ': ' + error.message);
+
+                // Use APIError's user-friendly message if available
+                let errorMessage = Messages.errors.CALCULATION_ERROR;
+                if (error instanceof APIError) {
+                    errorMessage = error.getUserMessage();
+                    console.error('API Error details:', error.toLogFormat());
+                } else {
+                    errorMessage += ': ' + error.message;
+                }
+
+                showError(errorMessage);
                 telegram.hapticFeedback(HAPTIC_TYPES.HEAVY);
             } finally {
                 showLoading(false);

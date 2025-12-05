@@ -1,5 +1,108 @@
 # CHANGELOG
 
+## [2025-12-05] SPRINT 5: HTTP Client with Retry/Timeout/Error Handling ✅
+
+### Summary
+Implemented robust HTTP API client following RPG "Reliable Network Operations" principle.
+Created APIClient class with exponential backoff retry logic, configurable timeouts,
+and custom error types. Improved error handling with user-friendly messages and structured logging.
+Replaced inline SecureAPI class with modular api.js (125 lines removed from index.html).
+
+### Changes
+
+#### API Client Module Created
+- `app/webapp/js/modules/api.js` (481 lines):
+  * **APIError class extends Error** - Custom error with context:
+    - Properties: `message, status, code, details, timestamp`
+    - Methods:
+      - `isNetworkError()` → boolean - Check if error is network-related
+      - `isTimeoutError()` → boolean - Check if error is timeout
+      - `isValidationError()` → boolean - Check if error is 4xx validation
+      - `isServerError()` → boolean - Check if error is 5xx server error
+      - `getUserMessage()` → string - Get user-friendly error message
+      - `toLogFormat()` → object - Convert to structured log format
+  * **APIClient class** - HTTP client with retry and timeout:
+    - Constructor options: baseURL, timeout, maxRetries, retryDelay, csrfToken
+    - `resolveBaseURL()` - Auto-detect base URL (query param > current host)
+    - `fetchWithTimeout(url, options, timeout)` - Timeout using AbortController
+    - `fetchWithRetry(url, options, maxRetries)` - Exponential backoff retry:
+      * Only retries on network errors (not 4xx/5xx)
+      * Delay: retryDelay × 2^attempt (e.g., 1s, 2s, 4s)
+      * Logs each retry attempt to console
+    - `parseErrorResponse(response)` - Parse FastAPI {"detail": "..."} errors
+    - `createHTTPError(status, errorData)` - Create typed APIError
+    - **Generic methods**:
+      - `get(path, options)` → Promise - Generic GET request
+      - `post(path, data, options)` → Promise - Generic POST request
+    - **Specific methods for car_calculator**:
+      - `calculate(formData)` → Promise<CalculationResult>
+      - `getMeta()` → Promise<MetaData>
+      - `getRates()` → Promise<RatesData>
+      - `refreshRates()` → Promise<RatesData>
+      - `health()` → Promise<HealthStatus>
+    - `logError(method, path, error)` - Structured error logging
+  * **Exports**: api singleton instance, APIClient class, APIError class
+
+#### HTML Integration
+- `app/webapp/index.html`:
+  * **Removed** old SecureAPI class (125 lines) - replaced with api.js import
+  * Added import: `import { api, APIError } from '/static/js/modules/api.js'`
+  * Replaced `api = new SecureAPI()` with singleton `api` from module
+  * Refactored `calculateCost()`:
+    - Changed `api.post(API_ENDPOINTS.CALCULATE, data)` → `api.calculate(data)`
+    - Improved error handling:
+      ```javascript
+      if (error instanceof APIError) {
+          errorMessage = error.getUserMessage(); // User-friendly message
+          console.error('API Error details:', error.toLogFormat());
+      }
+      ```
+  * Refactored `loadMetaData()`:
+    - Changed `api.get(API_ENDPOINTS.META)` → `api.getMeta()`
+    - Added structured error logging with `error.toLogFormat()`
+
+#### Testing
+- `tests/manual/test_api_client.html` (546 lines):
+  * **8 interactive test cases**:
+    1. Basic GET request (/api/meta)
+    2. Basic POST request (/api/calculate)
+    3. Validation error (4xx) - Invalid data
+    4. Network error - Non-existent endpoint
+    5. Timeout test - Short timeout with throttling
+    6. Retry test - Network interruption
+    7. API methods test - getMeta, getRates, refreshRates
+    8. Error types test - All APIError methods
+  * Interactive UI with result display (success/error states)
+  * Config display (RETRY_COUNT, RETRY_DELAY, TIMEOUT, baseURL)
+  * Instructions for manual testing (DevTools throttling)
+  * Color-coded results (green=success, red=error, yellow=loading)
+
+#### Configuration
+- Uses `API_CONFIG` from constants.js:
+  * `RETRY_COUNT: 3` - Maximum retry attempts
+  * `RETRY_DELAY: 1000` - Initial retry delay in ms (exponential backoff)
+  * `TIMEOUT: 10000` - Request timeout in ms (10 seconds)
+
+### Benefits
+- ✅ **Reliability**: Automatic retry on transient network failures
+- ✅ **User Experience**: Timeout prevents infinite waiting
+- ✅ **Error Handling**: User-friendly messages for all error types
+- ✅ **Debugging**: Structured logging with timestamps
+- ✅ **Maintainability**: Centralized HTTP logic, removed 125 lines from index.html
+- ✅ **Testability**: Test suite covers all error scenarios
+- ✅ **Backend Compatibility**: Parses FastAPI error format {"detail": "..."}
+
+### Synchronization
+- APIError.getUserMessage() provides localized messages:
+  * NetworkError → "Нет соединения с сервером. Проверьте интернет-соединение."
+  * TimeoutError → "Превышено время ожидания. Попробуйте еще раз."
+  * ValidationError → Server error message (from FastAPI)
+  * ServerError → "Ошибка сервера. Попробуйте позже."
+- API_CONFIG constants synchronized with backend expectations
+- Retry logic does NOT retry on 4xx/5xx (prevents double-submission)
+
+---
+
 ## [2025-12-05] SPRINT 4: Form Validation Module (FormValidator) ✅
 
 ### Summary

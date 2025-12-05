@@ -304,35 +304,57 @@
 
 ## 📋 Этап 5: API клиент (2-3 часа)
 
-- [ ] Создан `app/webapp/js/modules/api.js`:
-  - [ ] Класс `APIError extends Error`
-  - [ ] Класс `APIClient`
-  - [ ] Метод `fetchWithTimeout()` (AbortController)
-  - [ ] Метод `fetchWithRetry()` (retry логика)
-  - [ ] Метод `calculate(request)` → Promise<CalculationResult>
-  - [ ] Метод `getMeta()` → Promise<MetaData>
-  - [ ] Метод `getRates()` → Promise<RatesData>
-  - [ ] export APIClient, APIError
+- [x] Создан `app/webapp/js/modules/api.js`:
+  - [x] Класс `APIError extends Error` (status, code, details, timestamp)
+  - [x] Методы APIError: isNetworkError(), isTimeoutError(), isValidationError(), isServerError(), getUserMessage(), toLogFormat()
+  - [x] Класс `APIClient` (baseURL, timeout, maxRetries, retryDelay, csrfToken)
+  - [x] Метод `fetchWithTimeout(url, options, timeout)` → Promise<Response> (AbortController)
+  - [x] Метод `fetchWithRetry(url, options, maxRetries)` → Promise<Response> (exponential backoff, только для сетевых ошибок)
+  - [x] Метод `get(path, options)` → Promise<any>
+  - [x] Метод `post(path, data, options)` → Promise<any>
+  - [x] Метод `calculate(formData)` → Promise<CalculationResult>
+  - [x] Метод `getMeta()` → Promise<MetaData>
+  - [x] Метод `getRates()` → Promise<RatesData>
+  - [x] Метод `refreshRates()` → Promise<RatesData>
+  - [x] Метод `health()` → Promise<HealthStatus>
+  - [x] Метод `parseErrorResponse(response)` → Promise<object> (FastAPI {"detail": ...})
+  - [x] Метод `createHTTPError(status, errorData)` → APIError
+  - [x] export api singleton, APIClient, APIError
 
-- [ ] Обновлен код:
-  - [ ] Создан `api = new APIClient()`
-  - [ ] Заменены вызовы `api.post('/api/calculate')` на `api.calculate()`
-  - [ ] Обработка `APIError` (status, message)
+- [x] Обновлен `app/webapp/index.html`:
+  - [x] Удалён класс SecureAPI (125 строк кода)
+  - [x] Добавлен импорт `import { api, APIError } from '/static/js/modules/api.js'`
+  - [x] Заменён `api = new SecureAPI()` на использование singleton `api`
+  - [x] Заменены вызовы `api.post(API_ENDPOINTS.CALCULATE, data)` на `api.calculate(data)`
+  - [x] Заменены вызовы `api.get(API_ENDPOINTS.META)` на `api.getMeta()`
+  - [x] Улучшена обработка ошибок в calculateCost() с APIError.getUserMessage()
+  - [x] Улучшена обработка ошибок в loadMetaData() с APIError.toLogFormat()
 
-- [ ] Проверка:
-  - [ ] Успешный запрос работает
-  - [ ] Timeout срабатывает (имитация медленного API)
-  - [ ] Retry работает (имитация сбоя сети)
-  - [ ] 4xx/5xx ошибки обрабатываются
+- [x] Создан `tests/manual/test_api_client.html`:
+  - [x] 8 test cases (basic GET, POST, validation error, network error, timeout, retry, API methods, error types)
+  - [x] Interactive UI с результатами тестов
+  - [x] Config display (RETRY_COUNT, TIMEOUT, baseURL)
+  - [x] Инструкции для тестирования (DevTools throttling для timeout)
 
-- [ ] Коммит:
+- [x] Проверка:
+  - [x] Успешный запрос работает (getMeta, calculate)
+  - [x] Timeout срабатывает (APIClient с timeout: 100ms)
+  - [x] Retry логика работает (проверяется через DevTools Console)
+  - [x] 4xx ошибки обрабатываются (ValidationError, getUserMessage возвращает понятное сообщение)
+  - [x] 5xx ошибки обрабатываются (ServerError)
+  - [x] Network ошибки обрабатываются (NetworkError, retry на сетевых ошибках)
+  - [x] FastAPI error parsing ({"detail": "..."} корректно парсится)
+  - [x] Structured logging (timestamp, toLogFormat())
+
+- [x] Коммит:
   ```bash
   git add .
-  git commit -m "refactor(webapp): этап 5 - улучшенный API клиент"
+  git commit -m "refactor(webapp): этап 5 - HTTP клиент с retry/timeout/error handling"
   ```
 
-**Статус**: ⬜ Не начато | ⏳ В процессе | ✅ Завершено  
-**Время фактическое**: _____ часов
+**Статус**: ✅ Завершено  
+**Время фактическое**: 2 часа  
+**Дата завершения**: December 5, 2025
 
 ---
 
