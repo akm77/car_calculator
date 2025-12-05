@@ -758,6 +758,99 @@
 
             // Обновление состояния кнопки при вводе данных
             document.getElementById('calculatorForm').addEventListener('input', updateMainButtonState);
+
+            // Real-time validation (RPG Sprint 4)
+            setupRealTimeValidation();
+        }
+
+        /**
+         * Setup real-time validation for form fields (RPG Sprint 4)
+         * Validates fields on blur and shows inline errors
+         */
+        function setupRealTimeValidation() {
+            const fieldsToValidate = [
+                { id: 'year', name: 'year' },
+                { id: 'engineCc', name: 'engine_cc' },
+                { id: 'purchasePrice', name: 'purchase_price' }
+            ];
+
+            fieldsToValidate.forEach(({ id, name }) => {
+                const field = document.getElementById(id);
+                if (!field) return;
+
+                // Validate on blur (when user leaves field)
+                field.addEventListener('blur', function() {
+                    validateFieldRealTime(field, name);
+                });
+
+                // Clear error on input (when user starts typing)
+                field.addEventListener('input', function() {
+                    clearFieldError(field);
+                });
+            });
+
+            // Validate country selection
+            const countrySelect = document.getElementById('countrySelect');
+            if (countrySelect) {
+                countrySelect.addEventListener('change', function() {
+                    if (this.value) {
+                        clearFieldError(this);
+                    }
+                });
+            }
+        }
+
+        /**
+         * Validate single field in real-time
+         * @param {HTMLElement} field - Input element
+         * @param {string} fieldName - Field name for validator
+         */
+        function validateFieldRealTime(field, fieldName) {
+            const value = field.value;
+            const error = formValidator.validateField(fieldName, value);
+
+            if (error) {
+                showFieldError(field, error);
+            } else {
+                clearFieldError(field);
+            }
+        }
+
+        /**
+         * Show inline error for field
+         * @param {HTMLElement} field - Input element
+         * @param {string} message - Error message
+         */
+        function showFieldError(field, message) {
+            // Add error class to field
+            field.classList.add('error');
+
+            // Find or create error message element
+            let errorEl = field.nextElementSibling;
+            if (!errorEl || !errorEl.classList.contains('field-error')) {
+                errorEl = document.createElement('div');
+                errorEl.className = 'field-error';
+                field.parentNode.insertBefore(errorEl, field.nextSibling);
+            }
+
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+
+            // Haptic feedback for error
+            telegram.hapticFeedback(HAPTIC_TYPES.LIGHT);
+        }
+
+        /**
+         * Clear inline error for field
+         * @param {HTMLElement} field - Input element
+         */
+        function clearFieldError(field) {
+            field.classList.remove('error');
+
+            const errorEl = field.nextElementSibling;
+            if (errorEl && errorEl.classList.contains('field-error')) {
+                errorEl.style.display = 'none';
+            }
         }
 
         // Выбор страны
@@ -851,28 +944,53 @@
             }
         }
 
+        /**
+         * Validate form using FormValidator (RPG Sprint 4)
+         * @returns {boolean} - true if form is valid
+         */
         function validateForm() {
-            const year = parseInt(document.getElementById('year').value);
-            const currentYear = new Date().getFullYear();
-            if (year > currentYear) {
-                showError(Messages.errors.INVALID_YEAR_FUTURE);
+            const formData = new FormData(document.getElementById('calculatorForm'));
+
+            // Add country to form data (selected separately)
+            formData.set('country', selectedCountry || '');
+
+            const validationResult = formValidator.validate(formData);
+
+            if (!validationResult.isValid) {
+                // Show first error
+                const firstError = validationResult.errors[0];
+                showError(firstError.message);
+
+                // Highlight invalid field
+                const fieldId = getFieldIdFromName(firstError.field);
+                if (fieldId) {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        field.focus();
+                        field.classList.add('error');
+                        setTimeout(() => field.classList.remove('error'), 2000);
+                    }
+                }
+
                 return false;
             }
-            if (year < Constraints.YEAR_MIN) {
-                showError(Messages.errors.INVALID_YEAR_OLD);
-                return false;
-            }
-            const engineCc = parseInt(document.getElementById('engineCc').value);
-            if (engineCc < Constraints.ENGINE_CC_MIN || engineCc > Constraints.ENGINE_CC_MAX) {
-                showError(Messages.errors.INVALID_ENGINE_RANGE);
-                return false;
-            }
-            const price = parseFloat(document.getElementById('purchasePrice').value);
-            if (price <= 0) {
-                showError(Messages.errors.INVALID_PRICE);
-                return false;
-            }
+
             return true;
+        }
+
+        /**
+         * Map field name to HTML element ID
+         * @param {string} fieldName - Field name from validator
+         * @returns {string|null} - Element ID
+         */
+        function getFieldIdFromName(fieldName) {
+            const mapping = {
+                'year': 'year',
+                'engine_cc': 'engineCc',
+                'purchase_price': 'purchasePrice',
+                'country': 'countrySelect'
+            };
+            return mapping[fieldName] || null;
         }
 
         async function calculateCost() {

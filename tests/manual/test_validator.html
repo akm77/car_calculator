@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FormValidator Test Suite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2481cc;
+            margin-bottom: 20px;
+        }
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #555;
+            font-size: 1.3em;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            border-left: 4px solid #2481cc;
+        }
+        .test-case {
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+        }
+        .test-case h3 {
+            font-size: 1em;
+            margin-bottom: 10px;
+            color: #666;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .result.pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .result.fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .result.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .summary {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e8f4f8;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .summary h2 {
+            margin: 0 0 10px 0;
+        }
+        .summary .stats {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .summary .pass { color: #28a745; }
+        .summary .fail { color: #dc3545; }
+        button {
+            background: #2481cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-top: 10px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .form-demo {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 6px;
+            border: 2px solid #2481cc;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        .form-group input.error {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+        .field-error {
+            color: #dc3545;
+            font-size: 0.85em;
+            margin-top: 5px;
+            padding: 5px 10px;
+            background: #f8d7da;
+            border-left: 3px solid #dc3545;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 FormValidator Test Suite</h1>
+        <p>Comprehensive tests for the FormValidator module (RPG Sprint 4)</p>
+
+        <div id="test-results"></div>
+
+        <div class="summary" id="summary" style="display: none;">
+            <h2>Test Summary</h2>
+            <div class="stats">
+                <span class="pass">✓ <span id="pass-count">0</span> Passed</span> |
+                <span class="fail">✗ <span id="fail-count">0</span> Failed</span>
+            </div>
+        </div>
+
+        <h2>Interactive Demo</h2>
+        <div class="form-demo">
+            <form id="demo-form">
+                <div class="form-group">
+                    <label>Страна покупки</label>
+                    <select id="demo-country">
+                        <option value="">Выберите страну</option>
+                        <option value="japan">🍇 Япония</option>
+                        <option value="korea">🍊 Корея</option>
+                        <option value="china">🍑 Китай</option>
+                    </select>
+                    <div class="field-error" id="error-country"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Год выпуска</label>
+                    <input type="number" id="demo-year" placeholder="2020" />
+                    <div class="field-error" id="error-year"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Объем двигателя (см³)</label>
+                    <input type="number" id="demo-engine" placeholder="1500" />
+                    <div class="field-error" id="error-engine"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Цена покупки</label>
+                    <input type="number" id="demo-price" placeholder="1000000" step="0.01" />
+                    <div class="field-error" id="error-price"></div>
+                </div>
+
+                <button type="button" onclick="validateDemoForm()">Validate Form</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { FormValidator } from '/static/js/modules/validator.js';
+        import { Constraints } from '/static/js/config/constants.js';
+        import { Messages } from '/static/js/config/messages.js';
+
+        let testsPassed = 0;
+        let testsFailed = 0;
+
+        // Create validator instance
+        const validator = new FormValidator();
+        window.demoValidator = validator; // For demo form
+
+        // Test helper functions
+        function assert(condition, message) {
+            if (condition) {
+                testsPassed++;
+                return `<div class="result pass">✓ PASS: ${message}</div>`;
+            } else {
+                testsFailed++;
+                return `<div class="result fail">✗ FAIL: ${message}</div>`;
+            }
+        }
+
+        function testSection(title) {
+            return `<div class="test-section"><h2>${title}</h2>`;
+        }
+
+        function testCase(title) {
+            return `<div class="test-case"><h3>${title}</h3>`;
+        }
+
+        function closeTestCase() {
+            return `</div>`;
+        }
+
+        function closeSection() {
+            return `</div>`;
+        }
+
+        // Run all tests
+        function runTests() {
+            let html = '';
+
+            // Test 1: Constructor
+            html += testSection('1. Constructor Tests');
+            html += testCase('Should create validator with default constraints');
+            html += assert(validator instanceof FormValidator, 'Validator instance created');
+            html += assert(validator.constraints === Constraints, 'Uses default Constraints');
+            html += closeTestCase();
+
+            html += testCase('Should create validator with custom constraints');
+            const customValidator = new FormValidator({ YEAR_MIN: 2000, YEAR_MAX: 2025 });
+            html += assert(customValidator.constraints.YEAR_MIN === 2000, 'Custom constraints applied');
+            html += closeTestCase();
+            html += closeSection();
+
+            // Test 2: validateField - Year
+            html += testSection('2. Year Validation Tests');
+
+            html += testCase('Valid year (current year)');
+            const currentYear = new Date().getFullYear();
+            html += assert(validator.validateField('year', currentYear) === null, `Year ${currentYear} is valid`);
+            html += closeTestCase();
+
+            html += testCase('Valid year (minimum: 1990)');
+            html += assert(validator.validateField('year', 1990) === null, 'Year 1990 is valid');
+            html += closeTestCase();
+
+            html += testCase('Invalid year (too old)');
+            const tooOldError = validator.validateField('year', 1989);
+            html += assert(tooOldError !== null, 'Year 1989 returns error');
+            html += assert(tooOldError === Messages.errors.INVALID_YEAR_OLD, 'Correct error message');
+            html += closeTestCase();
+
+            html += testCase('Invalid year (future)');
+            const futureError = validator.validateField('year', currentYear + 1);
+            html += assert(futureError !== null, `Year ${currentYear + 1} returns error`);
+            html += assert(futureError === Messages.errors.INVALID_YEAR_FUTURE, 'Correct error message');
+            html += closeTestCase();
+
+            html += testCase('Invalid year (NaN)');
+            const nanError = validator.validateField('year', 'abc');
+            html += assert(nanError !== null, 'Non-numeric year returns error');
+            html += closeTestCase();
+            html += closeSection();
+
+            // Test 3: validateField - Engine CC
+            html += testSection('3. Engine Volume Validation Tests');
+
+            html += testCase('Valid engine cc (1500)');
+            html += assert(validator.validateField('engine_cc', 1500) === null, '1500 cc is valid');
+            html += closeTestCase();
+
+            html += testCase('Valid engine cc (minimum: 500)');
+            html += assert(validator.validateField('engine_cc', 500) === null, '500 cc is valid');
+            html += closeTestCase();
+
+            html += testCase('Valid engine cc (maximum: 10000)');
+            html += assert(validator.validateField('engine_cc', 10000) === null, '10000 cc is valid');
+            html += closeTestCase();
+
+            html += testCase('Invalid engine cc (too small)');
+            const tooSmallError = validator.validateField('engine_cc', 499);
+            html += assert(tooSmallError !== null, '499 cc returns error');
+            html += closeTestCase();
+
+            html += testCase('Invalid engine cc (too large)');
+            const tooLargeError = validator.validateField('engine_cc', 10001);
+            html += assert(tooLargeError !== null, '10001 cc returns error');
+            html += closeTestCase();
+
+            html += testCase('Support engineCc naming (camelCase)');
+            html += assert(validator.validateField('engineCc', 1500) === null, 'engineCc naming works');
+            html += closeTestCase();
+            html += closeSection();
+
+            // Test 4: validateField - Purchase Price
+            html += testSection('4. Purchase Price Validation Tests');
+
+            html += testCase('Valid price (100000)');
+            html += assert(validator.validateField('purchase_price', 100000) === null, '100000 is valid');
+            html += closeTestCase();
+
+            html += testCase('Valid price (0.01 - minimum)');
+            html += assert(validator.validateField('purchase_price', 0.01) === null, '0.01 is valid');
+            html += closeTestCase();
+
+            html += testCase('Invalid price (0)');
+            const zeroError = validator.validateField('purchase_price', 0);
+            html += assert(zeroError !== null, '0 returns error');
+            html += assert(zeroError === Messages.errors.INVALID_PRICE, 'Correct error message');
+            html += closeTestCase();
+
+            html += testCase('Invalid price (negative)');
+            const negError = validator.validateField('purchase_price', -1000);
+            html += assert(negError !== null, 'Negative price returns error');
+            html += closeTestCase();
+
+            html += testCase('Support purchasePrice naming (camelCase)');
+            html += assert(validator.validateField('purchasePrice', 100000) === null, 'purchasePrice naming works');
+            html += closeTestCase();
+            html += closeSection();
+
+            // Test 5: validateField - Country
+            html += testSection('5. Country Validation Tests');
+
+            html += testCase('Valid country (japan)');
+            html += assert(validator.validateField('country', 'japan') === null, 'japan is valid');
+            html += closeTestCase();
+
+            html += testCase('Invalid country (empty)');
+            const emptyError = validator.validateField('country', '');
+            html += assert(emptyError !== null, 'Empty country returns error');
+            html += closeTestCase();
+
+            html += testCase('Invalid country (whitespace)');
+            const wsError = validator.validateField('country', '   ');
+            html += assert(wsError !== null, 'Whitespace country returns error');
+            html += closeTestCase();
+            html += closeSection();
+
+            // Test 6: validate() - Full form validation
+            html += testSection('6. Full Form Validation Tests');
+
+            html += testCase('Valid form data');
+            const validForm = {
+                country: 'japan',
+                year: 2020,
+                engineCc: 1500,
+                purchasePrice: 1000000
+            };
+            const validResult = validator.validate(validForm);
+            html += assert(validResult.isValid === true, 'Form is valid');
+            html += assert(validResult.errors.length === 0, 'No errors returned');
+            html += closeTestCase();
+
+            html += testCase('Invalid form data (multiple errors)');
+            const invalidForm = {
+                country: '',
+                year: 1980,
+                engineCc: 100,
+                purchasePrice: -100
+            };
+            const invalidResult = validator.validate(invalidForm);
+            html += assert(invalidResult.isValid === false, 'Form is invalid');
+            html += assert(invalidResult.errors.length === 4, 'All 4 errors detected');
+            html += `<div class="result info">Errors: ${JSON.stringify(invalidResult.errors.map(e => e.field))}</div>`;
+            html += closeTestCase();
+
+            html += testCase('Support FormData object');
+            const formData = new FormData();
+            formData.set('country', 'korea');
+            formData.set('year', '2021');
+            formData.set('engineCc', '2000');
+            formData.set('purchasePrice', '500000');
+            const formDataResult = validator.validate(formData);
+            html += assert(formDataResult.isValid === true, 'FormData validation works');
+            html += closeTestCase();
+            html += closeSection();
+
+            // Test 7: getFieldConstraints()
+            html += testSection('7. Field Constraints Tests');
+
+            html += testCase('Get year constraints');
+            const yearConstraints = validator.getFieldConstraints('year');
+            html += assert(yearConstraints !== null, 'Year constraints returned');
+            html += assert(yearConstraints.min === 1990, 'Year min is 1990');
+            html += assert(yearConstraints.max === currentYear, `Year max is ${currentYear}`);
+            html += assert(yearConstraints.step === 1, 'Year step is 1');
+            html += closeTestCase();
+
+            html += testCase('Get engine constraints');
+            const engineConstraints = validator.getFieldConstraints('engine_cc');
+            html += assert(engineConstraints !== null, 'Engine constraints returned');
+            html += assert(engineConstraints.min === 500, 'Engine min is 500');
+            html += assert(engineConstraints.max === 10000, 'Engine max is 10000');
+            html += closeTestCase();
+
+            html += testCase('Get price constraints');
+            const priceConstraints = validator.getFieldConstraints('purchase_price');
+            html += assert(priceConstraints !== null, 'Price constraints returned');
+            html += assert(priceConstraints.min === 1, 'Price min is 1');
+            html += closeTestCase();
+
+            html += testCase('Unknown field returns null');
+            const unknownConstraints = validator.getFieldConstraints('unknown_field');
+            html += assert(unknownConstraints === null, 'Unknown field returns null');
+            html += closeTestCase();
+            html += closeSection();
+
+            // Test 8: Custom validators
+            html += testSection('8. Custom Validator Tests');
+
+            html += testCase('Add custom validator');
+            const customValidatorFn = (value) => {
+                const year = parseInt(value);
+                if (year === 2020) return 'Автомобили 2020 года не принимаются';
+                return null;
+            };
+            validator.addCustomValidator('year', customValidatorFn);
+            html += assert(validator.hasCustomValidator('year'), 'Custom validator added');
+            html += closeTestCase();
+
+            html += testCase('Custom validator blocks year 2020');
+            const customError = validator.validateField('year', 2020);
+            html += assert(customError !== null, 'Custom validator triggered');
+            html += assert(customError === 'Автомобили 2020 года не принимаются', 'Custom error message');
+            html += closeTestCase();
+
+            html += testCase('Custom validator allows other years');
+            const customPass = validator.validateField('year', 2019);
+            html += assert(customPass === null, 'Custom validator passes valid values');
+            html += closeTestCase();
+
+            html += testCase('Remove custom validator');
+            const removed = validator.removeCustomValidator('year');
+            html += assert(removed === true, 'Custom validator removed');
+            html += assert(!validator.hasCustomValidator('year'), 'No custom validator for year');
+            html += closeTestCase();
+
+            html += testCase('Year 2020 now passes after removing custom validator');
+            const nowPass = validator.validateField('year', 2020);
+            html += assert(nowPass === null, '2020 passes without custom validator');
+            html += closeTestCase();
+
+            html += testCase('Clear all custom validators');
+            validator.addCustomValidator('test1', () => null);
+            validator.addCustomValidator('test2', () => null);
+            validator.clearCustomValidators();
+            html += assert(validator.customValidators.size === 0, 'All custom validators cleared');
+            html += closeTestCase();
+            html += closeSection();
+
+            // Display results
+            document.getElementById('test-results').innerHTML = html;
+            document.getElementById('summary').style.display = 'block';
+            document.getElementById('pass-count').textContent = testsPassed;
+            document.getElementById('fail-count').textContent = testsFailed;
+        }
+
+        // Interactive demo validation
+        window.validateDemoForm = function() {
+            const fields = [
+                { id: 'demo-country', name: 'country', errorId: 'error-country' },
+                { id: 'demo-year', name: 'year', errorId: 'error-year' },
+                { id: 'demo-engine', name: 'engine_cc', errorId: 'error-engine' },
+                { id: 'demo-price', name: 'purchase_price', errorId: 'error-price' }
+            ];
+
+            let isValid = true;
+
+            fields.forEach(({ id, name, errorId }) => {
+                const field = document.getElementById(id);
+                const errorEl = document.getElementById(errorId);
+                const value = field.value;
+
+                const error = window.demoValidator.validateField(name, value);
+
+                if (error) {
+                    field.classList.add('error');
+                    errorEl.textContent = error;
+                    errorEl.style.display = 'block';
+                    isValid = false;
+                } else {
+                    field.classList.remove('error');
+                    errorEl.style.display = 'none';
+                }
+            });
+
+            if (isValid) {
+                alert('✅ Форма валидна!');
+            } else {
+                alert('❌ Форма содержит ошибки. Проверьте поля.');
+            }
+        };
+
+        // Setup real-time validation for demo form
+        ['demo-year', 'demo-engine', 'demo-price'].forEach(id => {
+            const field = document.getElementById(id);
+            const errorId = 'error-' + id.replace('demo-', '');
+            const name = id === 'demo-year' ? 'year' : id === 'demo-engine' ? 'engine_cc' : 'purchase_price';
+
+            field.addEventListener('blur', function() {
+                const error = window.demoValidator.validateField(name, this.value);
+                const errorEl = document.getElementById(errorId);
+
+                if (error) {
+                    this.classList.add('error');
+                    errorEl.textContent = error;
+                    errorEl.style.display = 'block';
+                } else {
+                    this.classList.remove('error');
+                    errorEl.style.display = 'none';
+                }
+            });
+
+            field.addEventListener('input', function() {
+                this.classList.remove('error');
+                const errorEl = document.getElementById(errorId);
+                errorEl.style.display = 'none';
+            });
+        });
+
+        // Run tests on page load
+        runTests();
+    </script>
+</body>
+</html>
+

@@ -1,5 +1,128 @@
 # CHANGELOG
 
+## [2025-12-05] SPRINT 4: Form Validation Module (FormValidator) ✅
+
+### Summary
+Implemented unified form validation module following RPG "Single Source of Truth" principle. 
+Created FormValidator class with support for full form validation, real-time field validation, 
+constraint inspection, and custom validators. Added inline error display with animations.
+Synchronized with backend Pydantic validation rules.
+
+### Changes
+
+#### Validation Module Created
+- `app/webapp/js/modules/validator.js` (252 lines):
+  * **FormValidator class** - Unified validation logic:
+    - `validate(formData)` → `{isValid: boolean, errors: Array<{field, message}>}` - Full form validation
+    - `validateField(name, value)` → `error | null` - Single field validation for real-time feedback
+    - `getFieldConstraints(name)` → `{min, max, step} | null` - Field constraint inspection
+    - `addCustomValidator(fieldName, fn)` → `this` - Add custom validation rules (chainable)
+    - `removeCustomValidator(fieldName)` → `boolean` - Remove custom validator
+    - `clearCustomValidators()` - Clear all custom validators
+    - `hasCustomValidator(fieldName)` → `boolean` - Check if custom validator exists
+  * **Built-in validators**:
+    - Year: YEAR_MIN (1990) ≤ year ≤ YEAR_MAX (current), no future years
+    - Engine CC: ENGINE_CC_MIN (500) ≤ cc ≤ ENGINE_CC_MAX (10000)
+    - Purchase Price: price > 0
+    - Country: not empty
+  * **Support for**:
+    - FormData and plain objects
+    - camelCase (engineCc, purchasePrice) and snake_case (engine_cc, purchase_price)
+    - NaN detection with friendly error messages
+  * **Exports**: FormValidator class, createValidator() factory, default validator instance
+
+#### CSS Validation Styles
+- `app/webapp/css/components.css`:
+  * `input.error / select.error` - Red border, shake animation, error background
+  * `.field-error` - Inline error messages with fade-in animation
+  * `@keyframes shake` - Shake animation for invalid fields (translateX ±5px)
+  * `@keyframes fadeIn` - Fade-in animation for error messages (opacity + translateY)
+
+#### HTML Integration
+- `app/webapp/index.html`:
+  * Added import for FormValidator module
+  * Created `formValidator = new FormValidator()` instance
+  * Refactored `validateForm()` to use `formValidator.validate()`:
+    - Returns {isValid, errors[]} instead of boolean
+    - Shows first error message
+    - Highlights invalid field with error class and focus
+    - Auto-removes error class after 2 seconds
+  * Added `getFieldIdFromName()` - Maps field names to HTML element IDs
+  * Added `setupRealTimeValidation()` - Configures real-time validation:
+    - Validates on blur (when user leaves field)
+    - Clears error on input (when user starts typing)
+    - Applies to year, engineCc, purchasePrice fields
+  * Added `validateFieldRealTime()` - Single field validation with UI feedback
+  * Added `showFieldError()` - Display inline error below field with haptic feedback
+  * Added `clearFieldError()` - Remove inline error message
+
+#### Testing
+- `tests/manual/test_validator.html` (546 lines):
+  * **40+ automated test cases**:
+    - Constructor tests (default/custom constraints)
+    - Year validation (valid: 1990-current, invalid: <1990, future, NaN)
+    - Engine CC validation (valid: 500-10000, invalid: <500, >10000, NaN)
+    - Price validation (valid: >0, invalid: 0, negative, NaN)
+    - Country validation (valid: non-empty, invalid: empty, whitespace)
+    - Full form validation (valid form, multiple errors, FormData support)
+    - Field constraints (year/engine/price/unknown fields)
+    - Custom validators (add/remove/clear, blocking, passing)
+  * **Interactive demo form**:
+    - Real-time validation on blur
+    - Error clearing on input
+    - Visual error feedback
+    - Manual validation button
+  * **Test summary**: Pass/Fail counts, colored results
+
+### Backend Synchronization
+- `FormValidator.validateField('year')` ↔ `models.py` `@field_validator('year')`:
+  - YEAR_MIN (1990) matches `if v < 1990: raise ValueError(ERR_YEAR_TOO_OLD)`
+  - YEAR_MAX (current) matches `if v > current_year: raise ValueError(ERR_YEAR_FUTURE)`
+- `FormValidator.validateField('engine_cc')` ↔ `models.py` `engine_cc: int = Field(gt=0)`:
+  - Frontend enforces 500-10000 range (UI constraint)
+  - Backend enforces gt=0 (business constraint)
+- `FormValidator.validateField('purchase_price')` ↔ `models.py` `purchase_price: Decimal = Field(gt=0)`:
+  - Both enforce value > 0
+- Error messages synchronized with `app/core/messages.py` (ERR_YEAR_FUTURE, ERR_YEAR_TOO_OLD)
+
+### Benefits
+- ✅ **Single Source of Truth**: All validation rules in one module
+- ✅ **Reusability**: Same validator for full form and individual fields
+- ✅ **Extensibility**: Custom validators for special cases (e.g., block specific years)
+- ✅ **UX**: Real-time feedback, inline errors, smooth animations
+- ✅ **Maintainability**: Change validation rule once, applies everywhere
+- ✅ **Testability**: 40+ tests ensure correctness
+- ✅ **Type Safety**: Clear interfaces ({isValid, errors[]}, {field, message})
+
+### Files Changed
+- **Created**: `app/webapp/js/modules/validator.js` (252 lines)
+- **Created**: `tests/manual/test_validator.html` (546 lines)
+- **Modified**: `app/webapp/index.html` (+80 lines: imports, real-time validation, error handling)
+- **Modified**: `app/webapp/css/components.css` (+45 lines: validation styles)
+- **Modified**: `docs/rpg.yaml` (added FormValidator component, updated recent_changes, next_stage)
+- **Modified**: `docs/webapp_refactoring_checklist.md` (marked Etap 4 as completed)
+
+### Testing Instructions
+```bash
+# Start local server
+python -m http.server 8000
+
+# Open test page
+open http://localhost:8000/tests/manual/test_validator.html
+
+# Should see:
+# - 40+ tests with ✓ PASS results
+# - Test summary: X Passed | 0 Failed
+# - Interactive demo form with real-time validation
+```
+
+### Next Steps
+- SPRINT 5: API Client Module (improved error handling, retry, timeout)
+- SPRINT 6: UI Module (show/hide helpers, loading states)
+- SPRINT 7: Results Renderer (display calculation results)
+
+---
+
 ## [2025-12-05] SPRINT 3: Constants and Configuration (Single Source of Truth) ✅
 
 ### Summary
