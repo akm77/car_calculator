@@ -10,6 +10,8 @@ rpg:
     supported_countries: ["japan", "korea", "uae", "china", "georgia"]
     recent_changes:
       - date: "2025-12-05"
+        description: "SPRINT 6 завершён: Создан модуль UI ui.js (UI класс с state management, showError/showLoading/showResult/hideError/hideLoading/hideResult, showToast с типами, haptic feedback, accessibility ARIA, анимации), заменены все UI функции в index.html, добавлен test_ui_module.html (8 тестов)"
+      - date: "2025-12-05"
         description: "SPRINT 5 завершён: Создан модуль API клиента api.js (APIClient с retry/timeout/error handling, APIError с типизацией ошибок), заменён SecureAPI в index.html, добавлен test_api_client.html (8 тестов)"
       - date: "2025-12-05"
         description: "SPRINT 4 завершён: Создан модуль валидации validator.js (FormValidator с validate/validateField/getFieldConstraints/customValidators), добавлена real-time валидация, CSS стили для ошибок, test_validator.html (40+ тестов)"
@@ -83,14 +85,15 @@ rpg:
           - "css/ - стили (variables, base, components with validation styles, telegram)"
           - "js/config/ - конфигурация (constants.js ✅, messages.js ✅)"
           - "js/utils/ - утилиты (formatters.js ✅, dom.js ✅)"
-          - "js/modules/ - бизнес-логика (validator.js ✅, api.js ✅, ui.js, results.js, calculator.js)"
+          - "js/modules/ - бизнес-логика (validator.js ✅, api.js ✅, ui.js ✅, results.js, calculator.js)"
           - "manifest.json, sw.js - PWA манифест и service worker"
           - "*.png - иконки и скриншоты"
         refactoring_status:
-          stage: "SPRINT_5_COMPLETED"
+          stage: "SPRINT_6_COMPLETED"
           date: "2025-12-05"
-          description: "Создан HTTP клиент с retry, timeout и улучшенной обработкой ошибок"
+          description: "Создан централизованный UI менеджер с state management и анимациями"
           components_created:
+            - "js/modules/ui.js - UI класс (state management: idle/loading/error/success, showError/showLoading/showResult/hideError/hideLoading/hideResult, showToast с типами, haptic feedback, accessibility ARIA, fade анимации)"
             - "js/modules/api.js - APIClient класс (retry, timeout, error handling), APIError (типизация ошибок), специфичные методы (calculate, getMeta, getRates, refreshRates)"
             - "js/modules/validator.js - FormValidator класс (validate, validateField, getFieldConstraints, addCustomValidator)"
             - "js/config/messages.js - все UI тексты (errors, buttons, labels, breakdown, warnings, share templates)"
@@ -173,6 +176,12 @@ rpg:
       - name: "validator.js"
         parent_module: "app_webapp"
         description: "Модуль валидации форм: FormValidator класс (единый источник правил валидации), методы: validate(formData) → {isValid, errors[]}, validateField(name, value) → error|null, getFieldConstraints(name) → {min, max, step}, addCustomValidator(fieldName, fn), removeCustomValidator(), clearCustomValidators(); поддержка кастомных валидаторов для расширяемости; синхронизирован с backend Pydantic моделями"
+      - name: "api.js"
+        parent_module: "app_webapp"
+        description: "Модуль HTTP клиента: APIClient класс (singleton), методы: calculate/getMeta/getRates/refreshRates (специфичные для API), _request (базовый HTTP с retry, timeout, payload size check), _handleError (маппинг HTTP статусов); APIError класс (code, httpStatus, getUserMessage, toLogFormat); конфигурация: MAX_RETRIES=3, REQUEST_TIMEOUT=10s, MAX_PAYLOAD_SIZE=10MB"
+      - name: "ui.js"
+        parent_module: "app_webapp"
+        description: "Модуль управления UI состояниями: UI класс (singleton), state management (_state: idle/loading/error/success, getState, _setState), методы: showLoading(text)/hideLoading, showError(msg)/hideError, showResult/hideResult, showShareButton/hideShareButton, scrollToResult, disableForm/enableForm, reset, showToast(message, type, duration); анимации: _fadeIn/_fadeOut (CSS transitions), _hapticFeedback (Telegram); accessibility: ARIA attributes (role, aria-live, aria-busy), focus management"
 
       - name: "fees.yml"
         parent_module: "config_data"
@@ -438,6 +447,34 @@ rpg:
         description: "Клавиатура с WebApp-кнопкой"
         testable: true
         test_priority: "low"
+
+      - name: "FormValidator"
+        parent_file: "validator.js"
+        type: "class"
+        description: "Валидация формы калькулятора: validate(formData) → {isValid, errors[]}, validateField(fieldName, value) → error|null, getFieldConstraints(fieldName) → {min, max, step, required}, addCustomValidator/removeCustomValidator/clearCustomValidators; синхронизирован с backend Pydantic моделями; real-time валидация при вводе"
+        testable: true
+        test_priority: "high"
+
+      - name: "APIClient"
+        parent_file: "api.js"
+        type: "class"
+        description: "HTTP клиент для API: calculate(requestData), getMeta(), getRates(), refreshRates(force); внутри: _request(method, endpoint, data, options) с retry (max 3), timeout (10s), payload size check (10MB), _handleError с маппингом HTTP статусов → APIError; singleton pattern"
+        testable: true
+        test_priority: "high"
+
+      - name: "APIError"
+        parent_file: "api.js"
+        type: "class"
+        description: "Кастомная ошибка API: code (enum: NETWORK_ERROR, TIMEOUT, VALIDATION_ERROR, etc.), httpStatus, originalError, getUserMessage() → user-friendly текст, toLogFormat() → детали для консоли; используется для единообразной обработки ошибок"
+        testable: true
+        test_priority: "medium"
+
+      - name: "UI"
+        parent_file: "ui.js"
+        type: "class"
+        description: "Централизованное управление UI состояниями: state management (_state: idle/loading/error/success, getState(), _setState()), методы показа/скрытия: showLoading(text)/hideLoading, showError(msg)/hideError, showResult/hideResult, showShareButton/hideShareButton, scrollToResult (smooth scroll), disableForm/enableForm, reset; showToast(message, type, duration) для уведомлений; анимации: _fadeIn/_fadeOut (CSS transitions); Telegram haptic feedback (_hapticFeedback); accessibility: ARIA attributes (role, aria-live, aria-busy), focus management; singleton pattern"
+        testable: true
+        test_priority: "high"
 
   tests:
     test_status:

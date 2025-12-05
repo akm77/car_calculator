@@ -135,6 +135,11 @@
         import { api, APIError } from '/static/js/modules/api.js';
 
         // =====================================================================
+        // Import UI module (RPG Sprint 6)
+        // =====================================================================
+        import { ui } from '/static/js/modules/ui.js';
+
+        // =====================================================================
         // Enhanced Telegram Integration
         // =====================================================================
         class TelegramWebAppHelper {
@@ -206,7 +211,7 @@
                 this.tg.BackButton.onClick(() => {
                     const resultCard = document.getElementById('resultCard');
                     if (resultCard.classList.contains('show')) {
-                        hideResult();
+                        ui.hideResult();
                         this.hideBackButton();
                         this.showMainButton();
                     } else {
@@ -447,7 +452,7 @@
 
             // Wire up events
             calcTabBtn.addEventListener('click', () => {
-                hideResult();
+                ui.hideResult();
                 showCalcTab();
                 if (telegram.isInTelegram()) {
                     telegram.hideBackButton();
@@ -465,7 +470,7 @@
                 }
             });
             backBtn.addEventListener('click', () => {
-                hideResult();
+                ui.hideResult();
                 showCalcTab();
                 if (telegram.isInTelegram()) {
                     telegram.hideBackButton();
@@ -889,7 +894,7 @@
 
         async function calculateCost() {
             if (!selectedCountry) {
-                showError(Messages.errors.NO_COUNTRY);
+                ui.showError(Messages.errors.NO_COUNTRY);
                 return;
             }
             if (!validateForm()) return;
@@ -905,9 +910,7 @@
                 vehicle_type: formData.get('vehicleType') || DEFAULT_VALUES.VEHICLE_TYPE
             };
 
-            showLoading(true);
-            hideError();
-            hideResult();
+            ui.showLoading();
 
             try {
                 telegram.setMainButtonLoading(true);
@@ -930,10 +933,10 @@
                     errorMessage += ': ' + error.message;
                 }
 
-                showError(errorMessage);
+                ui.showError(errorMessage);
                 telegram.hapticFeedback(HAPTIC_TYPES.HEAVY);
             } finally {
-                showLoading(false);
+                ui.hideLoading();
                 telegram.setMainButtonLoading(false);
             }
         }
@@ -1016,8 +1019,7 @@
             const metaDiv = document.getElementById('metaInfo');
             metaDiv.innerHTML = parts.join('');
 
-            document.getElementById('resultCard').classList.add('show');
-            document.getElementById('shareBtn').style.display='block';
+            ui.showResult();
             window.lastCalculationResult = result;
         }
 
@@ -1149,19 +1151,19 @@
                     const sent = telegram.sendDataSafe(telegramData);
 
                     if (sent) {
-                        showToast(Messages.info.SENT_TO_CHAT, 'success');
+                        ui.showToast(Messages.info.SENT_TO_CHAT, 'success');
                         telegram.hapticFeedback(HAPTIC_TYPES.MEDIUM);
 
                         setTimeout(() => {
                             try { telegram.close(); } catch (e) { console.warn('Failed to close WebApp:', e); }
                         }, ANIMATION.TELEGRAM_CLOSE_DELAY);
                     } else {
-                        showToast(Messages.errors.SEND_FAILED, 'error');
+                        ui.showToast(Messages.errors.SEND_FAILED, 'error');
                         telegram.hapticFeedback(HAPTIC_TYPES.HEAVY);
                     }
                 } catch (e) {
                     console.error('Exception while sending to Telegram:', e);
-                    showToast(Messages.errors.TELEGRAM_SEND_ERROR, 'error');
+                    ui.showToast(Messages.errors.TELEGRAM_SEND_ERROR, 'error');
                     telegram.hapticFeedback(HAPTIC_TYPES.HEAVY);
 
                     if (window.Telegram?.WebApp?.showAlert) {
@@ -1171,45 +1173,14 @@
             }
         }
 
-        // ===== UI helper functions (now using imported modules) =====
+        // ===== Helper functions (now using imported modules) =====
         // formatNumber and getAgeCategory now come from formatters module
         const formatNumber = formatters.formatNumber;
         const getAgeCategory = formatters.getAgeCategory;
-        function showLoading(show){
-            const el = document.getElementById('loading');
-            if (el) el.style.display = show ? 'block' : 'none';
-            const btn = document.getElementById('calculateBtn');
-            if (btn) btn.disabled = !!show;
-        }
-        function showError(msg){
-            const e = document.getElementById('error');
-            if (e){ e.textContent = msg; e.style.display='block'; }
-        }
-        function hideError(){
-            const e = document.getElementById('error');
-            if (e){ e.style.display='none'; }
-        }
-        function hideResult(){
-            const card = document.getElementById('resultCard');
-            if (card){ card.classList.remove('show'); }
-            const share = document.getElementById('shareBtn');
-            if (share){ share.style.display='none'; }
-        }
-        function showToast(message,type='info'){
-            const t=document.createElement('div');
-            t.className=`toast ${type}`;
-            t.textContent=message;
-            t.style.cssText=`position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:${type==='success'?'#10b981':type==='error'?'#ef4444':'#3b82f6'};color:#fff;padding:12px 24px;border-radius:8px;z-index:1000;animation:slideUp .3s ease-out;`;
-            document.body.appendChild(t);
-            setTimeout(()=>t.remove(),3000);
-        }
 
-        // Expose for compatibility with code that may reference window.*
-        window.hideResult = hideResult;
-        // displayResult is defined above; export it as well for potential wrappers
-        if (typeof displayResult === 'function') {
-            window.displayResult = displayResult;
-        }
+        // Expose UI and displayResult for compatibility with code that may reference window.*
+        window.ui = ui;
+        window.displayResult = displayResult;
     </script>
 </body>
 </html>

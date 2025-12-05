@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI Module Test - Sprint 6</title>
+    <link rel="stylesheet" href="/static/css/variables.css">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <style>
+        body {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: var(--secondary-bg-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: var(--link-color);
+        }
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .test-btn {
+            padding: 10px 16px;
+            background: var(--link-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .test-btn:hover {
+            opacity: 0.9;
+        }
+        .test-btn.error {
+            background: #ef4444;
+        }
+        .test-btn.success {
+            background: #10b981;
+        }
+        .test-btn.warning {
+            background: #f59e0b;
+        }
+        .state-display {
+            margin-top: 10px;
+            padding: 10px;
+            background: var(--bg-color);
+            border-radius: 4px;
+            font-family: monospace;
+            color: var(--link-color);
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .test-result.pass {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .test-result.fail {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 UI Module Test Suite - Sprint 6</h1>
+    <p>Тестирование централизованного управления UI состояниями</p>
+
+    <!-- Test 1: State Management -->
+    <div class="test-section">
+        <h2>Test 1: State Management</h2>
+        <p>Проверка переходов между состояниями (idle → loading → success/error)</p>
+        <div class="test-controls">
+            <button class="test-btn" onclick="testStateIdle()">Set IDLE</button>
+            <button class="test-btn" onclick="testStateLoading()">Set LOADING</button>
+            <button class="test-btn success" onclick="testStateSuccess()">Set SUCCESS</button>
+            <button class="test-btn error" onclick="testStateError()">Set ERROR</button>
+            <button class="test-btn" onclick="testStateReset()">RESET</button>
+        </div>
+        <div class="state-display" id="stateDisplay">Current State: <span id="currentState">idle</span></div>
+        <div id="test1Result" class="test-result" style="display: none;"></div>
+    </div>
+
+    <!-- Test 2: Loading Indicator -->
+    <div class="test-section">
+        <h2>Test 2: Loading Indicator</h2>
+        <p>Проверка показа/скрытия индикатора загрузки</p>
+        <div class="test-controls">
+            <button class="test-btn" onclick="testShowLoading()">Show Loading</button>
+            <button class="test-btn" onclick="testShowLoadingCustomText()">Show with Custom Text</button>
+            <button class="test-btn" onclick="testHideLoading()">Hide Loading</button>
+        </div>
+        <div id="test2Result" class="test-result" style="display: none;"></div>
+    </div>
+
+    <!-- Test 3: Error Messages -->
+    <div class="test-section">
+        <h2>Test 3: Error Messages</h2>
+        <p>Проверка отображения и скрытия ошибок</p>
+        <div class="test-controls">
+            <button class="test-btn error" onclick="testShowError()">Show Error</button>
+            <button class="test-btn" onclick="testHideError()">Hide Error</button>
+            <button class="test-btn error" onclick="testShowMultipleErrors()">Show Multiple Errors</button>
+        </div>
+        <div id="test3Result" class="test-result" style="display: none;"></div>
+    </div>
+
+    <!-- Test 4: Result Display -->
+    <div class="test-section">
+        <h2>Test 4: Result Display</h2>
+        <p>Проверка показа/скрытия результатов с анимацией</p>
+        <div class="test-controls">
+            <button class="test-btn success" onclick="testShowResult()">Show Result</button>
+            <button class="test-btn" onclick="testHideResult()">Hide Result</button>
+            <button class="test-btn" onclick="testScrollToResult()">Scroll to Result</button>
+        </div>
+        <div id="test4Result" class="test-result" style="display: none;"></div>
+    </div>
+
+    <!-- Test 5: Form Control -->
+    <div class="test-section">
+        <h2>Test 5: Form Control</h2>
+        <p>Проверка блокировки/разблокировки формы</p>
+        <div class="test-controls">
+            <button class="test-btn" onclick="testDisableForm()">Disable Form</button>
+            <button class="test-btn success" onclick="testEnableForm()">Enable Form</button>
+        </div>
+        <div id="test5Result" class="test-result" style="display: none;"></div>
+    </div>
+
+    <!-- Test 6: Toast Notifications -->
+    <div class="test-section">
+        <h2>Test 6: Toast Notifications</h2>
+        <p>Проверка всплывающих уведомлений</p>
+        <div class="test-controls">
+            <button class="test-btn" onclick="testToastInfo()">Info Toast</button>
+            <button class="test-btn success" onclick="testToastSuccess()">Success Toast</button>
+            <button class="test-btn error" onclick="testToastError()">Error Toast</button>
+            <button class="test-btn warning" onclick="testToastWarning()">Warning Toast</button>
+            <button class="test-btn" onclick="testToastLongDuration()">Long Duration Toast</button>
+        </div>
+        <div id="test6Result" class="test-result" style="display: none;"></div>
+    </div>
+
+    <!-- Test 7: Complete Flow -->
+    <div class="test-section">
+        <h2>Test 7: Complete Flow</h2>
+        <p>Проверка полного цикла: loading → success с результатом</p>
+        <div class="test-controls">
+            <button class="test-btn" onclick="testCompleteFlowSuccess()">Success Flow</button>
+            <button class="test-btn error" onclick="testCompleteFlowError()">Error Flow</button>
+        </div>
+        <div id="test7Result" class="test-result" style="display: none;"></div>
+    </div>
+
+    <!-- Test 8: Accessibility -->
+    <div class="test-section">
+        <h2>Test 8: Accessibility (ARIA)</h2>
+        <p>Проверка ARIA атрибутов и доступности</p>
+        <div class="test-controls">
+            <button class="test-btn" onclick="testAccessibility()">Check ARIA Attributes</button>
+        </div>
+        <div id="test8Result" class="test-result" style="display: none;"></div>
+    </div>
+
+    <!-- Mock Elements (same structure as actual webapp) -->
+    <div style="display: none;">
+        <form id="calculatorForm">
+            <input type="number" id="year" value="2020">
+            <input type="number" id="engineCc" value="2000">
+            <button id="calculateBtn">Calculate</button>
+        </form>
+        <div id="loading" style="display: none;">Loading...</div>
+        <div id="error" style="display: none;"></div>
+        <div id="resultCard" style="display: none;">
+            <div id="totalAmount">0 ₽</div>
+        </div>
+        <button id="shareBtn" style="display: none;">Share</button>
+    </div>
+
+    <script type="module">
+        import { ui, UI_STATES } from '/static/js/modules/ui.js';
+
+        // Make ui global for onclick handlers
+        window.ui = ui;
+
+        // Update state display
+        function updateStateDisplay() {
+            document.getElementById('currentState').textContent = ui.getState();
+        }
+        setInterval(updateStateDisplay, 500);
+
+        // Test 1: State Management
+        window.testStateIdle = () => {
+            ui.reset();
+            updateStateDisplay();
+            showTestResult('test1Result', 'pass', 'State set to IDLE');
+        };
+
+        window.testStateLoading = () => {
+            ui.showLoading();
+            updateStateDisplay();
+            showTestResult('test1Result', 'pass', 'State set to LOADING');
+        };
+
+        window.testStateSuccess = () => {
+            ui.showResult();
+            updateStateDisplay();
+            showTestResult('test1Result', 'pass', 'State set to SUCCESS');
+        };
+
+        window.testStateError = () => {
+            ui.showError('Test error message');
+            updateStateDisplay();
+            showTestResult('test1Result', 'pass', 'State set to ERROR');
+        };
+
+        window.testStateReset = () => {
+            ui.reset();
+            updateStateDisplay();
+            showTestResult('test1Result', 'pass', 'State reset to IDLE');
+        };
+
+        // Test 2: Loading Indicator
+        window.testShowLoading = () => {
+            ui.showLoading();
+            const loadingEl = document.getElementById('loading');
+            const isVisible = loadingEl.style.display !== 'none';
+            showTestResult('test2Result', isVisible ? 'pass' : 'fail',
+                isVisible ? 'Loading indicator shown' : 'Loading indicator NOT shown');
+        };
+
+        window.testShowLoadingCustomText = () => {
+            ui.showLoading('Пожалуйста, подождите...');
+            const loadingEl = document.getElementById('loading');
+            const hasCustomText = loadingEl.textContent === 'Пожалуйста, подождите...';
+            showTestResult('test2Result', hasCustomText ? 'pass' : 'fail',
+                hasCustomText ? 'Custom loading text shown' : 'Custom text NOT applied');
+        };
+
+        window.testHideLoading = () => {
+            ui.hideLoading();
+            setTimeout(() => {
+                const loadingEl = document.getElementById('loading');
+                const isHidden = loadingEl.style.display === 'none';
+                showTestResult('test2Result', isHidden ? 'pass' : 'fail',
+                    isHidden ? 'Loading indicator hidden' : 'Loading indicator NOT hidden');
+            }, 400);
+        };
+
+        // Test 3: Error Messages
+        window.testShowError = () => {
+            ui.showError('Тестовая ошибка');
+            const errorEl = document.getElementById('error');
+            const isVisible = errorEl.style.display !== 'none';
+            const hasText = errorEl.textContent === 'Тестовая ошибка';
+            showTestResult('test3Result', isVisible && hasText ? 'pass' : 'fail',
+                isVisible && hasText ? 'Error message shown correctly' : 'Error NOT shown correctly');
+        };
+
+        window.testHideError = () => {
+            ui.hideError();
+            setTimeout(() => {
+                const errorEl = document.getElementById('error');
+                const isHidden = errorEl.style.display === 'none';
+                showTestResult('test3Result', isHidden ? 'pass' : 'fail',
+                    isHidden ? 'Error message hidden' : 'Error NOT hidden');
+            }, 400);
+        };
+
+        window.testShowMultipleErrors = () => {
+            ui.showError('Первая ошибка');
+            setTimeout(() => {
+                ui.showError('Вторая ошибка (должна заменить первую)');
+                const errorEl = document.getElementById('error');
+                const hasSecondText = errorEl.textContent === 'Вторая ошибка (должна заменить первую)';
+                showTestResult('test3Result', hasSecondText ? 'pass' : 'fail',
+                    hasSecondText ? 'Second error replaced first' : 'Error replacement failed');
+            }, 500);
+        };
+
+        // Test 4: Result Display
+        window.testShowResult = () => {
+            ui.showResult();
+            const resultCard = document.getElementById('resultCard');
+            const hasShowClass = resultCard.classList.contains('show');
+            showTestResult('test4Result', hasShowClass ? 'pass' : 'fail',
+                hasShowClass ? 'Result card shown with animation' : 'Result card NOT shown');
+        };
+
+        window.testHideResult = () => {
+            ui.hideResult();
+            const resultCard = document.getElementById('resultCard');
+            const hasShowClass = resultCard.classList.contains('show');
+            showTestResult('test4Result', !hasShowClass ? 'pass' : 'fail',
+                !hasShowClass ? 'Result card hidden' : 'Result card NOT hidden');
+        };
+
+        window.testScrollToResult = () => {
+            ui.scrollToResult();
+            showTestResult('test4Result', 'pass', 'Scroll to result triggered (check console for errors)');
+        };
+
+        // Test 5: Form Control
+        window.testDisableForm = () => {
+            ui.disableForm();
+            const calcBtn = document.getElementById('calculateBtn');
+            const isDisabled = calcBtn.disabled;
+            showTestResult('test5Result', isDisabled ? 'pass' : 'fail',
+                isDisabled ? 'Form disabled correctly' : 'Form NOT disabled');
+        };
+
+        window.testEnableForm = () => {
+            ui.enableForm();
+            const calcBtn = document.getElementById('calculateBtn');
+            const isEnabled = !calcBtn.disabled;
+            showTestResult('test5Result', isEnabled ? 'pass' : 'fail',
+                isEnabled ? 'Form enabled correctly' : 'Form NOT enabled');
+        };
+
+        // Test 6: Toast Notifications
+        window.testToastInfo = () => {
+            ui.showToast('Информационное сообщение', 'info');
+            showTestResult('test6Result', 'pass', 'Info toast shown (check bottom of page)');
+        };
+
+        window.testToastSuccess = () => {
+            ui.showToast('Успешная операция!', 'success');
+            showTestResult('test6Result', 'pass', 'Success toast shown (check bottom of page)');
+        };
+
+        window.testToastError = () => {
+            ui.showToast('Произошла ошибка!', 'error');
+            showTestResult('test6Result', 'pass', 'Error toast shown (check bottom of page)');
+        };
+
+        window.testToastWarning = () => {
+            ui.showToast('Предупреждение!', 'warning');
+            showTestResult('test6Result', 'pass', 'Warning toast shown (check bottom of page)');
+        };
+
+        window.testToastLongDuration = () => {
+            ui.showToast('Сообщение на 10 секунд', 'info', 10000);
+            showTestResult('test6Result', 'pass', 'Long duration toast shown (10s)');
+        };
+
+        // Test 7: Complete Flow
+        window.testCompleteFlowSuccess = () => {
+            ui.reset();
+            ui.showLoading('Рассчитываем...');
+            setTimeout(() => {
+                ui.showResult();
+                ui.showToast('Расчет завершен!', 'success');
+                showTestResult('test7Result', 'pass', 'Success flow completed: loading → result → toast');
+            }, 2000);
+        };
+
+        window.testCompleteFlowError = () => {
+            ui.reset();
+            ui.showLoading('Рассчитываем...');
+            setTimeout(() => {
+                ui.showError('Ошибка при расчете');
+                ui.showToast('Не удалось выполнить расчет', 'error');
+                showTestResult('test7Result', 'pass', 'Error flow completed: loading → error → toast');
+            }, 2000);
+        };
+
+        // Test 8: Accessibility
+        window.testAccessibility = () => {
+            const results = [];
+
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl.getAttribute('role') === 'status') {
+                results.push('✓ Loading has role="status"');
+            } else {
+                results.push('✗ Loading missing role attribute');
+            }
+
+            const errorEl = document.getElementById('error');
+            if (errorEl.getAttribute('role') === 'alert') {
+                results.push('✓ Error has role="alert"');
+            } else {
+                results.push('✗ Error missing role attribute');
+            }
+
+            const resultCard = document.getElementById('resultCard');
+            if (resultCard.getAttribute('role') === 'region') {
+                results.push('✓ Result card has role="region"');
+            } else {
+                results.push('✗ Result card missing role attribute');
+            }
+
+            const allPass = results.every(r => r.startsWith('✓'));
+            showTestResult('test8Result', allPass ? 'pass' : 'fail', results.join('<br>'));
+        };
+
+        // Helper to show test results
+        function showTestResult(elementId, status, message) {
+            const el = document.getElementById(elementId);
+            el.className = `test-result ${status}`;
+            el.innerHTML = `<strong>${status === 'pass' ? '✅ PASS' : '❌ FAIL'}:</strong> ${message}`;
+            el.style.display = 'block';
+        }
+
+        // Auto-run accessibility test on load
+        setTimeout(() => {
+            window.testAccessibility();
+        }, 500);
+
+        console.log('UI Module Test Suite loaded. UI module:', ui);
+        console.log('Current state:', ui.getState());
+    </script>
+</body>
+</html>
+

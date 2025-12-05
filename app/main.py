@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 
 WEB_DIR = Path(__file__).parent / "webapp"
+TESTS_DIR = Path(__file__).parent.parent / "tests"
 
 
 def rate_limit_middleware(app: FastAPI) -> Callable:
@@ -99,6 +100,13 @@ def create_app() -> FastAPI:
         logger.info("static_files_mounted", web_dir=str(WEB_DIR))
     else:
         logger.warning("webapp_dir_not_found", path=str(WEB_DIR))
+
+    # Mount tests directory for manual testing
+    if TESTS_DIR.exists():
+        app.mount("/tests", StaticFiles(directory=TESTS_DIR, html=True), name="tests")
+        logger.info("tests_dir_mounted", tests_dir=str(TESTS_DIR))
+    else:
+        logger.warning("tests_dir_not_found", path=str(TESTS_DIR))
 
     # Redirect root to /web/ to unify relative asset paths
     @app.get("/")
