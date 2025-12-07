@@ -509,21 +509,6 @@
             setupEventListeners();
             setDefaultValues(); // Устанавливаем значения по умолчанию
 
-            // Patch result show/hide to switch tabs
-            const originalDisplayResult = window.displayResult;
-            const originalHideResult = window.hideResult;
-            if (typeof originalDisplayResult === 'function') {
-                window.displayResult = function(result) {
-                    originalDisplayResult(result);
-                    showResultsTab();
-                };
-            }
-            if (typeof originalHideResult === 'function') {
-                window.hideResult = function() {
-                    originalHideResult();
-                    showCalcTab();
-                };
-            }
 
             if (telegram.isInTelegram()) {
                 // Use only Telegram MainButton, hide in-page calculate button
@@ -1048,6 +1033,9 @@
             ui.showResult();
             console.log('[displayResult] ui.showResult() completed');
 
+            // Switch to results tab
+            showResultsTab();
+
             window.lastCalculationResult = result;
             console.log('[displayResult] COMPLETE');
         }
@@ -1148,9 +1136,9 @@
             // Copy to clipboard
             doCopy(detailText).then((copied) => {
                 if (copied) {
-                    showToast(Messages.info.COPIED, 'success');
+                    ui.showToast(Messages.info.COPIED, 'success');
                 } else {
-                    showToast(Messages.errors.COPY_FAILED, 'error');
+                    ui.showToast(Messages.errors.COPY_FAILED, 'error');
                 }
             });
 
