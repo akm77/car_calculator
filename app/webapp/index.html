@@ -1006,7 +1006,7 @@
 
             // Duty details
             if (meta.customs_value_eur != null) {
-                parts.push(`<div>${Messages.labels.CUSTOMS_VALUE}: ${formatNumber(Math.round(meta.customs_value_eur))} €</div>`);
+                parts.push(`<div>${Messages.labels.CUSTOMS_VALUE}: ${formatters.formatNumber(Math.round(meta.customs_value_eur))} €</div>`);
             }
             if (meta.duty_formula_mode === 'percent') {
                 if (meta.duty_percent != null) {
@@ -1016,7 +1016,7 @@
                     parts.push(`<div>${Messages.labels.MIN_RATE}: ${meta.duty_min_rate_eur_per_cc} €/см³</div>`);
                 }
                 if (meta.duty_value_bracket_max_eur != null) {
-                    parts.push(`<div>${Messages.duty.VALUE_BRACKET}: ${formatNumber(meta.duty_value_bracket_max_eur)} €</div>`);
+                    parts.push(`<div>${Messages.duty.VALUE_BRACKET}: ${formatters.formatNumber(meta.duty_value_bracket_max_eur)} €</div>`);
                 }
             } else if (meta.duty_formula_mode === 'per_cc' && meta.duty_rate_eur_per_cc != null) {
                 parts.push(`<div>${Messages.labels.DUTY_RATE}: ${meta.duty_rate_eur_per_cc} €/см³</div>`);
@@ -1069,7 +1069,7 @@
             if (r.engine_cc) lines.push(`${Messages.labels.ENGINE}: ${r.engine_cc} см³`);
             if (r.purchase_price && r.currency) lines.push(`${Messages.labels.PRICE}: ${fnum(r.purchase_price)} ${r.currency}`);
             if (r.freight_type) lines.push(`${Messages.labels.FREIGHT_TYPE}: ${r.freight_type}`);
-            if (m.age_years !== undefined && m.age_category) lines.push(`${Messages.labels.AGE}: ${m.age_years} лет (${getAgeCategory(m.age_category)})`);
+            if (m.age_years !== undefined && m.age_category) lines.push(`${Messages.labels.AGE}: ${m.age_years} лет (${formatters.getAgeCategory(m.age_category)})`);
             lines.push('');
             lines.push(Messages.share.BREAKDOWN_TITLE);
             if (b.purchase_price_rub) lines.push(`• ${Messages.breakdown.PURCHASE_PRICE}: ${fnum(b.purchase_price_rub)} ₽`);

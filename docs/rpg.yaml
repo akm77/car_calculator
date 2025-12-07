@@ -10,7 +10,7 @@ rpg:
     supported_countries: ["japan", "korea", "uae", "china", "georgia"]
     recent_changes:
       - date: "2025-12-07"
-        description: "BUGFIX CRITICAL: Исправлена кнопка 'Рассчитать' - заменён вызов showError() на ui.showError() в validateForm(), расчет теперь работает"
+        description: "BUGFIX CRITICAL: Исправлена кнопка 'Рассчитать' и отображение результатов - заменены вызовы устаревших функций: showError()→ui.showError() (1x), formatNumber()→formatters.formatNumber() (5x), getAgeCategory()→formatters.getAgeCategory() (2x). Всего 8 исправлений в index.html"
       - date: "2025-12-07"
         description: "BUGFIX: Исправлено предупреждение Telegram HapticFeedback (версия 6.0) - добавлена проверка версии API (поддержка с 6.1+), graceful degradation для старых версий"
       - date: "2025-12-07"

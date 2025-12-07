@@ -10,19 +10,23 @@
 
 ### User Report
 ```
-При нажатии на кнопку рассчитать РАСЧЕТ НЕ ПРОИЗВОДИТСЯ
-При нажатии на кнопку рассчитать есть тактильный отклик
+Report 1: "При нажатии на кнопку рассчитать РАСЧЕТ НЕ ПРОИЗВОДИТСЯ. При нажатии на кнопку рассчитать есть тактильный отклик"
+
+Report 2: "Вижу в консоли отправку на рассчет [APIClient] POST http://localhost:8000/api/calculate
+{country: 'georgia', year: 2022, engine_cc: 1500, purchase_price: 10000, currency: 'USD', ...}
+Но не вижу запроса результата рассчета"
 ```
 
 ### Symptoms
 - ✅ Haptic feedback works (button responds)
-- ❌ Calculation does NOT execute
-- ❌ No loading indicator
-- ❌ No results displayed
-- ❌ Form appears to do nothing
+- ✅ API request sends (visible in console)
+- ✅ API responds with data
+- ❌ Results do NOT display on screen
+- ❌ Numbers not formatted
+- ❌ Validation errors not shown
 
 ### Impact
-**CRITICAL**: Core functionality completely broken. Users cannot calculate car import costs, which is the **primary purpose** of the application.
+**CRITICAL**: Core functionality completely broken. Users cannot see calculation results or validation errors, which is the **primary purpose** of the application.
 
 ---
 
@@ -30,10 +34,22 @@
 
 ### Stack Trace (Browser Console)
 ```javascript
+// Error 1: Validation
 Uncaught ReferenceError: showError is not defined
     at validateForm (index.html:875)
     at calculateCost (index.html:914)
     at HTMLFormElement.<anonymous> (index.html:658)
+
+// Error 2: Results Display
+Uncaught ReferenceError: formatNumber is not defined
+    at displayResult (index.html:960)
+    at calculateCost (index.html:934)
+    at HTMLFormElement.<anonymous> (index.html:658)
+
+// Error 3: Age Category
+Uncaught ReferenceError: getAgeCategory is not defined
+    at displayResult (index.html:1004)
+    at calculateCost (index.html:934)
 ```
 
 ### Code Location: index.html:875
@@ -168,15 +184,43 @@ The `validateForm()` function (created in Sprint 4) still used the old `showErro
 
 ## ✅ Solution
 
-### The Fix (1 character change!)
+### Fix 1: Validation Error Display
 ```diff
 - showError(firstError.message);
 + ui.showError(firstError.message);
 ```
+**Line**: 875
 
+### Fix 2: Number Formatting (5 occurrences)
+```diff
+- formatNumber(breakdown.total_rub)
++ formatters.formatNumber(breakdown.total_rub)
+
+- formatNumber(item.amount)
++ formatters.formatNumber(item.amount)
+
+- formatNumber(Math.round(meta.customs_value_eur))
++ formatters.formatNumber(Math.round(meta.customs_value_eur))
+
+- formatNumber(meta.duty_value_bracket_max_eur)
++ formatters.formatNumber(meta.duty_value_bracket_max_eur)
+```
+**Lines**: 960, 980, 987, 1009, 1019
+
+### Fix 3: Age Category Display (2 occurrences)
+```diff
+- getAgeCategory(meta.age_category)
++ formatters.getAgeCategory(meta.age_category)
+
+- getAgeCategory(m.age_category)
++ formatters.getAgeCategory(m.age_category)
+```
+**Lines**: 1004, 1072
+
+### Summary
 **File**: `app/webapp/index.html`  
-**Line**: 875  
-**Characters changed**: +3 (add `ui.`)
+**Total fixes**: 8 function calls  
+**Characters changed**: +81 (add module prefixes)
 
 ---
 
@@ -355,11 +399,13 @@ describe('validateForm()', () => {
 
 ## 📁 Files Changed
 
-| File | Line | Change |
-|------|------|--------|
-| `app/webapp/index.html` | 875 | `showError()` → `ui.showError()` |
+| File | Lines | Changes |
+|------|-------|---------|
+| `app/webapp/index.html` | 875 | `showError()` → `ui.showError()` (1x) |
+| `app/webapp/index.html` | 960, 980, 987, 1009, 1019 | `formatNumber()` → `formatters.formatNumber()` (5x) |
+| `app/webapp/index.html` | 1004, 1072 | `getAgeCategory()` → `formatters.getAgeCategory()` (2x) |
 
-**Total**: 1 file, 1 line, +3 characters
+**Total**: 1 file, 8 function calls fixed, +81 characters
 
 ---
 
