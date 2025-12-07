@@ -929,7 +929,10 @@
             try {
                 telegram.setMainButtonLoading(true);
                 const result = await api.calculate(requestData);
+                console.log('[calculateCost] API result received:', result);
+                console.log('[calculateCost] Calling displayResult()...');
                 displayResult(result);
+                console.log('[calculateCost] displayResult() completed');
                 if (telegram.isInTelegram()) {
                     telegram.hapticFeedback(HAPTIC_TYPES.MEDIUM);
                     telegram.hideMainButton();
@@ -956,7 +959,14 @@
         }
 
         function displayResult(result) {
+            console.log('[displayResult] START - received result:', result);
+            console.log('[displayResult] breakdown:', result.breakdown);
+            console.log('[displayResult] meta:', result.meta);
+
             const { breakdown, meta } = result;
+            console.log('[displayResult] Destructured - breakdown:', breakdown, 'meta:', meta);
+
+            console.log('[displayResult] Setting totalAmount to:', formatters.formatNumber(breakdown.total_rub) + ' ₽');
             document.getElementById('totalAmount').textContent = formatters.formatNumber(breakdown.total_rub) + ' ₽';
 
             const breakdownDiv = document.getElementById('breakdown');
@@ -1032,9 +1042,14 @@
 
             const metaDiv = document.getElementById('metaInfo');
             metaDiv.innerHTML = parts.join('');
+            console.log('[displayResult] Meta info set, innerHTML length:', metaDiv.innerHTML.length);
 
+            console.log('[displayResult] Calling ui.showResult()...');
             ui.showResult();
+            console.log('[displayResult] ui.showResult() completed');
+
             window.lastCalculationResult = result;
+            console.log('[displayResult] COMPLETE');
         }
 
         // Resolve country code to label (prefers API meta, falls back to Messages.countries)
