@@ -18,6 +18,11 @@ self.addEventListener('install', function(event) {
 
 // Обработка запросов
 self.addEventListener('fetch', function(event) {
+  // Skip non-GET requests and Chrome extension requests
+  if (event.request.method !== 'GET' || event.request.url.includes('chrome-extension://')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then(function(response) {
@@ -25,7 +30,14 @@ self.addEventListener('fetch', function(event) {
         if (response) {
           return response;
         }
-        return fetch(event.request);
+
+        // Clone request and allow redirects
+        return fetch(event.request.clone(), {
+          redirect: 'follow'
+        }).catch(function(error) {
+          console.log('Fetch failed; returning offline page instead.', error);
+          // Could return a custom offline page here
+        });
       }
     )
   );

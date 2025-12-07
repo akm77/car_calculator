@@ -2,6 +2,16 @@
 
 ## Manual Test Suite
 
+### ⚠️ Import Path Fix (December 7, 2025)
+
+The test file now uses absolute paths:
+```javascript
+import * as formatters from '/static/js/utils/formatters.js';
+import * as dom from '/static/js/utils/dom.js';
+```
+
+This matches the FastAPI mount point `/static` → `app/webapp/` directory.
+
 ### Quick Start
 
 1. **Start the development server** (if not running):
@@ -12,13 +22,10 @@
 
 2. **Open test page in browser**:
    ```
-   http://localhost:8000/static/../tests/manual/test_formatters.html
+   http://localhost:8000/tests/manual/test_formatters.html
    ```
    
-   Or use direct file path:
-   ```
-   file:///Users/admin/PycharmProjects/car_calculator/tests/manual/test_formatters.html
-   ```
+   ⚠️ **Note**: Do NOT use `file://` protocol - ES6 modules require HTTP server
 
 3. **Check results**:
    - Green checkmarks = PASS

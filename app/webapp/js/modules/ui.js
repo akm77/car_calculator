@@ -304,7 +304,8 @@ export class UI {
     _hapticFeedback(type = 'medium') {
         try {
             const tg = window.Telegram?.WebApp;
-            if (tg && tg.HapticFeedback) {
+            // HapticFeedback is supported from Telegram WebApp API 6.1+
+            if (tg && tg.HapticFeedback && this._isHapticSupported(tg)) {
                 switch (type) {
                     case 'light':
                         tg.HapticFeedback.impactOccurred('light');
@@ -323,6 +324,19 @@ export class UI {
             // Haptic feedback is optional, silently fail
             console.debug('Haptic feedback not available:', e);
         }
+    }
+
+    /**
+     * Check if Haptic Feedback is supported in current Telegram version
+     * @param {Object} tg - Telegram WebApp instance
+     * @returns {boolean}
+     * @private
+     */
+    _isHapticSupported(tg) {
+        // HapticFeedback requires Telegram WebApp API 6.1+
+        const version = tg.version || '6.0';
+        const [major, minor] = version.split('.').map(Number);
+        return major > 6 || (major === 6 && minor >= 1);
     }
 
     /**

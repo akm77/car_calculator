@@ -130,6 +130,11 @@
         } from '/static/js/config/constants.js';
 
         // =====================================================================
+        // Import validator module (RPG Sprint 4)
+        // =====================================================================
+        import { validator as formValidator } from '/static/js/modules/validator.js';
+
+        // =====================================================================
         // Import API client module (RPG Sprint 5)
         // =====================================================================
         import { api, APIError } from '/static/js/modules/api.js';
@@ -341,7 +346,8 @@
             }
 
             hapticFeedback(type = 'light') {
-                if (!this.isValid || !this.tg?.HapticFeedback) return;
+                // HapticFeedback is supported from Telegram WebApp API 6.1+
+                if (!this.isValid || !this.tg?.HapticFeedback || !this.isHapticSupported()) return;
 
                 try {
                     if (type === 'light') {
@@ -354,6 +360,14 @@
                 } catch (error) {
                     console.warn('Haptic feedback failed:', error);
                 }
+            }
+
+            isHapticSupported() {
+                if (!this.tg) return false;
+                // HapticFeedback requires Telegram WebApp API 6.1+
+                const version = this.tg.version || '6.0';
+                const [major, minor] = version.split('.').map(Number);
+                return major > 6 || (major === 6 && minor >= 1);
             }
 
             close() {
