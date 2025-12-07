@@ -872,7 +872,7 @@
             if (!validationResult.isValid) {
                 // Show first error
                 const firstError = validationResult.errors[0];
-                showError(firstError.message);
+                ui.showError(firstError.message);
 
                 // Highlight invalid field
                 const fieldId = getFieldIdFromName(firstError.field);
