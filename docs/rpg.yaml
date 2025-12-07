@@ -10,6 +10,8 @@ rpg:
     supported_countries: ["japan", "korea", "uae", "china", "georgia"]
     recent_changes:
       - date: "2025-12-07"
+        description: "BUGFIX CRITICAL: Исправлена кнопка 'Рассчитать' - заменён вызов showError() на ui.showError() в validateForm(), расчет теперь работает"
+      - date: "2025-12-07"
         description: "BUGFIX: Исправлено предупреждение Telegram HapticFeedback (версия 6.0) - добавлена проверка версии API (поддержка с 6.1+), graceful degradation для старых версий"
       - date: "2025-12-07"
         description: "BUGFIX: Исправлены ошибки в index.html и sw.js - добавлен импорт validator.js (formValidator not defined), исправлен Service Worker для обработки редиректов (redirect mode: follow)"

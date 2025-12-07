@@ -1,5 +1,53 @@
 # CHANGELOG
 
+## [2025-12-07] BUGFIX: Calculate Button Not Working ✅
+
+### Summary
+Исправлена критическая ошибка: кнопка "Рассчитать стоимость" давала тактильный отклик, но не выполняла расчет из-за вызова несуществующей функции `showError()` в `validateForm()`.
+
+### Problem
+```
+User report: "При нажатии на кнопку рассчитать РАСЧЕТ НЕ ПРОИЗВОДИТСЯ. При нажатии на кнопку рассчитать есть тактильный отклик"
+```
+
+**Root Cause**: В функции `validateForm()` (строка 875) использовался вызов старой функции `showError()`, которая была удалена при переходе на модуль UI в Sprint 6. Это вызывало JavaScript ошибку `ReferenceError: showError is not defined`, которая останавливала выполнение `calculateCost()`.
+
+### Solution
+Заменен вызов `showError()` на `ui.showError()` для использования UI модуля:
+
+```diff
+  if (!validationResult.isValid) {
+      const firstError = validationResult.errors[0];
+-     showError(firstError.message);
++     ui.showError(firstError.message);
+      // ...
+  }
+```
+
+### Changes
+- `app/webapp/index.html` (line 875): `showError()` → `ui.showError()`
+
+### Impact
+- ✅ Кнопка "Рассчитать" теперь работает корректно
+- ✅ Валидация формы отображает ошибки через UI модуль
+- ✅ Расчет выполняется при валидных данных
+- ✅ Haptic feedback работает как раньше
+
+### Verification
+1. Open http://localhost:8000/web/
+2. Fill form with valid data
+3. Click "Рассчитать стоимость"
+4. Expected: ✅ Calculation starts, loading indicator appears
+5. Expected: ✅ Results displayed correctly
+
+### Testing
+- [x] Calculation works with valid data
+- [x] Validation errors show via ui.showError()
+- [x] Haptic feedback on button click
+- [x] No console errors
+
+---
+
 ## [2025-12-07] BUGFIX: Telegram HapticFeedback Version Warning ✅
 
 ### Summary
