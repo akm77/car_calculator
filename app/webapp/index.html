@@ -957,7 +957,7 @@
 
         function displayResult(result) {
             const { breakdown, meta } = result;
-            document.getElementById('totalAmount').textContent = formatNumber(breakdown.total_rub) + ' ₽';
+            document.getElementById('totalAmount').textContent = formatters.formatNumber(breakdown.total_rub) + ' ₽';
 
             const breakdownDiv = document.getElementById('breakdown');
             breakdownDiv.innerHTML = '';
@@ -977,14 +977,14 @@
                 if (item.amount > 0) {
                     const div = document.createElement('div');
                     div.className='breakdown-item';
-                    div.innerHTML=`<span class="breakdown-label">${item.label}</span><span class="breakdown-amount">${formatNumber(item.amount)} ₽</span>`;
+                    div.innerHTML=`<span class="breakdown-label">${item.label}</span><span class="breakdown-amount">${formatters.formatNumber(item.amount)} ₽</span>`;
                     breakdownDiv.appendChild(div);
                 }
             });
 
             const totalDiv = document.createElement('div');
             totalDiv.className='breakdown-item';
-            totalDiv.innerHTML=`<span class="breakdown-label">${Messages.labels.TOTAL}</span><span class="breakdown-amount">${formatNumber(breakdown.total_rub)} ₽</span>`;
+            totalDiv.innerHTML=`<span class="breakdown-label">${Messages.labels.TOTAL}</span><span class="breakdown-amount">${formatters.formatNumber(breakdown.total_rub)} ₽</span>`;
             breakdownDiv.appendChild(totalDiv);
 
             // Engine/duty details
@@ -1001,7 +1001,7 @@
                 parts.push(`<div>${Messages.labels.COUNTRY}: ${countryLabel}</div>`);
             }
 
-            parts.push(`<div>${Messages.labels.AGE}: ${meta.age_years} лет (${getAgeCategory(meta.age_category)})</div>`);
+            parts.push(`<div>${Messages.labels.AGE}: ${meta.age_years} лет (${formatters.getAgeCategory(meta.age_category)})</div>`);
             parts.push(`<div>${Messages.labels.ENGINE}: ${engineDisplay}</div>`);
 
             // Duty details
