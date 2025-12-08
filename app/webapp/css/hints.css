@@ -1,0 +1,373 @@
+/**
+ * Visual Hints System - CSS Styles
+ * Provides color-coded feedback for critical form fields (year, engine power)
+ * MVP Implementation - Sprint 2025-12-08
+ *
+ * References:
+ * - docs/UI_HINTS_INTEGRATION_PROPOSAL.md
+ * - docs/UI_HINTS_SUMMARY.md
+ * - docs/QUICK_REFERENCE_AGE_OPTIMAL.md
+ * - docs/QUICK_REFERENCE_POWER_LIMITS.md
+ */
+
+/* ========================================
+   Color-coded Input Borders & Backgrounds
+   ======================================== */
+
+/**
+ * Zone: OPTIMAL (Green)
+ * For age 3-5 years, power ≤160 HP
+ * Minimal customs fees and utilization fees
+ */
+.input-hint-optimal {
+    border: 2px solid #27ae60 !important;
+    background: rgba(39, 174, 96, 0.05) !important;
+    transition: all 0.3s ease;
+}
+
+.input-hint-optimal:focus {
+    border-color: #229954 !important;
+    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
+}
+
+/**
+ * Zone: ACCEPTABLE (Blue)
+ * For age slightly outside optimal, power 160-200 HP
+ * Fees start increasing but still manageable
+ */
+.input-hint-acceptable {
+    border: 2px solid #3498db !important;
+    background: rgba(52, 152, 219, 0.05) !important;
+    transition: all 0.3s ease;
+}
+
+.input-hint-acceptable:focus {
+    border-color: #2980b9 !important;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+/**
+ * Zone: WARNING (Orange)
+ * For age >5 years, power 200-300 HP
+ * High fees, caution advised
+ */
+.input-hint-warning {
+    border: 2px solid #f39c12 !important;
+    background: rgba(243, 156, 18, 0.05) !important;
+    transition: all 0.3s ease;
+}
+
+.input-hint-warning:focus {
+    border-color: #e67e22 !important;
+    box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.1);
+}
+
+/**
+ * Zone: PROHIBITIVE (Red)
+ * For age <3 years (expensive cars), power >300 HP
+ * Extremely high fees, strongly discouraged
+ */
+.input-hint-prohibitive {
+    border: 2px solid #e74c3c !important;
+    background: rgba(231, 76, 60, 0.05) !important;
+    transition: all 0.3s ease;
+}
+
+.input-hint-prohibitive:focus {
+    border-color: #c0392b !important;
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+/* ========================================
+   Hint Text Below Input Fields
+   ======================================== */
+
+/**
+ * Text hints that appear below the input field
+ * Provide brief explanation of the zone
+ */
+.hint-text {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--hint-color, #666);
+    animation: fadeIn 0.2s ease-in;
+}
+
+/* Fade-in animation for hint text */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Color-specific hint text styles for better readability */
+.input-hint-optimal + .hint-text {
+    color: #229954;
+}
+
+.input-hint-acceptable + .hint-text {
+    color: #2980b9;
+}
+
+.input-hint-warning + .hint-text {
+    color: #d68910;
+}
+
+.input-hint-prohibitive + .hint-text {
+    color: #c0392b;
+    font-weight: 500;
+}
+
+/* ========================================
+   Information Icon (ℹ️) & Tooltip
+   ======================================== */
+
+/**
+ * Info icon container - positioned next to label
+ */
+.info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    margin-left: 6px;
+    font-size: 14px;
+    color: var(--link-color, #2481cc);
+    cursor: pointer;
+    user-select: none;
+    vertical-align: middle;
+    transition: transform 0.2s ease;
+    /* Accessibility: ensure touch target is large enough */
+    position: relative;
+}
+
+.info-icon::before {
+    content: 'ℹ️';
+}
+
+.info-icon:hover {
+    transform: scale(1.15);
+}
+
+.info-icon:active {
+    transform: scale(1.0);
+}
+
+/* Accessibility: keyboard focus indicator */
+.info-icon:focus {
+    outline: 2px solid var(--link-color, #2481cc);
+    outline-offset: 2px;
+    border-radius: 50%;
+}
+
+/* Touch-friendly tap area (44x44px minimum) */
+.info-icon::after {
+    content: '';
+    position: absolute;
+    top: -13px;
+    left: -13px;
+    right: -13px;
+    bottom: -13px;
+    /* Invisible but increases clickable area */
+}
+
+/**
+ * Tooltip bubble that appears on click/hover
+ */
+.hint-tooltip {
+    position: absolute;
+    z-index: 1000;
+    max-width: 280px;
+    padding: 10px 12px;
+    background: var(--secondary-bg-color, #f5f5f5);
+    color: var(--text-color, #000);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: tooltipFadeIn 0.2s ease-out;
+    pointer-events: none; /* Don't block clicks */
+}
+
+/* Arrow for tooltip (positioned dynamically via JS) */
+.hint-tooltip::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+}
+
+/* Arrow pointing up (default position: below icon) */
+.hint-tooltip.tooltip-bottom::before {
+    top: -6px;
+    left: 12px;
+    border-width: 0 6px 6px 6px;
+    border-color: transparent transparent var(--secondary-bg-color, #f5f5f5) transparent;
+}
+
+/* Arrow pointing down (alternative position: above icon) */
+.hint-tooltip.tooltip-top::before {
+    bottom: -6px;
+    left: 12px;
+    border-width: 6px 6px 0 6px;
+    border-color: var(--secondary-bg-color, #f5f5f5) transparent transparent transparent;
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hidden state (initial) */
+.hint-tooltip.hidden {
+    display: none;
+}
+
+/* ========================================
+   Label Modifications for Icon Integration
+   ======================================== */
+
+/**
+ * Ensure labels can accommodate inline info icon
+ */
+label.has-info-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ========================================
+   Mobile Optimizations
+   ======================================== */
+
+@media (max-width: 480px) {
+    /* Slightly larger touch targets on mobile */
+    .info-icon {
+        width: 20px;
+        height: 20px;
+        font-size: 15px;
+    }
+
+    /* Tooltip adjustments for small screens */
+    .hint-tooltip {
+        max-width: calc(100vw - 40px);
+        font-size: 12px;
+    }
+
+    /* Reduce hint text size on mobile */
+    .hint-text {
+        font-size: 12px;
+    }
+}
+
+/* ========================================
+   Dark Mode Support (Telegram themes)
+   ======================================== */
+
+@media (prefers-color-scheme: dark) {
+    .hint-tooltip {
+        background: #2c2c2e;
+        border-color: rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+    }
+
+    .hint-tooltip.tooltip-bottom::before {
+        border-bottom-color: #2c2c2e;
+    }
+
+    .hint-tooltip.tooltip-top::before {
+        border-top-color: #2c2c2e;
+    }
+
+    /* Adjust hint text colors for dark mode */
+    .hint-text {
+        color: var(--hint-color, #999);
+    }
+
+    .input-hint-optimal + .hint-text {
+        color: #2ecc71;
+    }
+
+    .input-hint-acceptable + .hint-text {
+        color: #3498db;
+    }
+
+    .input-hint-warning + .hint-text {
+        color: #f39c12;
+    }
+
+    .input-hint-prohibitive + .hint-text {
+        color: #e74c3c;
+    }
+}
+
+/* ========================================
+   Accessibility Enhancements
+   ======================================== */
+
+/**
+ * Screen reader only text
+ * Provides context for color-coded hints to visually impaired users
+ */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/**
+ * High contrast mode support
+ * Ensures borders are visible in Windows High Contrast mode
+ */
+@media (prefers-contrast: high) {
+    .input-hint-optimal,
+    .input-hint-acceptable,
+    .input-hint-warning,
+    .input-hint-prohibitive {
+        border-width: 3px !important;
+    }
+}
+
+/* ========================================
+   Print Styles (hide hints when printing)
+   ======================================== */
+
+@media print {
+    .hint-text,
+    .info-icon,
+    .hint-tooltip {
+        display: none !important;
+    }
+
+    /* Remove colored borders for print */
+    .input-hint-optimal,
+    .input-hint-acceptable,
+    .input-hint-warning,
+    .input-hint-prohibitive {
+        border: 1px solid #000 !important;
+        background: transparent !important;
+    }
+}
+
