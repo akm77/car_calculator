@@ -149,6 +149,34 @@ export const Messages = {
         PER_CC_MODE: 'Ставка пошлины',
         VALUE_BRACKET: 'Диапазон до',
     },
+
+    // NEW 2025-12-08: Visual hints for critical form fields (MVP)
+    /**
+     * Hint texts for visual feedback on year and engine power fields.
+     * Based on optimal customs calculations and utilization fee analysis.
+     * References:
+     * - docs/QUICK_REFERENCE_AGE_OPTIMAL.md
+     * - docs/QUICK_REFERENCE_POWER_LIMITS.md
+     * - docs/UI_HINTS_INTEGRATION_PROPOSAL.md
+     */
+    hints: {
+        // Age/Year hints
+        age: {
+            optimal: '🟢 Оптимальный возраст для минимальной пошлины',
+            new_expensive: '🔴 Высокая пошлина для дорогих авто',
+            old_expensive: '🟠 Пошлина выше, чем для авто 3-5 лет',
+            acceptable: '🔵 Приемлемый возраст',
+            tooltip: 'Критический порог: 3-5 лет. В этом диапазоне пошлины минимальны для большинства авто.'
+        },
+        // Engine power hints
+        power: {
+            optimal: '🟢 Минимальный утилизационный сбор (5,200 ₽)',
+            acceptable: '🔵 Утильсбор начинает расти',
+            warning: '🟠 Высокий утилизационный сбор',
+            prohibitive: '🔴 Запретительный утильсбор! При 200+ л.с. сбор может превысить цену авто',
+            tooltip: 'Критический порог: 200 л.с. (147 кВт). После этой мощности утильсбор резко возрастает.'
+        }
+    },
 };
 
 // Export default for convenience
