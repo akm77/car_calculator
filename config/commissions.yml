@@ -9,7 +9,7 @@ default_commission_usd: 1000
 by_country:
   uae:
     # Для ОАЭ комиссия = 0, т.к. уже включена в расходы Дубая
-    - amount: 0
+    commission_usd: 0
 
   # Для остальных стран используется default_commission_usd
   # japan, korea, china, georgia - все платят 1000 USD

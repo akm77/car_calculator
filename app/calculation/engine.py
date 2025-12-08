@@ -209,16 +209,23 @@ def _commission(
     """Return commission in RUB (NEW 2025: fixed 1000 USD or country override).
 
     Selection order:
-    1) if by_country[country] exists -> use amount from there (in RUB)
+    1) if by_country[country] exists -> use commission_usd from there
     2) else use default_commission_usd (converted to RUB)
     """
     # Check for country-specific override (e.g., UAE = 0)
     if country:
         by_country = commissions_conf.get("by_country") or {}
         country_config = by_country.get(country)
-        if isinstance(country_config, list) and country_config:
-            # For simplicity: take first entry's amount (no thresholds in new system)
-            return to_decimal(country_config[0].get("amount", 0))
+        if country_config is not None:
+            # New structure: commission_usd key directly in country config
+            if isinstance(country_config, dict) and "commission_usd" in country_config:
+                commission_usd = to_decimal(country_config["commission_usd"])
+                if rates_conf:
+                    return _convert(commission_usd, "USD", rates_conf)
+                return Decimal("0")
+            # Legacy structure: list with amount
+            elif isinstance(country_config, list) and country_config:
+                return to_decimal(country_config[0].get("amount", 0))
 
     # Default: 1000 USD converted to RUB
     default_usd = commissions_conf.get("default_commission_usd", 1000)

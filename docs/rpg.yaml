@@ -10,6 +10,8 @@ rpg:
     supported_countries: ["japan", "korea", "uae", "china", "georgia"]
     recent_changes:
       - date: "2025-12-08"
+        description: "SPRINT 4 COMPLETED: Обновлены пошлины lt3 (6 брэкетов: 325k-6500k RUB → 3250-65000 EUR), исправлена логика _commission() для поддержки commission_usd в by_country, создан test_sprint4_duties.py (7 тестов duty brackets + commissions), все тесты проходят ✅"
+      - date: "2025-12-08"
         description: "REFACTORING SPRINT 0-3 COMPLETED: Реализована новая система утильсбора 2025 (2D таблица объём+мощность), добавлено обязательное поле engine_power_hp в модели, создан config/utilization_2025.yml с 80+ записями, обновлена логика _utilization_fee_v2() с конвертацией л.с.→кВт, унифицирована комиссия на 1000 USD, установлен ERA-GLONASS 45000 руб., manual tests проходят"
       - date: "2025-12-07"
         description: "BUGFIX CRITICAL: Исправлено отображение результатов - удалена нерабочая обертка displayResult в DOMContentLoaded (функция определялась позже), добавлен прямой вызов showResultsTab() в конце displayResult для переключения вкладки, исправлены вызовы showToast()→ui.showToast() (2x). Результаты теперь корректно отображаются в Telegram WebApp"

@@ -1,22 +1,31 @@
+# Таможенные пошлины (2025)
+# Источник: docs/SPECIFICATION.md
+# Обновлено: 2025-12-08
+# Брэкеты lt3 в EUR (пересчитаны из RUB по курсу ~100 RUB/EUR)
+#
+# Возраст ≤3 лет: 6 брэкетов по таможенной стоимости
+# Исходные пороги в RUB: 325k, 650k, 1625k, 3250k, 6500k
+# Конвертация: RUB / 100 = EUR (для конфигурации)
+
 age_categories:
   lt3:
     value_brackets:
-      - max_customs_value_eur: 8500
+      - max_customs_value_eur: 3250     # ≤ 325,000 RUB
         percent: 0.54
         min_rate_eur_per_cc: 2.5
-      - max_customs_value_eur: 16700
+      - max_customs_value_eur: 6500     # 325,001-650,000 RUB
         percent: 0.48
         min_rate_eur_per_cc: 3.5
-      - max_customs_value_eur: 42300
+      - max_customs_value_eur: 16250    # 650,001-1,625,000 RUB
         percent: 0.48
         min_rate_eur_per_cc: 5.5
-      - max_customs_value_eur: 84500
+      - max_customs_value_eur: 32500    # 1,625,001-3,250,000 RUB
         percent: 0.48
         min_rate_eur_per_cc: 7.5
-      - max_customs_value_eur: 169000
+      - max_customs_value_eur: 65000    # 3,250,001-6,500,000 RUB
         percent: 0.48
         min_rate_eur_per_cc: 15
-      - percent: 0.48
+      - percent: 0.48                   # > 6,500,000 RUB
         min_rate_eur_per_cc: 20
   "3_5":
     bands:

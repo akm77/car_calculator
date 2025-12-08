@@ -294,7 +294,7 @@ recent_changes:
    git add config/duties.yml config/commissions.yml docs/rpg.yaml
    git commit -m "feat(config): update duties lt3 brackets to 2025 spec (325k-6500k RUB)"
    ```
-3. **Переходи к Спринту 5** (API метаданные) — см. `docs/sprint_prompts/SPRINT_5_API_META.md`
+3. **Спроси разрешение на переход к Спринту 5** (API метаданные) — см. `docs/sprint_prompts/SPRINT_5_API_META.md`
 
 ---
 
