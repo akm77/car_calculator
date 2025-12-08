@@ -165,10 +165,9 @@ def _utilization_fee_v2(
     volume_band = None
     for band in volume_bands:
         vol_range = band.get("volume_range", [])
-        if len(vol_range) >= 2:
-            if vol_range[0] <= engine_cc <= vol_range[1]:
-                volume_band = band
-                break
+        if len(vol_range) >= 2 and vol_range[0] <= engine_cc <= vol_range[1]:
+            volume_band = band
+            break
 
     if not volume_band:
         logger.warning(f"Volume band not found for {engine_cc} cc, returning 0")
