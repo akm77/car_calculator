@@ -40,7 +40,7 @@ uae:
       currency: "USD"
       description: "Фрахт открытым типом (Астрахань, Новороссийск, СПб)"
     container:
-      amount: 5500
+      amount: 3800
       currency: "USD"
       description: "Фрахт в контейнере (Астрахань, Новороссийск, СПб)"
 
