@@ -122,11 +122,11 @@ async def get_meta() -> dict[str, object]:
 
     # Collect countries meta
     country_labels: dict[str, tuple[str, str]] = {
-        "japan": ("Япония", "🍇"),
-        "korea": ("Корея", "🍊"),
-        "uae": ("ОАЭ", "🍉"),
-        "china": ("Китай", "🍑"),
-        "georgia": ("Грузия", "🍒"),
+        "japan": ("Япония", "🇯🇵"),
+        "korea": ("Корея", "🇰🇷"),
+        "uae": ("ОАЭ", "🇦🇪"),
+        "china": ("Китай", "🇨🇳"),
+        "georgia": ("Грузия", "🇬🇪"),
     }
 
     countries: list[dict[str, object]] = []
