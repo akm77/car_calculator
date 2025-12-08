@@ -36,6 +36,28 @@ export const CONVERSION_FACTORS = {
     KW_TO_HP: 1.35962      // kilowatts → horsepower (inverse)
 };
 
+// NEW 2025-12-08: Hint thresholds for visual hints system (MVP)
+/**
+ * Thresholds for visual hints on critical form fields.
+ * Based on optimal customs duty and utilization fee calculations.
+ * References:
+ * - docs/QUICK_REFERENCE_AGE_OPTIMAL.md (age thresholds)
+ * - docs/QUICK_REFERENCE_POWER_LIMITS.md (power thresholds)
+ */
+export const HINT_THRESHOLDS = {
+    // Age thresholds (years from current year)
+    AGE: {
+        OPTIMAL_MIN: 3,    // Minimum age for optimal zone (3-5 years)
+        OPTIMAL_MAX: 5     // Maximum age for optimal zone
+    },
+    // Engine power thresholds (horsepower)
+    POWER: {
+        OPTIMAL_MAX: 160,      // Up to 160 HP: minimal utilization fee
+        ACCEPTABLE_MAX: 200,   // 160-200 HP: fee starts increasing
+        WARNING_MAX: 300       // 200-300 HP: high risk zone, >300 HP: prohibitive
+    }
+};
+
 // API endpoints
 export const API_ENDPOINTS = {
     CALCULATE: '/api/calculate',
