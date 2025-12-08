@@ -48,11 +48,18 @@ def _format_result(result: CalculationResult, req: CalculationRequest) -> str:
     country_emoji = {"japan": "🇯🇵", "korea": "🇰🇷", "uae": "🇦🇪", "china": "🇨🇳", "georgia": "🇬🇪"}.get(
         req.country, "🌍"
     )
+    country_label = {"japan": "Япония",
+                     "korea": "Корея",
+                     "uae": "ОАЭ",
+                     "china": "Китай",
+                     "georgia": "Грузия"}.get(
+        req.country, "Неизвестно"
+    )
 
     msg = "<b>💰 Расчёт стоимости растаможки</b>\n\n"
 
     # Входные параметры
-    msg += f"{country_emoji} <b>Страна:</b> {req.country.upper()}\n"
+    msg += f"{country_emoji} <b>Страна:</b> {country_label}\n"
     msg += f"📅 <b>Год:</b> {req.year} ({meta.age_category})\n"
     msg += f"⚙️ <b>Объём:</b> {req.engine_cc} см³\n"
 
