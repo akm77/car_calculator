@@ -1,0 +1,270 @@
+# BACKUP: Старая система утильсбора (только по объёму), дата: 2025-12-08
+# Test cases for final cost calculation validation
+# age_offset: number of years subtracted from current year to derive vehicle year.
+# Expected monetary values in RUB.
+
+cases:
+  - name: lt3_min_duty
+    age_offset: 1
+    request:
+      country: korea
+      engine_cc: 1800
+      engine_power_hp: 140
+      purchase_price: 7000
+      currency: EUR
+      freight_type: standard
+    expected:
+      age_category: lt3
+      purchase_price_rub: 700000
+      duties_rub: 450000
+      utilization_fee_rub: 3400
+      customs_services_rub: 70000
+      era_glonass_rub: 0
+      freight_rub: 49500
+      country_expenses_rub: 153000
+      company_commission_rub: 40000
+      total_rub: 1465900
+  - name: lt3_percent_duty
+    age_offset: 1
+    request:
+      country: china
+      engine_cc: 1000
+      engine_power_hp: 75
+      purchase_price: 80000
+      currency: EUR
+      freight_type: open
+    expected:
+      age_category: lt3
+      purchase_price_rub: 8000000
+      duties_rub: 3840000
+      utilization_fee_rub: 3400
+      customs_services_rub: 70000
+      era_glonass_rub: 0
+      freight_rub: 45000
+      country_expenses_rub: 63000
+      company_commission_rub: 85000
+      total_rub: 12106400
+  - name: band_3_5_mid
+    age_offset: 4
+    request:
+      country: japan
+      engine_cc: 1500
+      engine_power_hp: 110
+      purchase_price: 2000000
+      currency: JPY
+      freight_type: standard
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 1200000
+      duties_rub: 255000
+      utilization_fee_rub: 5200
+      customs_services_rub: 70000
+      era_glonass_rub: 0
+      freight_rub: 31500
+      country_expenses_rub: 90000
+      company_commission_rub: 40000
+      total_rub: 1691700
+  - name: gt5_large_engine
+    age_offset: 6
+    request:
+      country: uae
+      engine_cc: 4000
+      engine_power_hp: 300
+      purchase_price: 10000
+      currency: USD
+      freight_type: open
+    expected:
+      age_category: gt5
+      purchase_price_rub: 900000
+      duties_rub: 2280000
+      utilization_fee_rub: 3604800
+      customs_services_rub: 120000
+      era_glonass_rub: 0
+      freight_rub: 225000
+      country_expenses_rub: 108000
+      company_commission_rub: 40000
+      total_rub: 7277800
+  - name: japan_2022_1998cc
+    # Explicit year provided; ignore age_offset for this case
+    age_offset: 3
+    request:
+      country: japan
+      year: 2022
+      engine_cc: 1998
+      engine_power_hp: 150
+      purchase_price: 1200000
+      currency: JPY
+      freight_type: standard
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 720000
+      duties_rub: 539460
+      utilization_fee_rub: 5200
+      customs_services_rub: 70000
+      era_glonass_rub: 0
+      freight_rub: 31500
+      country_expenses_rub: 90000
+      company_commission_rub: 40000
+      total_rub: 1496160
+  # Boundary duty band tests (age category 3_5). All use same purchase price tier.
+  - name: band_3_5_boundary_1000cc
+    age_offset: 4
+    request:
+      country: japan
+      engine_cc: 1000
+      engine_power_hp: 70
+      purchase_price: 2000000
+      currency: JPY
+      freight_type: standard
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 1200000
+      duties_rub: 150000
+      utilization_fee_rub: 5200
+      customs_services_rub: 70000
+      era_glonass_rub: 0
+      freight_rub: 31500
+      country_expenses_rub: 90000
+      company_commission_rub: 40000
+      total_rub: 1586700
+  - name: band_3_5_boundary_1800cc
+    age_offset: 4
+    request:
+      country: japan
+      engine_cc: 1800
+      engine_power_hp: 140
+      purchase_price: 2000000
+      currency: JPY
+      freight_type: standard
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 1200000
+      duties_rub: 450000
+      utilization_fee_rub: 5200
+      customs_services_rub: 70000
+      era_glonass_rub: 0
+      freight_rub: 31500
+      country_expenses_rub: 90000
+      company_commission_rub: 40000
+      total_rub: 1886700
+  - name: band_3_5_boundary_2300cc
+    age_offset: 4
+    request:
+      country: japan
+      engine_cc: 2300
+      engine_power_hp: 180
+      purchase_price: 2000000
+      currency: JPY
+      freight_type: standard
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 1200000
+      duties_rub: 621000
+      utilization_fee_rub: 5200
+      customs_services_rub: 70000
+      era_glonass_rub: 0
+      freight_rub: 31500
+      country_expenses_rub: 90000
+      company_commission_rub: 40000
+      total_rub: 2057700
+  - name: band_3_5_boundary_3000cc
+    age_offset: 4
+    request:
+      country: japan
+      engine_cc: 3000
+      engine_power_hp: 240
+      purchase_price: 2000000
+      currency: JPY
+      freight_type: standard
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 1200000
+      duties_rub: 900000
+      utilization_fee_rub: 5200
+      customs_services_rub: 70000
+      era_glonass_rub: 0
+      freight_rub: 31500
+      country_expenses_rub: 90000
+      company_commission_rub: 40000
+      total_rub: 2336700
+  - name: band_3_5_boundary_gt3000cc
+    age_offset: 4
+    request:
+      country: japan
+      engine_cc: 3200
+      engine_power_hp: 260
+      purchase_price: 2000000
+      currency: JPY
+      freight_type: standard
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 1200000
+      duties_rub: 1152000
+      utilization_fee_rub: 3296800
+      customs_services_rub: 70000
+      era_glonass_rub: 0
+      freight_rub: 31500
+      country_expenses_rub: 90000
+      company_commission_rub: 40000
+      total_rub: 5880300
+  # Georgia test cases
+  - name: georgia_3_5_standard
+    age_offset: 4
+    request:
+      country: georgia
+      engine_cc: 1800
+      engine_power_hp: 140
+      purchase_price: 15000
+      currency: USD
+      freight_type: open
+    expected:
+      age_category: "3_5"
+      purchase_price_rub: 1350000
+      duties_rub: 450000
+      utilization_fee_rub: 5200
+      customs_services_rub: 120000
+      era_glonass_rub: 0
+      freight_rub: 45000
+      country_expenses_rub: 63000  # inspection 700 USD * 90 = 63000 RUB
+      company_commission_rub: 40000
+      total_rub: 2073200
+  - name: georgia_gt5_small_engine
+    age_offset: 7
+    request:
+      country: georgia
+      engine_cc: 1500
+      engine_power_hp: 110
+      purchase_price: 8000
+      currency: USD
+      freight_type: open
+    expected:
+      age_category: gt5
+      purchase_price_rub: 720000
+      duties_rub: 480000
+      utilization_fee_rub: 5200
+      customs_services_rub: 120000
+      era_glonass_rub: 0
+      freight_rub: 45000
+      country_expenses_rub: 63000  # inspection 700 USD * 90 = 63000 RUB
+      company_commission_rub: 40000
+      total_rub: 1473200
+  - name: georgia_lt3_low_price
+    age_offset: 1
+    request:
+      country: georgia
+      engine_cc: 2000
+      engine_power_hp: 150
+      purchase_price: 5000
+      currency: EUR
+      freight_type: open
+    expected:
+      age_category: lt3
+      purchase_price_rub: 500000
+      duties_rub: 500000  # min duty: 2000cc * 2.5 EUR/cc = 5000 EUR * 100 = 500000 RUB
+      utilization_fee_rub: 3400
+      customs_services_rub: 120000
+      era_glonass_rub: 0
+      freight_rub: 45000
+      country_expenses_rub: 63000  # inspection 700 USD * 90 = 63000 RUB
+      company_commission_rub: 40000  # georgia uses by_country thresholds: amount=80000 for any price, but fallback to global gives 40000 for <=1.5M
+      total_rub: 1271400
