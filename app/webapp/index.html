@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="/static/css/base.css">
     <link rel="stylesheet" href="/static/css/components.css">
     <link rel="stylesheet" href="/static/css/telegram.css">
+    <link rel="stylesheet" href="/static/css/hints.css">
     <noscript>Для работы приложения нужен JavaScript</noscript>
 </head>
 <body>
@@ -153,7 +154,8 @@
             DEFAULT_VALUES,
             FALLBACK_META,
             HAPTIC_TYPES,
-            ANIMATION
+            ANIMATION,
+            HINT_THRESHOLDS
         } from '/static/js/config/constants.js';
 
         // =====================================================================
@@ -170,6 +172,11 @@
         // Import UI module (RPG Sprint 6)
         // =====================================================================
         import { ui } from '/static/js/modules/ui.js';
+
+        // =====================================================================
+        // Import Hints module (RPG Sprint MVP - 2025-12-08)
+        // =====================================================================
+        import { HintsManager } from '/static/js/modules/hints.js';
 
         // =====================================================================
         // Enhanced Telegram Integration
@@ -537,6 +544,13 @@
             setupEventListeners();
             setDefaultValues(); // Устанавливаем значения по умолчанию
 
+            // NEW 2025-12-08: Initialize Visual Hints System (MVP)
+            const hintsConfig = {
+                HINT_THRESHOLDS: HINT_THRESHOLDS
+            };
+            const hintsManager = new HintsManager(hintsConfig, Messages);
+            hintsManager.init();
+            console.log('Visual hints system initialized');
 
             if (telegram.isInTelegram()) {
                 // Use only Telegram MainButton, hide in-page calculate button
