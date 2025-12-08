@@ -87,13 +87,12 @@ export const DEFAULT_VALUES = {
 };
 
 // Country emoji mapping (synchronized with backend meta API)
-// Note: Backend uses fruit emojis as per FLAG_TO_FRUIT_MIGRATION.md
 export const COUNTRY_EMOJI = {
-    japan: '🍇',
-    korea: '🍊',
-    uae: '🍉',
-    china: '🍑',
-    georgia: '🍒',
+    japan: '🇯🇵',
+    korea: '🇰🇷',
+    uae: '🇦🇪',
+    china: '🇨🇳',
+    georgia: '🇬🇪',
 };
 
 // Freight type codes
