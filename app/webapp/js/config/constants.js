@@ -149,11 +149,11 @@ export const DEBOUNCE = {
 // Fallback metadata (used if /api/meta fails)
 export const FALLBACK_META = {
     countries: [
-        { code: 'japan', label: 'Япония', emoji: '🍇', purchase_currency: 'JPY', freight_types: ['standard'] },
-        { code: 'korea', label: 'Корея', emoji: '🍊', purchase_currency: 'USD', freight_types: ['standard'] },
-        { code: 'uae', label: 'ОАЭ', emoji: '🍉', purchase_currency: 'AED', freight_types: ['open', 'container'] },
-        { code: 'china', label: 'Китай', emoji: '🍑', purchase_currency: 'USD', freight_types: ['open'] },
-        { code: 'georgia', label: 'Грузия', emoji: '🍒', purchase_currency: 'USD', freight_types: ['open'] },
+        { code: 'japan', label: 'Япония', emoji: '🇯🇵', purchase_currency: 'JPY', freight_types: ['standard'] },
+        { code: 'korea', label: 'Корея', emoji: '🇰🇷', purchase_currency: 'USD', freight_types: ['standard'] },
+        { code: 'uae', label: 'ОАЭ', emoji: '🇦🇪', purchase_currency: 'AED', freight_types: ['open', 'container'] },
+        { code: 'china', label: 'Китай', emoji: '🇨🇳', purchase_currency: 'USD', freight_types: ['open'] },
+        { code: 'georgia', label: 'Грузия', emoji: '🇬🇪', purchase_currency: 'USD', freight_types: ['open'] },
     ],
     freight_type_labels: {
         standard: 'Стандартный',
