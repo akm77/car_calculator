@@ -4,11 +4,13 @@ rpg:
     description: "FastAPI-сервис и Telegram-бот для расчёта стоимости ввоза авто на базе тарифов, комиссий и валютных курсов (статические YAML + опционально live CBR)."
     version: "2.0.0"
     python_version: "3.13"
-    total_lines_of_code: 1690
+    total_lines_of_code: 1990
     last_updated: "2025-12-08"
     architecture: "Модульная архитектура с разделением на слои: API, Calculation Engine, Bot, Services"
     supported_countries: ["japan", "korea", "uae", "china", "georgia"]
     recent_changes:
+      - date: "2025-12-08"
+        description: "MVP UI HINTS COMPLETED: Реализована система визуальных подсказок для критичных полей формы (возраст, мощность) - цветовая индикация (4 зоны: optimal/acceptable/warning/prohibitive), краткие текстовые подсказки под полями, информационные иконки ℹ️ с tooltip'ами, real-time обновление при вводе (debounced 300ms), ARIA accessibility (aria-describedby, aria-live, keyboard support), создан hints.css (8.2K, 350+ строк) и hints.js (10K, 335 строк) модуль с HintsManager классом, обновлены constants.js (HINT_THRESHOLDS) и messages.js (hints messages), интегрировано в index.html, создан test_hints_mvp.html для мануального тестирования, ~300 LOC добавлено ✅"
       - date: "2025-12-08"
         description: "SPRINT 9 COMPLETED: Актуализирована вся документация проекта - обновлён SPECIFICATION.md (добавлены маркеры 'Реализовано в v2.0' для всех новых требований: утильсбор, комиссия, пошлины, ЭРА-ГЛОНАСС), создан MIGRATION_GUIDE.md (полное руководство миграции с v1.x на v2.0 с примерами для Python/JavaScript/cURL, breaking changes, rollback plan, FAQ), обновлён CHANGELOG.md (v2.0.0 release notes с полной статистикой изменений), финализирован rpg.yaml (версия 2.0.0, все спринты 0-9 задокументированы) ✅"
       - date: "2025-12-08"
@@ -154,6 +156,49 @@ rpg:
       - name: "app_webapp"
         path: "app/webapp"
         description: "Статический PWA фронтенд (index.html с динамической генерацией списка стран из /api/meta, manifest, sw.js, ассеты); populateCountries() загружает страны при инициализации"
+      - name: "app_webapp_hints"
+        path: "app/webapp/css/hints.css + app/webapp/js/modules/hints.js"
+        description: "Визуальные подсказки для критичных полей формы (возраст, мощность) - MVP система real-time фидбека для оптимизации выбора параметров авто"
+        components:
+          - "hints.css - цветовая индикация полей (4 зоны), стили для tooltip и hint text, анимации, темная тема, a11y"
+          - "hints.js - HintsManager класс (getAgeHintData, getPowerHintData, applyHintToField, showHintText, initTooltips, attachFieldHints)"
+          - "constants.js HINT_THRESHOLDS - пороги для возраста (3-5 лет оптимально) и мощности (160/200/300 л.с.)"
+          - "messages.js hints - тексты подсказок для всех зон (optimal/acceptable/warning/prohibitive)"
+        features:
+          - "Цветовые зоны: 🟢 optimal (минимальные платежи), 🔵 acceptable (начинают расти), 🟠 warning (высокие), 🔴 prohibitive (запретительные)"
+          - "Краткие текстовые подсказки под полями с объяснением зоны"
+          - "Информационные иконки ℹ️ с tooltip'ами (пороги и рекомендации)"
+          - "Real-time обновление при вводе (debounced 300ms для производительности)"
+          - "Accessibility: ARIA attributes, keyboard support (Tab + Enter/Space), screen reader friendly"
+          - "Smooth CSS transitions между цветами"
+          - "Мобильная адаптация (44x44px tap targets, responsive tooltips)"
+          - "Dark mode support (prefers-color-scheme)"
+          - "High contrast mode support"
+        thresholds:
+          age:
+            optimal: "3-5 лет (минимальные пошлины)"
+            prohibitive: "<3 лет (высокая пошлина для дорогих авто)"
+            warning: ">5 лет (пошлина выше оптимальной)"
+          power:
+            optimal: "≤160 л.с. (минимальный утильсбор 5,200₽)"
+            acceptable: "160-200 л.с. (утильсбор растет)"
+            warning: "200-300 л.с. (высокий утильсбор)"
+            prohibitive: ">300 л.с. (запретительный, может превысить цену авто)"
+        files_changed:
+          - "app/webapp/css/hints.css (NEW, 8.2K, 350+ lines)"
+          - "app/webapp/js/modules/hints.js (NEW, 10K, 335 lines)"
+          - "app/webapp/js/config/constants.js (MODIFIED, +23 lines)"
+          - "app/webapp/js/config/messages.js (MODIFIED, +28 lines)"
+          - "app/webapp/index.html (MODIFIED, +4 lines imports, +5 lines init)"
+          - "tests/manual/test_hints_mvp.html (NEW, standalone test page)"
+        time_spent: "2.5 часа"
+        implemented_date: "2025-12-08"
+        reference_docs:
+          - "docs/UI_HINTS_INTEGRATION_PROPOSAL.md (полная концепция, варианты реализации)"
+          - "docs/UI_HINTS_SUMMARY.md (краткое резюме, цветовая схема)"
+          - "docs/QUICK_REFERENCE_AGE_OPTIMAL.md (оптимальный возраст, пороги пошлин)"
+          - "docs/QUICK_REFERENCE_POWER_LIMITS.md (пороги мощности, утильсбор)"
+          - "docs/SPRINT_MVP_HINTS_PROMPT.md (промпт для реализации MVP)"
         structure:
           - "index.html - главная страница (рефакторинг в процессе, validator интегрирован)"
           - "index.html.backup - резервная копия монолитной версии (1548 строк)"
@@ -257,6 +302,12 @@ rpg:
       - name: "ui.js"
         parent_module: "app_webapp"
         description: "Модуль управления UI состояниями: UI класс (singleton), state management (_state: idle/loading/error/success, getState, _setState), методы: showLoading(text)/hideLoading, showError(msg)/hideError, showResult/hideResult, showShareButton/hideShareButton, scrollToResult, disableForm/enableForm, reset, showToast(message, type, duration); анимации: _fadeIn/_fadeOut (CSS transitions), _hapticFeedback (Telegram); accessibility: ARIA attributes (role, aria-live, aria-busy), focus management"
+      - name: "hints.js"
+        parent_module: "app_webapp_hints"
+        description: "Модуль визуальных подсказок для критичных полей (MVP): HintsManager класс (constructor(constants, messages)), методы: getAgeHintData(year) → {zone, className, text, ariaLabel} (расчет возраста и определение зоны: optimal 3-5 лет, prohibitive <3, warning >5), getPowerHintData(powerHp) → hint data (зоны по мощности: optimal ≤160, acceptable 160-200, warning 200-300, prohibitive >300), applyHintToField(fieldElement, hintData) (добавление CSS классов и ARIA атрибутов), showHintText(fieldElement, text) (текстовая подсказка под полем), hideHintText(fieldElement), _createTooltip(tooltipText, iconElement) (позиционирование с учетом viewport), showTooltip/hideTooltip (управление tooltip'ами), initTooltips() (добавление ℹ️ иконок к labels полей year и enginePowerHp), attachFieldHints(fieldElement, fieldType) (debounced input handler 300ms), init() (инициализация для year и enginePowerHp), destroy() (cleanup); activeTooltips Map для отслеживания; debounce утилита; real-time обновление, keyboard support (Enter/Space), click/hover events, auto-hide через 5 сек"
+      - name: "hints.css"
+        parent_module: "app_webapp_hints"
+        description: "Стили визуальных подсказок: цветовая индикация полей (.input-hint-optimal green, .input-hint-acceptable blue, .input-hint-warning orange, .input-hint-prohibitive red с border 2px, background rgba, transitions 0.3s, focus states с box-shadow), .hint-text (под полем, font-size 13px, fadeIn animation 0.2s, цветовые варианты для каждой зоны), .info-icon (ℹ️ inline-flex 18x18px, hover scale 1.15, :focus outline, ::after для tap area 44x44px), .hint-tooltip (absolute, max-width 280px, padding 10px, border-radius 8px, box-shadow, ::before стрелка, .tooltip-bottom/.tooltip-top позиции), .has-info-icon label (display inline-flex), mobile adaptations (@media max-width 480px), dark mode (@media prefers-color-scheme dark), high contrast (@media prefers-contrast high), print styles (hide hints)"
 
       - name: "fees.yml"
         parent_module: "config_data"
