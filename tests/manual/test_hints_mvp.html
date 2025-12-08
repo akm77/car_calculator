@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test: Visual Hints System MVP</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .test-container {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            color: #2481cc;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 24px;
+        }
+
+        .test-section {
+            margin-bottom: 32px;
+        }
+
+        .test-section h2 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 16px;
+            border-bottom: 2px solid #2481cc;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #2481cc;
+        }
+
+        .test-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .test-btn {
+            padding: 8px 16px;
+            font-size: 13px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .test-btn:hover {
+            background: #f0f0f0;
+            border-color: #2481cc;
+        }
+
+        .test-btn.optimal {
+            border-color: #27ae60;
+            color: #27ae60;
+        }
+
+        .test-btn.acceptable {
+            border-color: #3498db;
+            color: #3498db;
+        }
+
+        .test-btn.warning {
+            border-color: #f39c12;
+            color: #f39c12;
+        }
+
+        .test-btn.prohibitive {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        .test-info {
+            background: #e8f4fd;
+            border-left: 4px solid #2481cc;
+            padding: 12px;
+            margin-top: 16px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .legend {
+            margin-top: 24px;
+            padding: 16px;
+            background: #fafafa;
+            border-radius: 8px;
+        }
+
+        .legend h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            margin-right: 12px;
+            border: 2px solid;
+        }
+
+        .legend-color.optimal {
+            background: rgba(39, 174, 96, 0.1);
+            border-color: #27ae60;
+        }
+
+        .legend-color.acceptable {
+            background: rgba(52, 152, 219, 0.1);
+            border-color: #3498db;
+        }
+
+        .legend-color.warning {
+            background: rgba(243, 156, 18, 0.1);
+            border-color: #f39c12;
+        }
+
+        .legend-color.prohibitive {
+            background: rgba(231, 76, 60, 0.1);
+            border-color: #e74c3c;
+        }
+
+        .test-results {
+            margin-top: 24px;
+            padding: 16px;
+            background: #f0f8ff;
+            border-radius: 8px;
+        }
+
+        .test-results h3 {
+            margin-bottom: 12px;
+        }
+
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+
+        .checklist li {
+            padding: 8px;
+            margin-bottom: 4px;
+            background: white;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .checklist li:before {
+            content: '☐ ';
+            color: #999;
+            margin-right: 8px;
+        }
+
+        .checklist li.checked:before {
+            content: '✓ ';
+            color: #27ae60;
+        }
+    </style>
+
+    <!-- Import hints.css from main app -->
+    <link rel="stylesheet" href="/static/css/hints.css">
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Test: Visual Hints System MVP</h1>
+        <p class="subtitle">Тестирование цветовых подсказок для критичных полей формы</p>
+
+        <!-- Test Section 1: Age/Year -->
+        <div class="test-section">
+            <h2>1️⃣ Тест: Год выпуска (Возраст авто)</h2>
+            <div class="form-group">
+                <label for="testYear">Год выпуска</label>
+                <input type="number" id="testYear" placeholder="Введите год выпуска">
+                <div class="test-buttons">
+                    <button class="test-btn prohibitive" onclick="setYear(2024)">2024 (новое, 🔴)</button>
+                    <button class="test-btn prohibitive" onclick="setYear(2023)">2023 (1 год, 🔴)</button>
+                    <button class="test-btn optimal" onclick="setYear(2022)">2022 (3 года, 🟢)</button>
+                    <button class="test-btn optimal" onclick="setYear(2021)">2021 (4 года, 🟢)</button>
+                    <button class="test-btn optimal" onclick="setYear(2020)">2020 (5 лет, 🟢)</button>
+                    <button class="test-btn warning" onclick="setYear(2018)">2018 (7 лет, 🟠)</button>
+                    <button class="test-btn warning" onclick="setYear(2015)">2015 (10 лет, 🟠)</button>
+                </div>
+            </div>
+            <div class="test-info">
+                <strong>Ожидаемое поведение:</strong>
+                <ul style="margin: 8px 0 0 20px; font-size: 13px;">
+                    <li>2022-2020 (3-5 лет) → 🟢 Зеленая рамка + текст "Оптимальный возраст"</li>
+                    <li>2024-2023 (&lt;3 лет) → 🔴 Красная рамка + текст "Высокая пошлина для дорогих авто"</li>
+                    <li>2018 и старше (&gt;5 лет) → 🟠 Оранжевая рамка + текст "Пошлина выше"</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Test Section 2: Engine Power -->
+        <div class="test-section">
+            <h2>2️⃣ Тест: Мощность двигателя</h2>
+            <div class="form-group">
+                <label for="testPower">Мощность двигателя (л.с.)</label>
+                <input type="number" id="testPower" placeholder="Введите мощность в л.с.">
+                <div class="test-buttons">
+                    <button class="test-btn optimal" onclick="setPower(100)">100 л.с. (🟢)</button>
+                    <button class="test-btn optimal" onclick="setPower(150)">150 л.с. (🟢)</button>
+                    <button class="test-btn optimal" onclick="setPower(160)">160 л.с. (граница, 🟢)</button>
+                    <button class="test-btn acceptable" onclick="setPower(180)">180 л.с. (🔵)</button>
+                    <button class="test-btn acceptable" onclick="setPower(200)">200 л.с. (граница, 🔵)</button>
+                    <button class="test-btn warning" onclick="setPower(250)">250 л.с. (🟠)</button>
+                    <button class="test-btn warning" onclick="setPower(300)">300 л.с. (граница, 🟠)</button>
+                    <button class="test-btn prohibitive" onclick="setPower(350)">350 л.с. (🔴)</button>
+                    <button class="test-btn prohibitive" onclick="setPower(500)">500 л.с. (🔴)</button>
+                </div>
+            </div>
+            <div class="test-info">
+                <strong>Ожидаемое поведение:</strong>
+                <ul style="margin: 8px 0 0 20px; font-size: 13px;">
+                    <li>≤160 л.с. → 🟢 Зеленая рамка + "Минимальный утилизационный сбор"</li>
+                    <li>160-200 л.с. → 🔵 Голубая рамка + "Утильсбор начинает расти"</li>
+                    <li>200-300 л.с. → 🟠 Оранжевая рамка + "Высокий утилизационный сбор"</li>
+                    <li>&gt;300 л.с. → 🔴 Красная рамка + "Запретительный утильсбор!"</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <h3>Легенда цветовых зон:</h3>
+            <div class="legend-item">
+                <div class="legend-color optimal"></div>
+                <span><strong>🟢 OPTIMAL</strong> — Оптимальный выбор (минимальные платежи)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color acceptable"></div>
+                <span><strong>🔵 ACCEPTABLE</strong> — Приемлемый выбор (платежи начинают расти)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color warning"></div>
+                <span><strong>🟠 WARNING</strong> — Осторожно, высокие платежи</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color prohibitive"></div>
+                <span><strong>🔴 PROHIBITIVE</strong> — Невыгодно/запретительно</span>
+            </div>
+        </div>
+
+        <!-- Test Checklist -->
+        <div class="test-results">
+            <h3>✅ Чек-лист тестирования:</h3>
+            <ul class="checklist">
+                <li>Цветовая индикация работает на поле "Год выпуска"</li>
+                <li>Цветовая индикация работает на поле "Мощность двигателя"</li>
+                <li>Текстовые подсказки появляются под полями</li>
+                <li>Текст соответствует цветовой зоне</li>
+                <li>Подсказки исчезают при очистке поля</li>
+                <li>Переходы между цветами плавные (transitions)</li>
+                <li>Информационные иконки ℹ️ присутствуют (проверьте на основной форме)</li>
+                <li>Tooltip работает при клике на ℹ️</li>
+                <li>Все работает на мобильном устройстве</li>
+                <li>Нет ошибок в консоли браузера</li>
+            </ul>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import required modules
+        import { HintsManager } from '/static/js/modules/hints.js';
+        import { Messages } from '/static/js/config/messages.js';
+        import { HINT_THRESHOLDS } from '/static/js/config/constants.js';
+
+        // Initialize hints system
+        const hintsConfig = { HINT_THRESHOLDS: HINT_THRESHOLDS };
+        const hintsManager = new HintsManager(hintsConfig, Messages);
+
+        // Get field elements
+        const yearField = document.getElementById('testYear');
+        const powerField = document.getElementById('testPower');
+
+        // Attach hints to fields
+        if (yearField) {
+            hintsManager.attachFieldHints(yearField, 'age');
+        }
+        if (powerField) {
+            hintsManager.attachFieldHints(powerField, 'power');
+        }
+
+        // Helper functions for test buttons
+        window.setYear = function(year) {
+            yearField.value = year;
+            yearField.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+
+        window.setPower = function(power) {
+            powerField.value = power;
+            powerField.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+
+        // Auto-check checklist items when user interacts
+        const checklistItems = document.querySelectorAll('.checklist li');
+        let interactionCount = 0;
+
+        yearField.addEventListener('input', () => {
+            if (interactionCount < checklistItems.length) {
+                checklistItems[interactionCount].classList.add('checked');
+                interactionCount++;
+            }
+        });
+
+        powerField.addEventListener('input', () => {
+            if (interactionCount < checklistItems.length) {
+                checklistItems[interactionCount].classList.add('checked');
+                interactionCount++;
+            }
+        });
+
+        console.log('Test page initialized. Hints manager ready.');
+        console.log('Try entering different years and power values to see hints in action!');
+    </script>
+</body>
+</html>
+
