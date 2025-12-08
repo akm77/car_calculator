@@ -73,6 +73,7 @@ def _format_result(result: CalculationResult, req: CalculationRequest) -> str:
 
     # Детализация стоимости
     msg += "<b>📊 Детализация:</b>\n"
+    msg += f"• Стоимость покупки (в рублях): {breakdown.purchase_price_rub:,.0f} ₽\n"
     msg += f"• Таможенная пошлина: {breakdown.duties_rub:,.0f} ₽\n"
     msg += f"• Утилизационный сбор: {breakdown.utilization_fee_rub:,.0f} ₽\n"
 
