@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test: Engine Power Field Validation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-case {
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 3px solid #ccc;
+            background: #f9f9f9;
+        }
+        .pass { border-left-color: #27ae60; background: #e8f8f5; }
+        .fail { border-left-color: #e74c3c; background: #fadbd8; }
+        h1 { color: #2c3e50; }
+        h2 { color: #34495e; margin-top: 0; }
+        .status { font-weight: bold; }
+        .pass .status { color: #27ae60; }
+        .fail .status { color: #e74c3c; }
+        code {
+            background: #ecf0f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test: Engine Power Field (SPRINT 6)</h1>
+
+    <div class="test-section">
+        <h2>Constants Test</h2>
+        <div id="constantsTest"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Validator Test</h2>
+        <div id="validatorTest"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Messages Test</h2>
+        <div id="messagesTest"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Summary</h2>
+        <div id="summary"></div>
+    </div>
+
+    <script type="module">
+        import { Constraints, CONVERSION_FACTORS } from '/static/js/config/constants.js';
+        import { FormValidator } from '/static/js/modules/validator.js';
+        import { Messages } from '/static/js/config/messages.js';
+
+        const results = [];
+
+        function runTest(name, testFn) {
+            try {
+                const result = testFn();
+                if (result === true || result === null) {
+                    results.push({ name, pass: true, message: 'PASS' });
+                    return true;
+                } else {
+                    results.push({ name, pass: false, message: result || 'Expected null/true' });
+                    return false;
+                }
+            } catch (e) {
+                results.push({ name, pass: false, message: `ERROR: ${e.message}` });
+                return false;
+            }
+        }
+
+        function displayResults(elementId, tests) {
+            const div = document.getElementById(elementId);
+            tests.forEach(test => {
+                const testDiv = document.createElement('div');
+                testDiv.className = `test-case ${test.pass ? 'pass' : 'fail'}`;
+                testDiv.innerHTML = `
+                    <div class="status">${test.pass ? '✅ PASS' : '❌ FAIL'}</div>
+                    <div><strong>${test.name}</strong></div>
+                    <div>${test.message}</div>
+                `;
+                div.appendChild(testDiv);
+            });
+        }
+
+        // Test 1: Constants
+        console.log('=== Testing Constants ===');
+        const constantsTests = [];
+
+        constantsTests.push({
+            name: 'ENGINE_POWER_HP_MIN exists',
+            pass: runTest('ENGINE_POWER_HP_MIN', () => {
+                return Constraints.ENGINE_POWER_HP_MIN === 1;
+            }),
+            message: `Value: ${Constraints.ENGINE_POWER_HP_MIN}`
+        });
+
+        constantsTests.push({
+            name: 'ENGINE_POWER_HP_MAX exists',
+            pass: runTest('ENGINE_POWER_HP_MAX', () => {
+                return Constraints.ENGINE_POWER_HP_MAX === 1500;
+            }),
+            message: `Value: ${Constraints.ENGINE_POWER_HP_MAX}`
+        });
+
+        constantsTests.push({
+            name: 'CONVERSION_FACTORS.HP_TO_KW exists',
+            pass: runTest('HP_TO_KW', () => {
+                return CONVERSION_FACTORS.HP_TO_KW === 0.7355;
+            }),
+            message: `Value: ${CONVERSION_FACTORS.HP_TO_KW}`
+        });
+
+        constantsTests.push({
+            name: 'CONVERSION_FACTORS.KW_TO_HP exists',
+            pass: runTest('KW_TO_HP', () => {
+                return CONVERSION_FACTORS.KW_TO_HP === 1.35962;
+            }),
+            message: `Value: ${CONVERSION_FACTORS.KW_TO_HP}`
+        });
+
+        displayResults('constantsTest', constantsTests);
+
+        // Test 2: Validator
+        console.log('=== Testing Validator ===');
+        const validator = new FormValidator();
+        const validatorTests = [];
+
+        validatorTests.push({
+            name: 'Reject 0 horsepower',
+            pass: runTest('Reject 0', () => {
+                const error = validator.validateField('enginePowerHp', 0);
+                return error !== null ? true : 'Expected error for 0';
+            }),
+            message: validator.validateField('enginePowerHp', 0) || 'null'
+        });
+
+        validatorTests.push({
+            name: 'Reject 2000 horsepower (over max)',
+            pass: runTest('Reject 2000', () => {
+                const error = validator.validateField('enginePowerHp', 2000);
+                return error !== null ? true : 'Expected error for 2000';
+            }),
+            message: validator.validateField('enginePowerHp', 2000) || 'null'
+        });
+
+        validatorTests.push({
+            name: 'Accept 150 horsepower',
+            pass: runTest('Accept 150', () => {
+                const error = validator.validateField('enginePowerHp', 150);
+                return error === null ? true : `Unexpected error: ${error}`;
+            }),
+            message: validator.validateField('enginePowerHp', 150) || 'null (valid)'
+        });
+
+        validatorTests.push({
+            name: 'Accept 1 horsepower (min)',
+            pass: runTest('Accept 1', () => {
+                const error = validator.validateField('enginePowerHp', 1);
+                return error === null ? true : `Unexpected error: ${error}`;
+            }),
+            message: validator.validateField('enginePowerHp', 1) || 'null (valid)'
+        });
+
+        validatorTests.push({
+            name: 'Accept 1500 horsepower (max)',
+            pass: runTest('Accept 1500', () => {
+                const error = validator.validateField('enginePowerHp', 1500);
+                return error === null ? true : `Unexpected error: ${error}`;
+            }),
+            message: validator.validateField('enginePowerHp', 1500) || 'null (valid)'
+        });
+
+        validatorTests.push({
+            name: 'Reject empty string',
+            pass: runTest('Reject empty', () => {
+                const error = validator.validateField('enginePowerHp', '');
+                return error !== null ? true : 'Expected error for empty string';
+            }),
+            message: validator.validateField('enginePowerHp', '') || 'null'
+        });
+
+        validatorTests.push({
+            name: 'getFieldConstraints returns correct data',
+            pass: runTest('getFieldConstraints', () => {
+                const constraints = validator.getFieldConstraints('enginePowerHp');
+                return (constraints &&
+                        constraints.min === 1 &&
+                        constraints.max === 1500 &&
+                        constraints.step === 1 &&
+                        constraints.required === true) ? true : 'Constraints mismatch';
+            }),
+            message: JSON.stringify(validator.getFieldConstraints('enginePowerHp'))
+        });
+
+        displayResults('validatorTest', validatorTests);
+
+        // Test 3: Messages
+        console.log('=== Testing Messages ===');
+        const messagesTests = [];
+
+        messagesTests.push({
+            name: 'enginePowerHpRequired error exists',
+            pass: runTest('enginePowerHpRequired', () => {
+                return Messages.errors.enginePowerHpRequired ? true : 'Missing error message';
+            }),
+            message: Messages.errors.enginePowerHpRequired || 'undefined'
+        });
+
+        messagesTests.push({
+            name: 'ENGINE_POWER_HP label exists',
+            pass: runTest('ENGINE_POWER_HP', () => {
+                return Messages.labels.ENGINE_POWER_HP ? true : 'Missing label';
+            }),
+            message: Messages.labels.ENGINE_POWER_HP || 'undefined'
+        });
+
+        messagesTests.push({
+            name: 'ENGINE_POWER_KW breakdown label exists',
+            pass: runTest('ENGINE_POWER_KW', () => {
+                return Messages.breakdown.ENGINE_POWER_KW ? true : 'Missing breakdown label';
+            }),
+            message: Messages.breakdown.ENGINE_POWER_KW || 'undefined'
+        });
+
+        messagesTests.push({
+            name: 'UTILIZATION_COEFFICIENT breakdown label exists',
+            pass: runTest('UTILIZATION_COEFFICIENT', () => {
+                return Messages.breakdown.UTILIZATION_COEFFICIENT ? true : 'Missing utilization label';
+            }),
+            message: Messages.breakdown.UTILIZATION_COEFFICIENT || 'undefined'
+        });
+
+        displayResults('messagesTest', messagesTests);
+
+        // Summary
+        const passed = results.filter(r => r.pass).length;
+        const total = results.length;
+        const summaryDiv = document.getElementById('summary');
+        summaryDiv.innerHTML = `
+            <h3>${passed === total ? '🎉 All tests passed!' : '⚠️ Some tests failed'}</h3>
+            <p><strong>${passed} / ${total}</strong> tests passed</p>
+            ${passed === total ?
+                '<p style="color: #27ae60;">✅ Engine power field integration is complete and working correctly!</p>' :
+                '<p style="color: #e74c3c;">❌ Please review failed tests above.</p>'
+            }
+        `;
+
+        console.log(`\n=== SUMMARY ===`);
+        console.log(`Tests passed: ${passed} / ${total}`);
+        console.log(`Status: ${passed === total ? 'SUCCESS' : 'FAILURE'}`);
+    </script>
+</body>
+</html>
+

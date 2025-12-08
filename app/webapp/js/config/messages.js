@@ -12,6 +12,7 @@ export const Messages = {
         INVALID_YEAR_OLD: 'Год выпуска должен быть не менее 1990',
         INVALID_ENGINE_RANGE: 'Объем двигателя должен быть от 500 до 10000 см³',
         INVALID_PRICE: 'Цена покупки должна быть больше 0',
+        enginePowerHpRequired: 'Укажите мощность двигателя', // NEW 2025
         CALCULATION_ERROR: 'Ошибка расчета',
         NETWORK_ERROR: 'Ошибка сети. Проверьте подключение',
         SEND_FAILED: 'Не удалось отправить в чат',
@@ -35,6 +36,7 @@ export const Messages = {
         COUNTRY: 'Страна покупки',
         YEAR: 'Год выпуска',
         ENGINE: 'Объем двигателя',
+        ENGINE_POWER_HP: 'Мощность двигателя (л.с.)', // NEW 2025
         PRICE: 'Цена покупки',
         VEHICLE_TYPE: 'Тип транспортного средства',
         FREIGHT_TYPE: 'Тип фрахта',
@@ -58,6 +60,8 @@ export const Messages = {
         UTILIZATION_FEE: 'Утилизационный сбор',
         ERA_GLONASS: 'Эра-Глонасс',
         COMPANY_COMMISSION: 'Вознаграждение компании',
+        ENGINE_POWER_KW: 'Мощность (кВт)', // NEW 2025: for result display
+        UTILIZATION_COEFFICIENT: 'Коэффициент утильсбора', // NEW 2025
     },
 
     // Information messages

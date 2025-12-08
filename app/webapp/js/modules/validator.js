@@ -51,6 +51,12 @@ export class FormValidator {
             errors.push({ field: 'engine_cc', message: engineError });
         }
 
+        // NEW 2025: Validate engine_power_hp
+        const enginePowerError = this.validateField('engine_power_hp', data.enginePowerHp || data.engine_power_hp);
+        if (enginePowerError) {
+            errors.push({ field: 'engine_power_hp', message: enginePowerError });
+        }
+
         // Validate purchase_price
         const priceError = this.validateField('purchase_price', data.purchasePrice || data.purchase_price);
         if (priceError) {
@@ -125,6 +131,26 @@ export class FormValidator {
                 break;
             }
 
+            // NEW 2025: Engine power validation
+            case 'engine_power_hp':
+            case 'enginePowerHp': {
+                const power = parseInt(value, 10);
+
+                if (isNaN(power)) {
+                    return Messages.errors.enginePowerHpRequired || 'Введите мощность двигателя в л.с.';
+                }
+
+                if (power < this.constraints.ENGINE_POWER_HP_MIN) {
+                    return `Минимальная мощность: ${this.constraints.ENGINE_POWER_HP_MIN} л.с.`;
+                }
+
+                if (power > this.constraints.ENGINE_POWER_HP_MAX) {
+                    return `Максимальная мощность: ${this.constraints.ENGINE_POWER_HP_MAX} л.с.`;
+                }
+
+                return null; // validation passed
+            }
+
             case 'purchase_price':
             case 'purchasePrice': {
                 const price = parseFloat(value);
@@ -174,6 +200,16 @@ export class FormValidator {
                     min: this.constraints.ENGINE_CC_MIN,
                     max: this.constraints.ENGINE_CC_MAX,
                     step: this.constraints.ENGINE_CC_STEP || 50
+                };
+
+            case 'engine_power_hp':
+            case 'enginePowerHp':
+                return {
+                    min: this.constraints.ENGINE_POWER_HP_MIN,
+                    max: this.constraints.ENGINE_POWER_HP_MAX,
+                    step: 1,
+                    required: true,
+                    type: 'number'
                 };
 
             case 'purchase_price':

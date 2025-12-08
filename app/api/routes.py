@@ -93,7 +93,22 @@ async def refresh_rates() -> dict[str, object]:
 
 @router.get("/meta")
 async def get_meta() -> dict[str, object]:
-    """Return reference metadata (countries, freight types, constraints, age categories)."""
+    """
+    Метаданные калькулятора для инициализации UI.
+
+    Returns:
+        dict: Справочные данные и ограничения валидации
+            - countries: список стран с emoji и labels
+            - freight_types: типы фрахта
+            - age_categories: возрастные категории авто
+            - constraints: лимиты полей формы (NEW: engine_power_hp)
+            - conversion_factors: коэффициенты конвертации (NEW: hp_to_kw)
+            - currencies_supported: поддерживаемые валюты
+
+    Changelog:
+        - 2025-12-08: Добавлены engine_power_hp constraints и conversion_factors
+        - 2025-12-04: Добавлена страна Georgia
+    """
     cfg = get_configs()
     fees_conf = cfg.fees
     rates_conf = cfg.rates
@@ -150,6 +165,15 @@ async def get_meta() -> dict[str, object]:
         "min_year": 1990,
         "max_year": current_year,
         "max_engine_cc": 10000,
+        "engine_power_hp_min": 1,       # NEW: Синхронизировано с models.py Field(gt=0)
+        "engine_power_hp_max": 1500,    # NEW: Синхронизировано с models.py Field(le=1500)
+        "purchase_price_min": 1000,
+        "purchase_price_max": 100000000,
+    }
+
+    conversion_factors = {
+        "hp_to_kw": 0.7355,    # NEW: Коэффициент конвертации л.с. → кВт
+        "kw_to_hp": 1.35962,   # NEW: Обратная конвертация кВт → л.с.
     }
 
     notes = [
@@ -166,5 +190,6 @@ async def get_meta() -> dict[str, object]:
         "freight_type_labels": freight_type_labels,
         "currencies_supported": currencies_supported,
         "constraints": constraints,
+        "conversion_factors": conversion_factors,  # NEW
         "notes": notes,
     }

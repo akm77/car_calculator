@@ -48,6 +48,33 @@
                     <input type="number" id="engineCc" name="engineCc" min="500" max="10000" step="50" required data-constraint-engine>
                 </div>
 
+                <!-- Мощность двигателя (NEW 2025) -->
+                <div class="form-group">
+                    <label for="enginePowerHp">
+                        <span class="label-text">Мощность двигателя</span>
+                        <span class="required">*</span>
+                    </label>
+                    <div class="input-with-unit">
+                        <input
+                            type="number"
+                            id="enginePowerHp"
+                            name="enginePowerHp"
+                            min="1"
+                            max="1500"
+                            step="1"
+                            required
+                            aria-required="true"
+                            aria-describedby="enginePowerHpHelp"
+                            placeholder="150"
+                        >
+                        <span class="unit">л.с.</span>
+                    </div>
+                    <small id="enginePowerHpHelp" class="help-text">
+                        Будет конвертировано в кВт (1 л.с. = 0.7355 кВт)
+                    </small>
+                    <div class="field-error" id="enginePowerHpError" role="alert"></div>
+                </div>
+
                 <div class="form-group">
                     <label>Цена покупки <span class="required">*</span></label>
                     <div class="input-group">
@@ -669,6 +696,7 @@
             const fieldsToValidate = [
                 { id: 'year', name: 'year' },
                 { id: 'engineCc', name: 'engine_cc' },
+                { id: 'enginePowerHp', name: 'engine_power_hp' }, // NEW 2025: engine power validation
                 { id: 'purchasePrice', name: 'purchase_price' }
             ];
 
@@ -903,6 +931,7 @@
                 country: selectedCountry,
                 year: parseInt(formData.get('year')),
                 engine_cc: parseInt(formData.get('engineCc')),
+                engine_power_hp: parseInt(formData.get('enginePowerHp')), // NEW 2025: add engine power
                 purchase_price: parseFloat(formData.get('purchasePrice')),
                 currency: formData.get('currency'),
                 freight_type: selectedFreightType,
@@ -998,6 +1027,19 @@
 
             parts.push(`<div>${Messages.labels.AGE}: ${meta.age_years} лет (${formatters.getAgeCategory(meta.age_category)})</div>`);
             parts.push(`<div>${Messages.labels.ENGINE}: ${engineDisplay}</div>`);
+
+            // NEW 2025: Display engine power and conversion
+            if (meta.engine_power_hp && meta.engine_power_kw) {
+                parts.push(`<div>${Messages.breakdown.ENGINE_POWER_KW}: ${meta.engine_power_hp} л.с. <span class="text-muted">(${meta.engine_power_kw.toFixed(2)} кВт)</span></div>`);
+            }
+
+            // NEW 2025: Display utilization coefficient
+            if (meta.utilization_coefficient !== null && meta.utilization_coefficient !== undefined) {
+                const baseRate = 20000; // базовая ставка утильсбора
+                const utilizationFee = breakdown.utilization_fee_rub || (baseRate * meta.utilization_coefficient);
+                parts.push(`<div>${Messages.breakdown.UTILIZATION_COEFFICIENT}: ${meta.utilization_coefficient}</div>`);
+                parts.push(`<div class="help-text" style="margin-left:20px;font-size:0.9em;color:#666;">Базовая ставка ${formatters.formatNumber(baseRate)} ₽ × коэффициент = ${formatters.formatNumber(utilizationFee)} ₽</div>`);
+            }
 
             // Duty details
             if (meta.customs_value_eur != null) {

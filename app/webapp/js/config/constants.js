@@ -14,12 +14,26 @@ export const Constraints = {
     ENGINE_CC_MIN: 500,
     ENGINE_CC_MAX: 10000,
 
+    // NEW 2025: Engine power validation (models.py: engine_power_hp)
+    ENGINE_POWER_HP_MIN: 1,
+    ENGINE_POWER_HP_MAX: 1500,
+
     // Price validation (models.py: purchase_price: Decimal = Field(gt=0))
     PRICE_MIN: 1,
 
     // Input steps
     ENGINE_CC_STEP: 50,
     PRICE_STEP: 0.01,
+};
+
+// NEW 2025: Conversion factors
+/**
+ * Conversion factors for units of measurement.
+ * Synchronized with GET /api/meta response.
+ */
+export const CONVERSION_FACTORS = {
+    HP_TO_KW: 0.7355,      // horsepower → kilowatts
+    KW_TO_HP: 1.35962      // kilowatts → horsepower (inverse)
 };
 
 // API endpoints
