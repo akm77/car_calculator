@@ -17,7 +17,8 @@ VehicleType = Literal["M1", "pickup", "bus", "motorhome", "other"]
 class CalculationRequest(BaseModel):
     country: Country
     year: int
-    engine_cc: int = Field(gt=0)
+    engine_cc: int = Field(gt=0, le=10000, description="Объём двигателя в см³")
+    engine_power_hp: int = Field(gt=0, le=1500, description="Мощность двигателя в л.с.")
     purchase_price: Decimal = Field(gt=0)
     currency: str = Field(description="ISO currency code of purchase price, e.g. JPY USD CNY AED")
     freight_type: FreightType | None = None
@@ -72,6 +73,10 @@ class CalculationMeta(BaseModel):
     duty_rate_eur_per_cc: float | None = None
     duty_value_bracket_max_eur: float | None = None
     vehicle_type: VehicleType | None = None
+    # New: Power and utilization fee info (2025 spec)
+    engine_power_hp: int | None = None
+    engine_power_kw: float | None = None
+    utilization_coefficient: float | None = None
     # New: Map of currency rates used in this calculation, e.g. {"USD_RUB": 90.0}
     rates_used: dict[str, float] = Field(default_factory=dict)
 

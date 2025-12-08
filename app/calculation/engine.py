@@ -135,53 +135,98 @@ def _compute_duty(
     return duty_rub, "per_cc", details
 
 
-def _utilization_fee(age_category: str, engine_cc: int, rates_conf: dict[str, Any]) -> Decimal:
-    util = rates_conf.get("utilization", {})
-    table = util.get("personal_m1", [])
+def _utilization_fee_v2(
+    age_category: str,
+    engine_cc: int,
+    engine_power_hp: int,
+    rates_conf: dict[str, Any]
+) -> tuple[Decimal, float]:
+    """
+    Новая система утильсбора (2025): 2D-таблица по объёму и мощности.
 
-    # Определяем правильный ключ в зависимости от возрастной категории
-    if age_category == "lt3":
-        key = "lt3"
-    elif age_category == "3_5":
-        key = "ge3"  # для 3-5 лет используем ставку ge3
-    else:  # gt5
-        key = "gt5"  # для >5 лет используем ставку gt5 если есть, иначе ge3
+    Args:
+        age_category: 'lt3', '3_5', или 'gt5'
+        engine_cc: Объём двигателя в см³
+        engine_power_hp: Мощность в л.с.
+        rates_conf: Конфигурация с utilization_m1_personal
 
-    for seg in table:
-        max_cc = seg.get("max_cc")
-        if max_cc is None or engine_cc <= max_cc:
-            # Сначала пробуем найти специфичный ключ, потом fallback на ge3
-            rate = seg.get(key) or seg.get("ge3", 0)
-            return to_decimal(rate)
-    return Decimal("0")
+    Returns:
+        (fee_rub, coefficient): Сумма сбора и использованный коэффициент
+    """
+    util = rates_conf.get("utilization_m1_personal", {})
+    base_rate = to_decimal(util.get("base_rate_rub", 20000))
+
+    # 1. Конвертация л.с. → кВт
+    HP_TO_KW = 0.7355
+    engine_power_kw = engine_power_hp * HP_TO_KW
+
+    # 2. Поиск диапазона объёма
+    volume_bands = util.get("volume_bands", [])
+    volume_band = None
+    for band in volume_bands:
+        vol_range = band.get("volume_range", [])
+        if len(vol_range) >= 2:
+            if vol_range[0] <= engine_cc <= vol_range[1]:
+                volume_band = band
+                break
+
+    if not volume_band:
+        logger.warning(f"Volume band not found for {engine_cc} cc, returning 0")
+        return Decimal("0"), 0.0
+
+    # 3. Поиск диапазона мощности
+    power_brackets = volume_band.get("power_brackets", [])
+    coefficient = None
+    for bracket in power_brackets:
+        max_kw = bracket.get("power_kw_max")
+        # Если max_kw is None — это последний диапазон (без верхней границы)
+        if max_kw is None or engine_power_kw <= max_kw:
+            # Выбираем коэффициент по возрасту: lt3 или gt3
+            coef_key = "coefficient_lt3" if age_category == "lt3" else "coefficient_gt3"
+            coefficient = bracket.get(coef_key, 0)
+            break
+
+    if coefficient is None:
+        logger.warning(
+            f"Power bracket not found for {engine_power_kw:.2f} kW "
+            f"({engine_power_hp} hp) in volume band {engine_cc} cc, returning 0"
+        )
+        return Decimal("0"), 0.0
+
+    # 4. Расчёт: base_rate × coefficient
+    coefficient_dec = to_decimal(coefficient)
+    fee = quantize4(base_rate * coefficient_dec)
+
+    return fee, float(coefficient)
 
 
-def _commission(amount_rub: Decimal, commissions_conf: dict[str, Any], country: str | None = None) -> Decimal:
-    """Return commission in RUB based on thresholds; supports optional per-country override.
+def _commission(
+    amount_rub: Decimal,
+    commissions_conf: dict[str, Any],
+    country: str | None = None,
+    rates_conf: dict[str, Any] | None = None,
+) -> Decimal:
+    """Return commission in RUB (NEW 2025: fixed 1000 USD or country override).
 
     Selection order:
-    1) if by_country[country] thresholds exist -> use them
-    2) else use global thresholds
+    1) if by_country[country] exists -> use amount from there (in RUB)
+    2) else use default_commission_usd (converted to RUB)
     """
-    # Prefer country-specific thresholds if available
+    # Check for country-specific override (e.g., UAE = 0)
     if country:
         by_country = commissions_conf.get("by_country") or {}
-        thresholds = by_country.get(country)
-        if isinstance(thresholds, list) and thresholds:
-            for th in thresholds:
-                max_price = th.get("max_price")
-                max_price_dec = to_decimal(max_price) if max_price is not None else None
-                if max_price_dec is None or amount_rub <= max_price_dec:
-                    return to_decimal(th.get("amount", 0.0))
-            return Decimal("0")
+        country_config = by_country.get(country)
+        if isinstance(country_config, list) and country_config:
+            # For simplicity: take first entry's amount (no thresholds in new system)
+            return to_decimal(country_config[0].get("amount", 0))
 
-    # Fallback to global thresholds
-    thresholds = commissions_conf.get("thresholds", [])
-    for th in thresholds:
-        max_price = th.get("max_price")
-        max_price_dec = to_decimal(max_price) if max_price is not None else None
-        if max_price_dec is None or amount_rub <= max_price_dec:
-            return to_decimal(th.get("amount", 0.0))
+    # Default: 1000 USD converted to RUB
+    default_usd = commissions_conf.get("default_commission_usd", 1000)
+    if rates_conf:
+        commission_usd = to_decimal(default_usd)
+        return _convert(commission_usd, "USD", rates_conf)
+
+    # Fallback if no rates (shouldn't happen in practice)
     return Decimal("0")
 
 
@@ -264,10 +309,11 @@ def calculate(req: CalculationRequest) -> CalculationResult:
     customs_services_map = rates_conf.get("customs_services", {})
     customs_services_rub_dec = to_decimal(customs_services_map.get(req.country, 0))
 
-    # ERA-GLONASS excluded from calculation (deprecated) — keep 0 in breakdown
-    # (no variable assignment to avoid linter warning)
+    # ERA-GLONASS: NEW 2025 - configurable value (default 45000 RUB)
+    era_glonass_rub_dec = to_decimal(rates_conf.get("era_glonass_rub", 45000))
 
     # Utilization fee — only for M1. For other vehicle types, set 0 and warn to contact support.
+    utilization_coefficient = None
     if getattr(req, "vehicle_type", "M1") != "M1":
         utilization_fee_rub_dec = Decimal("0")
         warnings.append(
@@ -280,10 +326,17 @@ def calculate(req: CalculationRequest) -> CalculationResult:
             )
         )
     else:
-        utilization_fee_rub_dec = _utilization_fee(age_category, req.engine_cc, rates_conf)
+        # NEW: Call v2 function with engine_power_hp
+        utilization_fee_rub_dec, utilization_coefficient = _utilization_fee_v2(
+            age_category, req.engine_cc, req.engine_power_hp, rates_conf
+        )
 
-    # Commission based ONLY on purchase price in RUB (business rule)
-    commission_rub_dec = _commission(purchase_price_rub, commissions_conf, req.country)
+    # Commission: NEW 2025 - fixed 1000 USD (or 0 for UAE)
+    commission_rub_dec = _commission(
+        purchase_price_rub, commissions_conf, req.country, rates_conf
+    )
+    if commission_rub_dec > 0:
+        used_currency_codes.add("USD")  # Commission uses USD
 
     total_rub_dec = (
         purchase_price_rub
@@ -300,7 +353,7 @@ def calculate(req: CalculationRequest) -> CalculationResult:
         duties_rub=round_rub(duties_rub_dec),
         utilization_fee_rub=round_rub(utilization_fee_rub_dec),
         customs_services_rub=round_rub(customs_services_rub_dec),
-        era_glonass_rub=0,
+        era_glonass_rub=round_rub(era_glonass_rub_dec),
         freight_rub=round_rub(freight_rub_dec),
         country_expenses_rub=round_rub(country_expenses_rub_dec),
         company_commission_rub=round_rub(commission_rub_dec),
@@ -325,6 +378,10 @@ def calculate(req: CalculationRequest) -> CalculationResult:
     purchase_rate_key = f"{req.currency.upper()}_RUB"
     purchase_rate_val = rates_used.get(purchase_rate_key)
 
+    # Calculate engine_power_kw for display
+    HP_TO_KW = 0.7355
+    engine_power_kw = round(req.engine_power_hp * HP_TO_KW, 2)
+
     meta = CalculationMeta(
         age_years=age_years,
         age_category=age_category,
@@ -339,6 +396,10 @@ def calculate(req: CalculationRequest) -> CalculationResult:
         duty_rate_eur_per_cc=duty_details.get("duty_rate_eur_per_cc"),
         duty_value_bracket_max_eur=duty_details.get("duty_value_bracket_max_eur"),
         vehicle_type=getattr(req, "vehicle_type", None),
+        # NEW 2025: Power and utilization coefficient
+        engine_power_hp=req.engine_power_hp,
+        engine_power_kw=engine_power_kw,
+        utilization_coefficient=utilization_coefficient,
         rates_used=rates_used,
     )
 

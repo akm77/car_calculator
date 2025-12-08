@@ -1,0 +1,243 @@
+# Утилизационный сбор для физических лиц (М1, личное использование)
+# Действует с 1 декабря 2015 г. (обновлено 2025)
+# Формула: УС = base_rate_rub × coefficient
+# Коэффициент зависит от объёма двигателя (см³) и мощности (кВт)
+
+utilization_m1_personal:
+  base_rate_rub: 20000
+
+  volume_bands:
+    # ≤ 1000 см³
+    - volume_range: [0, 1000]
+      power_brackets:
+        - power_kw_max: 51.48
+          coefficient_lt3: 0.17
+          coefficient_gt3: 0.26
+        - power_kw_max: 73.55
+          coefficient_lt3: 0.17
+          coefficient_gt3: 0.26
+        - power_kw_max: 95.61
+          coefficient_lt3: 0.17
+          coefficient_gt3: 0.26
+        - power_kw_max: 117.68
+          coefficient_lt3: 0.17
+          coefficient_gt3: 0.26
+        - power_kw_max: null  # ≥ 117.69 → см. следующий диапазон
+          coefficient_lt3: 0.17
+          coefficient_gt3: 0.26
+
+    # 1001–2000 см³
+    - volume_range: [1001, 2000]
+      power_brackets:
+        - power_kw_max: 51.48
+          coefficient_lt3: 0.17
+          coefficient_gt3: 0.26
+        - power_kw_max: 73.55
+          coefficient_lt3: 0.17
+          coefficient_gt3: 0.26
+        - power_kw_max: 95.61
+          coefficient_lt3: 0.17
+          coefficient_gt3: 0.26
+        - power_kw_max: 117.68
+          coefficient_lt3: 0.17
+          coefficient_gt3: 0.26
+        - power_kw_max: 139.75
+          coefficient_lt3: 37.5
+          coefficient_gt3: 62.2
+        - power_kw_max: 161.81
+          coefficient_lt3: 39.7
+          coefficient_gt3: 66.0
+        - power_kw_max: 183.88
+          coefficient_lt3: 42.1
+          coefficient_gt3: 69.9
+        - power_kw_max: 205.94
+          coefficient_lt3: 47.6
+          coefficient_gt3: 76.6
+        - power_kw_max: 228.00
+          coefficient_lt3: 53.8
+          coefficient_gt3: 83.8
+        - power_kw_max: 250.07
+          coefficient_lt3: 60.8
+          coefficient_gt3: 91.8
+        - power_kw_max: 272.13
+          coefficient_lt3: 69.3
+          coefficient_gt3: 100.5
+        - power_kw_max: 294.20
+          coefficient_lt3: 79.0
+          coefficient_gt3: 110.0
+        - power_kw_max: 316.26
+          coefficient_lt3: 90.0
+          coefficient_gt3: 120.5
+        - power_kw_max: 338.33
+          coefficient_lt3: 102.7
+          coefficient_gt3: 132.0
+        - power_kw_max: 367.75
+          coefficient_lt3: 117.0
+          coefficient_gt3: 144.5
+        - power_kw_max: null  # ≥ 367.76
+          coefficient_lt3: 133.4
+          coefficient_gt3: 158.2
+
+    # 2001–3000 см³
+    - volume_range: [2001, 3000]
+      power_brackets:
+        - power_kw_max: 51.48
+          coefficient_lt3: 0.17
+          coefficient_gt3: 0.26
+        - power_kw_max: 73.55
+          coefficient_lt3: 0.17
+          coefficient_gt3: 0.26
+        - power_kw_max: 95.61
+          coefficient_lt3: 0.17
+          coefficient_gt3: 0.26
+        - power_kw_max: 117.68
+          coefficient_lt3: 0.17
+          coefficient_gt3: 0.26
+        - power_kw_max: 139.75
+          coefficient_lt3: 96.11
+          coefficient_gt3: 144.0
+        - power_kw_max: 161.81
+          coefficient_lt3: 98.5
+          coefficient_gt3: 145.9
+        - power_kw_max: 183.88
+          coefficient_lt3: 100.1
+          coefficient_gt3: 148.0
+        - power_kw_max: 205.94
+          coefficient_lt3: 105.0
+          coefficient_gt3: 152.5
+        - power_kw_max: 228.00
+          coefficient_lt3: 109.2
+          coefficient_gt3: 157.1
+        - power_kw_max: 250.07
+          coefficient_lt3: 113.6
+          coefficient_gt3: 161.4
+        - power_kw_max: 272.13
+          coefficient_lt3: 118.1
+          coefficient_gt3: 165.9
+        - power_kw_max: 294.20
+          coefficient_lt3: 122.9
+          coefficient_gt3: 170.6
+        - power_kw_max: 316.26
+          coefficient_lt3: 127.8
+          coefficient_gt3: 175.4
+        - power_kw_max: 338.33
+          coefficient_lt3: 132.9
+          coefficient_gt3: 180.3
+        - power_kw_max: 367.75
+          coefficient_lt3: 138.2
+          coefficient_gt3: 185.3
+        - power_kw_max: null  # ≥ 367.76
+          coefficient_lt3: 143.7
+          coefficient_gt3: 190.5
+
+    # 3001–3500 см³
+    - volume_range: [3001, 3500]
+      power_brackets:
+        - power_kw_max: 51.48
+          coefficient_lt3: 107.67
+          coefficient_gt3: 164.84
+        - power_kw_max: 73.55
+          coefficient_lt3: 107.67
+          coefficient_gt3: 164.84
+        - power_kw_max: 95.61
+          coefficient_lt3: 107.67
+          coefficient_gt3: 164.84
+        - power_kw_max: 117.68
+          coefficient_lt3: 107.67
+          coefficient_gt3: 164.84
+        - power_kw_max: 139.75
+          coefficient_lt3: 109.8
+          coefficient_gt3: 166.7
+        - power_kw_max: 161.81
+          coefficient_lt3: 112.0
+          coefficient_gt3: 168.5
+        - power_kw_max: 183.88
+          coefficient_lt3: 114.3
+          coefficient_gt3: 170.3
+        - power_kw_max: 205.94
+          coefficient_lt3: 117.1
+          coefficient_gt3: 172.7
+        - power_kw_max: 228.00
+          coefficient_lt3: 120.0
+          coefficient_gt3: 177.0
+        - power_kw_max: 250.07
+          coefficient_lt3: 126.6
+          coefficient_gt3: 181.5
+        - power_kw_max: 272.13
+          coefficient_lt3: 133.6
+          coefficient_gt3: 186.9
+        - power_kw_max: 294.20
+          coefficient_lt3: 141.0
+          coefficient_gt3: 192.5
+        - power_kw_max: 316.26
+          coefficient_lt3: 148.7
+          coefficient_gt3: 198.3
+        - power_kw_max: 338.33
+          coefficient_lt3: 156.9
+          coefficient_gt3: 204.2
+        - power_kw_max: 367.75
+          coefficient_lt3: 165.5
+          coefficient_gt3: 210.4
+        - power_kw_max: null  # ≥ 367.76
+          coefficient_lt3: 174.6
+          coefficient_gt3: 216.7
+
+    # > 3500 см³
+    - volume_range: [3501, 999999]
+      power_brackets:
+        - power_kw_max: 51.48
+          coefficient_lt3: 137.11
+          coefficient_gt3: 180.24
+        - power_kw_max: 73.55
+          coefficient_lt3: 137.11
+          coefficient_gt3: 180.24
+        - power_kw_max: 95.61
+          coefficient_lt3: 137.11
+          coefficient_gt3: 180.24
+        - power_kw_max: 117.68
+          coefficient_lt3: 137.11
+          coefficient_gt3: 180.24
+        - power_kw_max: 139.75
+          coefficient_lt3: 139.4
+          coefficient_gt3: 182.9
+        - power_kw_max: 161.81
+          coefficient_lt3: 141.8
+          coefficient_gt3: 185.7
+        - power_kw_max: 183.88
+          coefficient_lt3: 144.2
+          coefficient_gt3: 188.5
+        - power_kw_max: 205.94
+          coefficient_lt3: 147.1
+          coefficient_gt3: 192.8
+        - power_kw_max: 228.00
+          coefficient_lt3: 150.0
+          coefficient_gt3: 197.2
+        - power_kw_max: 250.07
+          coefficient_lt3: 155.3
+          coefficient_gt3: 208.0
+        - power_kw_max: 272.13
+          coefficient_lt3: 160.73
+          coefficient_gt3: 219.5
+        - power_kw_max: 294.20
+          coefficient_lt3: 166.4
+          coefficient_gt3: 231.6
+        - power_kw_max: 316.26
+          coefficient_lt3: 172.2
+          coefficient_gt3: 244.3
+        - power_kw_max: 338.33
+          coefficient_lt3: 178.2
+          coefficient_gt3: 257.8
+        - power_kw_max: 367.75
+          coefficient_lt3: 184.4
+          coefficient_gt3: 272.0
+        - power_kw_max: null  # ≥ 367.76
+          coefficient_lt3: 190.9
+          coefficient_gt3: 286.9
+
+# Примечания:
+# 1. Для электромобилей и гибридов последовательного типа (объём = 0):
+#    Используется первая строка таблицы с особыми коэффициентами по мощности
+# 2. power_kw_max: null означает "все значения выше предыдущего порога"
+# 3. coefficient_lt3 применяется для авто ≤ 3 лет
+# 4. coefficient_gt3 применяется для авто > 3 лет (включая 3_5 и gt5 категории)
+
