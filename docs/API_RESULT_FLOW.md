@@ -1,8 +1,11 @@
 # 📖 ПОДРОБНОЕ ОБЪЯСНЕНИЕ: Как получаем результат расчета от API
 
-**Дата**: 7 декабря 2025  
+**Дата**: 8 декабря 2025 (обновлено для v2.0)  
 **Файл**: `app/webapp/index.html`  
 **API Endpoint**: `POST /api/calculate`
+
+> **⚠️ ВАЖНО (v2.0):** С версии 2.0.0 добавлено **обязательное поле** `engine_power_hp` (1-1500 л.с.)  
+> См. [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) для деталей миграции.
 
 ---
 
@@ -47,6 +50,7 @@ async function calculateCost() {
         country: selectedCountry,                              // 'georgia', 'japan', etc.
         year: parseInt(formData.get('year')),                  // 2022
         engine_cc: parseInt(formData.get('engineCc')),         // 1500
+        engine_power_hp: parseInt(formData.get('enginePowerHp')), // 110 ← NEW v2.0
         purchase_price: parseFloat(formData.get('purchasePrice')), // 10000
         currency: formData.get('currency'),                    // 'USD', 'JPY', etc.
         freight_type: selectedFreightType,                     // 'open', 'container'
@@ -54,7 +58,7 @@ async function calculateCost() {
     };
     
     console.log('[calculateCost] Request data:', requestData);
-    // Вывод: {country: 'georgia', year: 2022, engine_cc: 1500, ...}
+    // Вывод: {country: 'georgia', year: 2022, engine_cc: 1500, engine_power_hp: 110, ...}
     
     // ============================================================
     // ШАГ 3: ПОКАЗЫВАЕМ ИНДИКАТОР ЗАГРУЗКИ
@@ -196,6 +200,9 @@ async def calculate_endpoint(req: CalculationRequest):
     "age_years": 2,                      // Возраст авто
     "age_category": "3_5",               // Категория: от 3 до 5 лет
     "volume_band": "1500-2000",          // Диапазон объема двигателя
+    "engine_power_hp": 110,              // ← NEW v2.0: Мощность в л.с.
+    "engine_power_kw": 80.91,            // ← NEW v2.0: Мощность в кВт (hp × 0.7355)
+    "utilization_coefficient": 0.26,     // ← NEW v2.0: Коэффициент утильсбора
     "customs_value_eur": 9500.0,         // Таможенная стоимость
     "duty_formula_mode": "percent",      // Режим расчета пошлины
     "duty_percent": 0.2,                 // 20% пошлина
@@ -207,6 +214,7 @@ async def calculate_endpoint(req: CalculationRequest):
     "country": "georgia",
     "year": 2022,
     "engine_cc": 1500,
+    "engine_power_hp": 110,              // ← NEW v2.0: ОБЯЗАТЕЛЬНОЕ ПОЛЕ
     "purchase_price": 10000.0,
     "currency": "USD",
     "freight_type": "open",

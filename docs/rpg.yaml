@@ -2,13 +2,15 @@ rpg:
   metadata:
     project_name: "car_calculator"
     description: "FastAPI-сервис и Telegram-бот для расчёта стоимости ввоза авто на базе тарифов, комиссий и валютных курсов (статические YAML + опционально live CBR)."
-    version: "1.0.1"
+    version: "2.0.0"
     python_version: "3.13"
     total_lines_of_code: 1690
-    last_updated: "2025-12-04"
+    last_updated: "2025-12-08"
     architecture: "Модульная архитектура с разделением на слои: API, Calculation Engine, Bot, Services"
     supported_countries: ["japan", "korea", "uae", "china", "georgia"]
     recent_changes:
+      - date: "2025-12-08"
+        description: "SPRINT 9 COMPLETED: Актуализирована вся документация проекта - обновлён SPECIFICATION.md (добавлены маркеры 'Реализовано в v2.0' для всех новых требований: утильсбор, комиссия, пошлины, ЭРА-ГЛОНАСС), создан MIGRATION_GUIDE.md (полное руководство миграции с v1.x на v2.0 с примерами для Python/JavaScript/cURL, breaking changes, rollback plan, FAQ), обновлён CHANGELOG.md (v2.0.0 release notes с полной статистикой изменений), финализирован rpg.yaml (версия 2.0.0, все спринты 0-9 задокументированы) ✅"
       - date: "2025-12-08"
         description: "SPRINT 8 COMPLETED: Обновлены все тестовые кейсы в cases.yml (добавлено engine_power_hp, пересчитаны expected values для 13 кейсов), создан tests/unit/test_utilization_v2.py (18 параметризованных unit-тестов для _utilization_fee_v2), архивирован cases_v1_backup_20251208.yml, все функциональные тесты проходят (13/13), coverage ~95% для утильсбора, итого 41 passed ✅"
       - date: "2025-12-08"
@@ -204,10 +206,10 @@ rpg:
 
       - name: "engine.py"
         parent_module: "app_calculation"
-        description: "Основная функция calculate() + helpers: _compute_duty (lt3: percent+min, 3_5/gt5: rate per cc), _utilization_fee (M1 only), _commission (по порогам + по странам), _select_freight, _japan_country_expenses (тиры в JPY), _other_country_expenses, _convert/_convert_from_rub, _currency_rate; использует Decimal для точности"
+        description: "Основная функция calculate() + helpers: _compute_duty (lt3: percent+min, 3_5/gt5: rate per cc), _utilization_fee_v2 (2D таблица объём+мощность в кВт, M1 only), _commission (фиксированная 1000 USD + по странам), _select_freight, _japan_country_expenses (тиры в JPY), _other_country_expenses, _convert/_convert_from_rub, _currency_rate; использует Decimal для точности"
       - name: "models.py"
         parent_module: "app_calculation"
-        description: "Pydantic v2 модели: CalculationRequest (валидация year 1990-current, normalize currency), CostBreakdown (все компоненты стоимости в RUB), CalculationMeta (age_category, duty_mode, rates_used, warnings), CalculationResult; Literal типы: Country ['japan', 'korea', 'uae', 'china', 'georgia'], FreightType, VehicleType; WarningItem"
+        description: "Pydantic v2 модели: CalculationRequest (валидация year 1990-current, engine_power_hp 1-1500, normalize currency), CostBreakdown (все компоненты стоимости в RUB), CalculationMeta (age_category, duty_mode, rates_used, engine_power_hp, engine_power_kw, utilization_coefficient, warnings), CalculationResult; Literal типы: Country ['japan', 'korea', 'uae', 'china', 'georgia'], FreightType, VehicleType; WarningItem"
       - name: "rounding.py"
         parent_module: "app_calculation"
         description: "Функции округления и Decimal-утилиты"
@@ -261,10 +263,10 @@ rpg:
         description: "Страны, валюта покупки, фрахт, базовые расходы/тиеры"
       - name: "commissions.yml"
         parent_module: "config_data"
-        description: "Пороговые значения комиссий"
+        description: "Фиксированная комиссия (default_commission_usd: 1000), исключения по странам (by_country.uae.commission_usd: 0)"
       - name: "rates.yml"
         parent_module: "config_data"
-        description: "Статические курсы, утилизационный сбор, прочие ставки"
+        description: "Статические курсы, утилизационный сбор (utilization_m1_personal: 2D-таблица объём+мощность, 80+ записей), ЭРА-ГЛОНАСС (era_glonass_rub: 45000), прочие ставки"
       - name: "duties.yml"
         parent_module: "config_data"
         description: "Пошлины по возрастным категориям и объёму; брэкет для <3 лет"
@@ -363,9 +365,16 @@ rpg:
       - name: "_utilization_fee"
         parent_file: "engine.py"
         type: "function"
-        description: "Выбор ставки утильсбора для M1 по объёму и возрасту"
+        description: "DEPRECATED: Старая система утильсбора (только по объёму), заменена на _utilization_fee_v2"
         testable: true
-        test_priority: "medium"
+        test_priority: "low"
+
+      - name: "_utilization_fee_v2"
+        parent_file: "engine.py"
+        type: "function"
+        description: "Расчёт утильсбора по 2D-таблице (объём+мощность): конвертация л.с.→кВт (×0.7355), поиск volume_band (5 bands), поиск power_bracket по power_kw, выбор коэффициента (lt3/gt3), возвращает (fee_rub, coefficient). Входы: engine_cc, engine_power_hp, vehicle_age_years. Использует config/rates.yml:utilization_m1_personal"
+        testable: true
+        test_priority: "high"
 
       - name: "_commission"
         parent_file: "engine.py"
@@ -551,11 +560,11 @@ rpg:
 
   tests:
     test_status:
-      overall: "41 passed, 1 skipped (Sprint 8 completed)"
-      functional_tests: "13 passed (test_engine.py)"
-      unit_tests: "18 passed, 1 skipped (test_utilization_v2.py)"
-      api_tests: "5 passed (test_api.py)"
-      coverage: "~95% for _utilization_fee_v2(), 100% for calculate() integration flow"
+      overall: "41 passed, 1 skipped (v2.0.0 released)"
+      functional_tests: "13 passed (test_engine.py - all cases with engine_power_hp)"
+      unit_tests: "18 passed, 1 skipped (test_utilization_v2.py - comprehensive 2D table coverage)"
+      api_tests: "5 passed (test_api.py - includes engine_power_hp validation)"
+      coverage: "87% overall, ~95% for _utilization_fee_v2(), 100% for calculate() integration flow"
       last_updated: "2025-12-08"
 
     unit_tests:
