@@ -3,8 +3,8 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 import pytest
 
-from app.main import app
 from app.core.settings import get_configs
+from app.main import app
 
 
 @pytest.fixture(scope="session")

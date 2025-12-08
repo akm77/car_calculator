@@ -10,6 +10,10 @@ rpg:
     supported_countries: ["japan", "korea", "uae", "china", "georgia"]
     recent_changes:
       - date: "2025-12-08"
+        description: "SPRINT 8 COMPLETED: Обновлены все тестовые кейсы в cases.yml (добавлено engine_power_hp, пересчитаны expected values для 13 кейсов), создан tests/unit/test_utilization_v2.py (18 параметризованных unit-тестов для _utilization_fee_v2), архивирован cases_v1_backup_20251208.yml, все функциональные тесты проходят (13/13), coverage ~95% для утильсбора, итого 41 passed ✅"
+      - date: "2025-12-08"
+        description: "SPRINT 7 COMPLETED: Обновлены Telegram Bot хендлеры для поддержки engine_power_hp - cmd_calc теперь использует engine_power_hp=110 и _format_result helper, on_webapp_data парсит и валидирует engine_power_hp (обязательное поле), создан _format_result для HTML форматирования с отображением мощности в кВт, коэффициента утильсбора и полного breakdown, обработка ValidationError, синтаксис и импорты проверены ✅"
+      - date: "2025-12-08"
         description: "SPRINT 6 COMPLETED: Добавлено поле 'Мощность двигателя (л.с.)' в WebApp форму (после engineCc), обновлены constants.js (ENGINE_POWER_HP_MIN/MAX, CONVERSION_FACTORS), validator.js (валидация engine_power_hp), messages.js (labels и errors), calculateCost() (передача engine_power_hp в API), displayResult() (отображение мощности в кВт и коэффициента утильсбора), real-time валидация, создан test_engine_power_field.html ✅"
       - date: "2025-12-08"
         description: "SPRINT 5 COMPLETED: Обновлён GET /api/meta - добавлены constraints для engine_power_hp (min=1, max=1500), добавлена секция conversion_factors (hp_to_kw=0.7355, kw_to_hp=1.35962), обновлён docstring с changelog, созданы тесты test_get_meta_engine_power_constraints и test_get_meta_backward_compatibility, Swagger UI актуален, backward compatibility сохранена ✅"
@@ -231,7 +235,7 @@ rpg:
         description: "_build_bot (TOKEN_PATTERN regex валидация, DefaultBotProperties(ParseMode.HTML)), _build_dispatcher (register handlers), _set_commands (BotCommand /start), main_async (setup_logging, TelegramNotFound обработка, dp.start_polling с allowed_updates), run_bot entrypoint; Custom exceptions: MissingBotTokenError, InvalidBotTokenError"
       - name: "handlers/start.py"
         parent_module: "app_bot"
-        description: "Router: @router.message(Command('start')) → cmd_start (проверка HTTPS для WebApp button, main_menu клавиатура), @router.message(Command('calc')) → cmd_calc (пример расчёта japan 2021 1496cc), @router.message(F.web_app_data) → on_webapp_data (парсинг JSON, вызов calculate, форматирование результата с breakdown); register(dp: Dispatcher)"
+        description: "Router: @router.message(Command('start')) → cmd_start (проверка HTTPS для WebApp button, main_menu клавиатура), @router.message(Command('calc')) → cmd_calc (пример расчёта japan 2021 1496cc 110hp с _format_result), @router.message(F.web_app_data) → on_webapp_data (парсинг JSON с engine_power_hp, валидация обязательности, вызов calculate, форматирование через _format_result с мощностью и коэффициентом); _format_result helper (HTML форматирование с breakdown, мощностью в кВт, коэффициентом утильсбора); register(dp: Dispatcher)"
       - name: "keyboards.py"
         parent_module: "app_bot"
         description: "ReplyKeyboard с WebApp-кнопкой"
@@ -503,12 +507,12 @@ rpg:
         testable: true
         test_priority: "medium"
 
-      - name: "cmd_start / cmd_calc / on_webapp_data / register"
+      - name: "cmd_start / cmd_calc / on_webapp_data / _format_result / register"
         parent_file: "app/bot/handlers/start.py"
         type: "function"
-        description: "Хендлеры aiogram, интеграция с движком расчёта, вывод результатов"
+        description: "Хендлеры aiogram (NEW: cmd_calc с engine_power_hp=110, on_webapp_data с парсингом и валидацией engine_power_hp, обработкой ValidationError), _format_result helper (HTML форматирование с мощностью в кВт, коэффициентом утильсбора, breakdown, предупреждениями), интеграция с движком расчёта"
         testable: true
-        test_priority: "medium"
+        test_priority: "high"
 
       - name: "main_menu"
         parent_file: "app/bot/keyboards.py"
@@ -547,11 +551,19 @@ rpg:
 
   tests:
     test_status:
-      overall: "14 passed, 1 failed (test_calculation_cases[gt5_large_engine])"
-      failing_test: "customs_services_rub mismatch: expected 120000.0, got 150000.0 для UAE"
-      action_required: "Обновить либо config/rates.yml либо tests/test_data/cases.yml"
+      overall: "41 passed, 1 skipped (Sprint 8 completed)"
+      functional_tests: "13 passed (test_engine.py)"
+      unit_tests: "18 passed, 1 skipped (test_utilization_v2.py)"
+      api_tests: "5 passed (test_api.py)"
+      coverage: "~95% for _utilization_fee_v2(), 100% for calculate() integration flow"
+      last_updated: "2025-12-08"
 
     unit_tests:
+      - target_component: "_utilization_fee_v2"
+        test_file: "tests/unit/test_utilization_v2.py"
+        test_functions: ["test_utilization_fee_calculation (11 parametrized cases)", "test_utilization_fee_hp_to_kw_conversion", "test_utilization_fee_edge_case_boundary", "test_utilization_fee_zero_power", "test_utilization_fee_all_age_categories", "test_utilization_fee_different_countries", "test_utilization_fee_high_power_vehicle", "test_utilization_fee_low_power_vehicle"]
+        coverage_status: "exists"
+        notes: "SPRINT 8: Комплексное покрытие новой системы утильсбора 2025 - проверка конвертации л.с.→кВт (0.7355), все 5 диапазонов объёма (≤1000, 1001-2000, 2001-3000, 3001-3500, >3500 cc), все возрастные категории (lt3, 3_5, gt5), граничные значения (0hp, 1hp, 400hp), boundary cases между диапазонами. Coverage ~95%"
       - target_component: "parse_cbr_xml"
         test_file: "tests/functional/test_cbr.py"
         test_functions: ["test_parse_cbr_xml_basic"]

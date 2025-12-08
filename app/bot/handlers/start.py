@@ -1,14 +1,24 @@
+"""
+Обработчики команд Telegram бота.
+
+Changelog:
+- 2025-12-08: Добавлена поддержка engine_power_hp в cmd_calc и on_webapp_data
+- 2025-12-08: Создан helper _format_result для единообразного форматирования
+"""
+
 from __future__ import annotations
 
+from decimal import Decimal
 import json
 from typing import TYPE_CHECKING
 
 from aiogram import Dispatcher, F, Router
 from aiogram.filters import Command
+from pydantic import ValidationError
 
 from app.bot.keyboards import main_menu
 from app.calculation.engine import calculate
-from app.calculation.models import CalculationRequest
+from app.calculation.models import CalculationRequest, CalculationResult
 from app.core.messages import WARN_WEBAPP_HTTP_URL
 from app.core.settings import get_settings
 from app.struct_logger import logger
@@ -20,12 +30,72 @@ if TYPE_CHECKING:  # pragma: no cover
 router = Router()
 
 
+def _format_result(result: CalculationResult, req: CalculationRequest) -> str:
+    """
+    Форматирование результата расчёта для Telegram.
+
+    Args:
+        result: Результат расчёта из engine.calculate()
+        req: Исходный запрос (для отображения входных параметров)
+
+    Returns:
+        str: HTML-форматированное сообщение для Telegram
+    """
+    breakdown = result.breakdown
+    meta = result.meta
+
+    # Заголовок
+    country_emoji = {"japan": "🇯🇵", "korea": "🇰🇷", "uae": "🇦🇪", "china": "🇨🇳", "georgia": "🇬🇪"}.get(
+        req.country, "🌍"
+    )
+
+    msg = "<b>💰 Расчёт стоимости растаможки</b>\n\n"
+
+    # Входные параметры
+    msg += f"{country_emoji} <b>Страна:</b> {req.country.upper()}\n"
+    msg += f"📅 <b>Год:</b> {req.year} ({meta.age_category})\n"
+    msg += f"⚙️ <b>Объём:</b> {req.engine_cc} см³\n"
+
+    # NEW: Мощность
+    if meta.engine_power_hp and meta.engine_power_kw:
+        msg += f"🔋 <b>Мощность:</b> {meta.engine_power_hp} л.с. "
+        msg += f"<i>({meta.engine_power_kw:.2f} кВт)</i>\n"
+
+    msg += f"💵 <b>Цена:</b> {req.purchase_price:,.0f} {req.currency}\n"
+    msg += "\n"
+
+    # Детализация стоимости
+    msg += "<b>📊 Детализация:</b>\n"
+    msg += f"• Таможенная пошлина: {breakdown.duties_rub:,.0f} ₽\n"
+    msg += f"• Утилизационный сбор: {breakdown.utilization_fee_rub:,.0f} ₽\n"
+
+    # NEW: Коэффициент утильсбора (если есть)
+    if meta.utilization_coefficient is not None:
+        msg += f"  <i>(базовая ставка 20,000 ₽ × коэфф. {meta.utilization_coefficient})</i>\n"
+
+    msg += f"• Таможенное оформление: {breakdown.customs_services_rub:,.0f} ₽\n"
+    msg += f"• Фрахт: {breakdown.freight_rub:,.0f} ₽\n"
+    msg += f"• Расходы в стране: {breakdown.country_expenses_rub:,.0f} ₽\n"
+    msg += f"• Комиссия компании: {breakdown.company_commission_rub:,.0f} ₽\n"
+    msg += f"• ЭРА-ГЛОНАСС: {breakdown.era_glonass_rub:,.0f} ₽\n"
+    msg += "\n"
+
+    # Итого
+    msg += f"<b>💎 ИТОГО: {breakdown.total_rub:,.0f} ₽</b>\n"
+
+    # Предупреждения
+    if meta.warnings:
+        msg += "\n⚠️ <b>Предупреждения:</b>\n"
+        for warning in meta.warnings:
+            msg += f"• {warning.message}\n"
+
+    return msg
+
+
 @router.message(Command("start"))
 async def cmd_start(message: Message) -> None:
     settings = get_settings()
-    text = (
-        "Здравствуйте! Это калькулятор стоимости ввоза авто.\n"
-    )
+    text = "Здравствуйте! Это калькулятор стоимости ввоза авто.\n"
     if settings.webapp_url.lower().startswith("https://"):
         await message.answer(
             text + "\nНажмите кнопку ниже для запуска WebApp.",  # noqa: RUF001
@@ -38,103 +108,88 @@ async def cmd_start(message: Message) -> None:
 
 @router.message(Command("calc"))
 async def cmd_calc(message: Message) -> None:
-    req = CalculationRequest(
-        country="japan",
-        year=2021,
-        engine_cc=1496,
-        purchase_price=1200000,
-        currency="JPY",
-        freight_type="standard",
-    )
-    result = calculate(req)
-    total = result.breakdown.total_rub
-    await message.answer(
-        f"Пример расчета (Япония 2021 1.5L):\nИтого: {total:,.0f} RUB",  # noqa: RUF001
-        disable_web_page_preview=True,
-    )
+    """
+    Пример расчёта стоимости (демонстрация).
+
+    NEW in v2.0: добавлено поле engine_power_hp.
+    """
+    try:
+        # Пример: Япония, 2021 год, 1496 cc, 110 л.с., 2.5M JPY
+        req = CalculationRequest(
+            country="japan",
+            year=2021,
+            engine_cc=1496,
+            engine_power_hp=110,  # NEW: обязательное поле
+            purchase_price=Decimal("2500000"),
+            currency="JPY",
+            vehicle_type="M1",
+        )
+
+        # Расчёт
+        result = calculate(req)
+
+        # Форматирование результата
+        response = _format_result(result, req)
+
+        await message.answer(response, parse_mode="HTML")
+
+    except Exception as e:
+        logger.error("calc_command_error", error=str(e), exc_info=True)
+        await message.answer("❌ Ошибка при расчёте. Попробуйте позже.")
 
 
 @router.message(F.web_app_data)
 async def on_webapp_data(message: Message) -> None:
+    """
+    Обработка данных из Telegram WebApp.
+
+    NEW in v2.0: парсинг engine_power_hp из WebApp payload.
+    """
     raw = message.web_app_data.data  # type: ignore[attr-defined]
     logger.info("webapp_data_received_raw", raw=raw)
+
     try:
+        # Парсинг JSON
         data = json.loads(raw)
-        logger.info("webapp_data_parsed", keys=list(data.keys()))
-    except Exception:
-        logger.exception("webapp_data_parse_error")
-        await message.answer("Получены данные WebApp (не JSON)")
-        return
+        logger.info("webapp_data_received", data_keys=list(data.keys()))
 
-    action = data.get("action")
-
-    # Process webapp data (any action)
-    logger.info("webapp_data_processing", data=data)
-
-    # Extract basic info
-    total = data.get("total") or data.get("total_rub", 0)
-    country = data.get("country", "")
-    year = data.get("year", "")
-    engine_cc = data.get("engine_cc", "")
-    currency = data.get("currency", "")
-
-    # Get country name in Russian
-    country_names = {
-        "japan": "Японии",
-        "korea": "Кореи",
-        "uae": "ОАЭ",
-        "china": "Китая",
-    }
-    country_name = country_names.get(country, country)
-
-    # Format the message
-    if total and country_name:
-        message_text = f"🚗 Расчет растаможки автомобиля из {country_name}\n\n"
-
-        if year:
-            message_text += f"📅 Год выпуска: {year}\n"
-        if engine_cc:
-            message_text += f"🔧 Объем двигателя: {engine_cc} см³\n"
-        if currency and data.get("purchase_price"):
-            purchase_price = data.get("purchase_price")
-            try:
-                # Convert to float for formatting, handle both string and numeric values
-                purchase_price_num = float(purchase_price)
-                message_text += f"💰 Цена покупки: {purchase_price_num:,.0f} {currency}\n"
-            except (ValueError, TypeError):
-                # Fallback if conversion fails
-                message_text += f"💰 Цена покупки: {purchase_price} {currency}\n"
-
-        message_text += f"\n💵 **Итоговая стоимость: {total:,.0f} ₽**"
-
-        # Add detailed breakdown if available
-        detail = data.get("detail", "")
-        if detail and len(detail) > 0:
-            # Telegram has message length limit, so we'll send summary + link to detailed breakdown
-            message_text += f"\n\n📊 Подробная детализация:\n{detail}"
-
-    else:
-        # Fallback to summary or text
-        message_text = data.get("summary") or data.get("text") or "Результат расчета получен"
-
-    # Send the message
-    try:
-        await message.answer(message_text, parse_mode="Markdown")
-        logger.info("webapp_data_sent", total=total, country=country, action=action)
-    except Exception as e:
-        # If markdown fails, try without formatting
-        logger.warning("webapp_data_markdown_failed", error=str(e))
-        try:
-            # Remove markdown formatting and send plain text
-            plain_text = message_text.replace("**", "").replace("*", "")
-            await message.answer(plain_text)
-            logger.info("webapp_data_sent_plain", total=total, country=country, action=action)
-        except Exception as e2:
-            logger.error("webapp_data_failed", error=str(e2))
+        # NEW: Проверка обязательного поля engine_power_hp
+        if "engine_power_hp" not in data:
             await message.answer(
-                "Результат расчета получен, "
-                "но произошла ошибка при форматировании."
+                "❌ <b>Ошибка:</b> Не указана мощность двигателя.\n"
+                "Пожалуйста, заполните все поля формы.",
+                parse_mode="HTML",
             )
+            return
+
+        # Формирование запроса
+        req = CalculationRequest(
+            country=data.get("country"),
+            year=int(data.get("year")),
+            engine_cc=int(data.get("engine_cc")),
+            engine_power_hp=int(data.get("engine_power_hp")),  # NEW: добавлено поле
+            purchase_price=Decimal(str(data.get("purchase_price"))),
+            currency=data.get("currency"),
+            vehicle_type=data.get("vehicle_type", "M1"),
+            freight_type=data.get("freight_type", "container"),
+            sanctions_unknown=data.get("sanctions_unknown", False),
+        )
+
+        # Расчёт
+        result = calculate(req)
+
+        # Форматирование
+        response = _format_result(result, req)
+
+        await message.answer(response, parse_mode="HTML")
+
+    except ValidationError as ve:
+        logger.warning("webapp_validation_error", errors=ve.errors())
+        error_msgs = "\n".join([f"• {e['msg']}" for e in ve.errors()])
+        await message.answer(f"❌ <b>Ошибка валидации:</b>\n{error_msgs}", parse_mode="HTML")
+    except Exception as e:
+        logger.error("webapp_data_error", error=str(e), exc_info=True)
+        await message.answer("❌ Ошибка при обработке данных. Попробуйте ещё раз.")
 
 
 def register(dp: Dispatcher) -> None:

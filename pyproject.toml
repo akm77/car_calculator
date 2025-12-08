@@ -108,6 +108,7 @@ ignore = [
 # Per-file adjustments
 [tool.ruff.lint.per-file-ignores]
 "app/__init__.py" = ["F401"]  # re-export allowance
+"tests/**/*.py" = ["RUF001", "RUF002", "RUF003"]  # Allow cyrillic in tests (Russian comments/docs)
 
 [tool.ruff.lint.isort]
 case-sensitive = false
