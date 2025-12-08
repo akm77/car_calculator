@@ -330,7 +330,8 @@
                         total: data?.total ?? data?.total_rub,
                         country: data?.country,
                         year: data?.year,
-                        engine_cc: data?.engine_cc
+                        engine_cc: data?.engine_cc,
+                        engine_power_hp: data?.engine_power_hp  // NEW: добавлено обязательное поле
                     };
                     // Ensure summary fits
                     let summary = minimal.summary || '';
@@ -1201,6 +1202,7 @@
                         country_label: countryLabel,
                         year: r.year,
                         engine_cc: r.engine_cc,
+                        engine_power_hp: r.engine_power_hp,  // NEW: добавлено обязательное поле
                         currency: r.currency,
                         purchase_price: r.purchase_price,
                         freight_type: r.freight_type,
