@@ -8,6 +8,9 @@ Telegram Bot + FastAPI backend + WebApp for calculating the total import cost of
   - Country expenses and freight per country (Yen/USD, etc.)
   - Utilization fee, customs services, company commission
   - ERA-GLONASS excluded from totals (deprecated)
+- Commission model:
+  - Fixed company commission in USD (1000 USD for most countries, 0 USD for UAE, configurable in `config/commissions.yml`)
+  - Optional **bank_commission** as a percentage surcharge to FX rates (configured in `config/commissions.yml::bank_commission`); it affects only currency-based components and is reflected in `meta.detailed_rates_used.display` (e.g. `USD/RUB = 78.95 + 1%`).
 - Currency handling:
   - Static rates in config + optional live rates via CBR
   - Response meta contains rates_used with all applied rates; logs include purchase_rate_rub

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.2] - 2025-12-15
+
+### 📚 Documentation
+
+- Синхронизирован раздел 4.5 "Банковская комиссия" в `docs/SPECIFICATION.md` с фактической реализацией:
+  - зафиксировано, что `bank_commission` применяется как надбавка к валютным курсам через `_effective_currency_rate` и `_convert`;
+  - перечислены затронутые поля `breakdown` и инварианты (0% = режим без банка, монотонный рост `total_rub`, особый случай `uae`);
+  - описан контракт `meta.rates_used`/`meta.detailed_rates_used` и формат строки курса для UI ("USD/RUB = BASE [+ P%]").
+- В `docs/MIGRATION_GUIDE.md` добавлен раздел "Миграция комиссий: thresholds → fixed USD → bank_commission" с шагами для Backend/QA/DevOps и ссылками на тестовые конфиги (`commissions_company_only.yml`, `commissions_with_bank.yml`) и тесты.
+- Обновлён `docs/rpg.yaml`:
+  - ветка `bank_commission_runtime_support` помечена как реализованная на уровне runtime и тестов (SPRINT 4.5–4.8);
+  - дополнены описания узлов `config_data`, `app_calculation`, `app_api`, `app_webapp`, `app_bot`, `tests` и рёбер, отражающих путь `config/commissions.yml::bank_commission → engine → CalculationMeta.(rates_used, detailed_rates_used) → API → клиенты → тесты`.
+
+### 🧮 Behavior (no breaking changes)
+
+- Уточнено и задокументировано, что включение/выключение `bank_commission` влияет только на валютно‑зависимые компоненты (`purchase_price_rub`, `freight_rub`, `country_expenses_rub`, `company_commission_rub`) и `breakdown.total_rub`, не меняя структуру API и выбор duty/age.
+
+---
+
 ## [2.0.1] - 2025-12-08
 
 ### 🐛 Fixed
@@ -20,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Влияние:** Для примера (10k USD, 1500cc, 250hp, Грузия 2025):
   - Пошлина была: 731,798 ₽ (завышена)
   - Пошлина стала: 465,690 ₽ (корректно)
-  - Экономия: ~266,000 ₽
+  - Экономия: ~266,000 ��
 - **Файлы:** `config/duties.yml`, `docs/SPECIFICATION.md`
 - **См. также:** `DUTY_FIX_REPORT.md` для детального анализа
 

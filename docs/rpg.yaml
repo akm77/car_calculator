@@ -12,7 +12,7 @@ rpg:
       - date: "2025-12-08"
         description: "SPRINT 1 SPEC COMPLETED: Формализована банковская комиссия как надбавка к валютному курсу в документации (SPEC + RPG) без изменений кода. Добавлена концептуальная секция bank_commission в config/commissions.yml (enabled, percent, meta.recommended_min/max, warn_above, default_percent), описан контракт effective_rate = base_rate × (1 + bank_commission_percent/100), зафиксировано влияние на total_rub и CalculationMeta.rates_used (base_rate, bank_commission_percent, effective_rate), разведены понятия 'комиссия компании' (фиксированная 1000 USD) и 'банковская комиссия' (процент к курсу)."
       - date: "2025-12-15"
-        description: "SPRINT 3 DESIGN COMPLETED: Уточнён контракт /api/calculate без изменения формата JSON: breakdown.total_rub трактуется как сумма в рублях уже с учётом банковской комиссии (через effective_rate), банковская комиссия не имеет собственных полей в JSON; определён минимальный контракт meta.rates_used для клиентов (строковое представление курса 'BASE_RATE [+ PERCENT%]' для WebApp и Telegram-бота); обновлён RPG-поток engine.calculate() → CalculationResult(meta.rates_used) → api.routes → webapp/bot, зафиксировано, что на клиентах комиссия видна только как надбавка к курсу, без раскрытия абсолютных сумм."
+        description: "SPRINT 4.5–4.8 COMPLETED: Реализовано чтение и применение bank_commission из config/commissions.yml в расчётах движка; добавлены и задокументированы поля meta.rates_used и meta.detailed_rates_used для прозрачного отображения курсов и надбавки '+ P%'; обновлены SPECIFICATION.md, MIGRATION_GUIDE.md и rpg.yaml, зафиксирована ветка bank_commission_runtime_support как реализованная на уровне runtime и тестов (unit + functional)."
     planned_improvements:
       - priority: "HIGH"
         component: "app_webapp"
@@ -42,9 +42,9 @@ rpg:
         reference: "docs/sprints/sprint1_bank_commission_config.md"
         estimated_time: "2-3 спринта (design + implementation + tests)"
         stages:
-          - "SPRINT 2: Спроектировать алгоритм применения bank_commission в engine.py (выделить все валютные конвертации, добавить расчёт effective_rate)."
-          - "SPRINT 3: Расширить CalculationMeta.rates_used (base_rate, bank_commission_percent, effective_rate) и описать формат в API/клиентах."
-          - "SPRINT 4: Реализовать чтение bank_commission из config/commissions.yml, внедрить effective_rate в расчёты, добавить unit- и функциональные тесты."
+          - "SPRINT 2: Спродектировать алгоритм применения bank_commission в engine.py (выделить все валютные конвертации, добавить расчёт effective_rate). [ВЫПОЛНЕНО]"
+          - "SPRINT 3: Расширить CalculationMeta (rates_used, detailed_rates_used с base_rate, bank_commission_percent, effective_rate, display) и описать формат в API/клиентах; обновить SPEC и RPG. [ВЫПОЛНЕНО]"
+          - "SPRINT 4: Реализовать чтение bank_commission из config/commissions.yml, внедрить effective_rate в конвертацию валют (_convert, _commission), добавить unit-и функциональные тесты для движка и API, синхронизировать документацию и RPG (SPRINT 4.5–4.8). [ВЫПОЛНЕНО]"
 
     sprint_prompts:
       location: "docs/sprint_prompts/"
@@ -112,7 +112,7 @@ rpg:
         description: "Инфраструктурные сервисы (курсы CBR, слияние статических/живых курсов)"
       - name: "app_api"
         path: "app/api"
-        description: "HTTP API-маршруты FastAPI. Серилизуют CalculationResult (breakdown, meta, request) в JSON и проксируют meta.rates_used клиентам без раскрытия внутренних деталей расчёта комиссии."
+        description: "HTTP API-маршруты FastAPI. Сериализуют CalculationResult (breakdown, meta, request) в JSON и проксируют meta.rates_used/detailed_rates_used клиентам без раскрытия внутренних деталей расчёта комиссии."
       - name: "app_main"
         path: "app"
         description: "Инициализация FastAPI, CORS middleware, rate limiting, статика (/web, /static), редирект с /, manifest.json, sw.js, /ping, /debug/files; lifespan для загрузки конфигов"
@@ -202,10 +202,7 @@ rpg:
           next_stage: "SPRINT_6_UI_MODULE"
       - name: "config_data"
         path: "config"
-        description: "YAML-конфиги тарифов: fees.yml, commissions.yml, rates.yml, duties.yml. В рамках SPRINT 1 формализована секция bank_commission в commissions.yml (как спецификация, без изменений runtime-кода): глобальный процент банковской комиссии (enabled, percent) и метаданные (recommended_min/max, warn_above, default_percent)."
-      - name: "tests"
-        path: "tests"
-        description: "Функциональные тесты API/движка и юнит-тесты CBR"
+        description: "YAML-конфиги тарифов: fees.yml, commissions.yml, rates.yml, duties.yml. В рамках SPRINT 1 специфицирована секция bank_commission в commissions.yml; в SPRINT 4 она реализована в рантайме и используется движком."
 
     files:
       - name: "settings.py"
@@ -217,7 +214,7 @@ rpg:
 
       - name: "engine.py"
         parent_module: "app_calculation"
-        description: "Основная функция calculate() + helpers: _compute_duty (lt3: percent+min, 3_5/gt5: rate per cc), _utilization_fee_v2 (2D таблица объём+мощность в кВт, M1 only), _commission (фиксированная 1000 USD + по странам, конвертация через effective_rate при включённой bank_commission), _select_freight, _japan_country_expenses (тииры в JPY), _other_country_expenses, _convert/_convert_from_rub, _currency_rate, _effective_currency_rate, _get_bank_commission_percent; использует Decimal для точности. Внутри calculate() формируются breakdown и CalculationMeta, включая заполнение meta.rates_used (числовые курсы XXX_RUB) и meta.detailed_rates_used (RateUsage с base/effective/percent/display)."
+        description: "Основная функция calculate() + helpers: _compute_duty (lt3: percent+min, 3_5/gt5: rate per cc), _utilization_fee_v2 (2D таблица объём+мощность в кВт, M1 only), _commission (фиксированная 1000 USD + по странам, конвертация через effective_rate при включённой bank_commission), _select_freight, _japan_country_expenses (тиыры в JPY), _other_country_expenses, _convert/_convert_from_rub, _currency_rate, _effective_currency_rate, _get_bank_commission_percent; использует Decimal для точности. Внутри calculate() формируются breakdown и CalculationMeta, включая заполнение meta.rates_used (числовые курсы XXX_RUB) и meta.detailed_rates_used (RateUsage с base/effective/percent/display)."
       - name: "models.py"
         parent_module: "app_calculation"
         description: "Pydantic v2 модели: CalculationRequest (валидация year 1990-current, engine_power_hp 1-1500, normalize currency), CostBreakdown (все компоненты стоимости в RUB), CalculationMeta (age_category, duty_mode, vehicle_type, engine_power_hp/kw, utilization_coefficient, warnings, rates_used: dict[str, float] для числовых курсов, detailed_rates_used: dict[str, RateUsage] для подробного описания курсов с base_rate/effective_rate/bank_commission_percent/display), CalculationResult; Literal типы: Country ['japan', 'korea', 'uae', 'china', 'georgia'], FreightType, VehicleType; WarningItem"
@@ -280,7 +277,7 @@ rpg:
         description: "Страны, валюта покупки, фрахт, базовые расходы/тиеры"
       - name: "commissions.yml"
         parent_module: "config_data"
-        description: "Фиксированная комиссия компании (default_commission_usd: 1000, by_country.uae.commission_usd: 0) и специфицированная (пока не используемая в коде) секция bank_commission: enabled, percent (0–10% рекомендованный диапазон), meta.recommended_min/max, warn_above, default_percent, а также возможное будущее расширение by_component. Для тестов используются отдельные YAML-конфиги в tests/test_data/config (commissions_company_only.yml, commissions_with_bank.yml), совместимые по формату с этим файлом."
+        description: "Фиксированная комиссия компании (default_commission_usd: 1000, by_country.uae.commission_usd: 0) и секция bank_commission: enabled, percent (0–10% рекомендуемый диапазон), meta.recommended_min/max, warn_above, default_percent. В рантайме движок читает percent и применяет его как надбавку к валютным курсам при конвертации purchase_price, freight, country_expenses и комиссии компании. Для тестов используются совместимые по формату YAML-конфиги в tests/test_data/config (commissions_company_only.yml — без bank_commission, commissions_with_bank.yml — с включённой bank_commission)."
       - name: "rates.yml"
         parent_module: "config_data"
         description: "Статические курсы, утилизационный сбор (utilization_m1_personal: 2D-таблица объём+мощность, 80+ записей), ЭРА-ГЛОНАСС (era_glonass_rub: 45000), прочие ставки"
@@ -585,7 +582,7 @@ rpg:
 
   tests:
     test_status:
-      overall: "41 passed, 1 skipped (v2.0.0 released)"
+      overall: "41 passed, 1 skipped (v2.0.0 released) + добавлены тесты по bank_commission в SPRINT 4.5–4.7"
       functional_tests: "13 passed (test_engine.py - all cases with engine_power_hp)"
       unit_tests: "18 passed, 1 skipped (test_utilization_v2.py - comprehensive 2D table coverage)"
       api_tests: "5 passed (test_api.py - includes engine_power_hp validation)"
@@ -697,6 +694,19 @@ rpg:
         to: "app_core"
         data_type: "settings"
         description: "CBR-сервис использует AppSettings для URL, TTL и флагов live"
+      - from: "config_data"
+        to: "app_calculation"
+        data_type: "commissions.yml::bank_commission, rates.yml::currencies"
+        description: "Движок читает config/commissions.yml::bank_commission (enabled, percent) и config/rates.yml (base_rate), вычисляет effective_rate = base_rate × (1 + bank_commission_percent/100) и использует его для конвертации валютных компонентов в RUB. В JSON-ответе /api/calculate банковская комиссия не выделяется отдельным полем; её эффект проявляется в breakdown.total_rub и в meta.rates_used/detailed_rates_used.display."
+      - from: "app_calculation"
+        to: "app_api"
+        description: "engine.calculate() возвращает CalculationResult, включающий CostBreakdown и CalculationMeta. В CalculationMeta хранятся rates_used и detailed_rates_used: для каждой валютной пары (например, USD_RUB) логические поля base_rate, bank_commission_percent, effective_rate и строковое представление для UI. API не модифицирует эти значения, а только сериализует их в JSON."
+      - from: "app_api"
+        to: "app_webapp"
+        description: "WebApp вызывает POST /api/calculate и получает JSON с breakdown, meta и request. Из meta.detailed_rates_used WebApp берёт только строку курса для отображения пользователю (например, 'USD/RUB = 78.95 + 1%') и не знает ничего о внутренней формуле effective_rate или сумме банковской комиссии. В breakdown нет отдельных полей 'bank_commission_*'."
+      - from: "app_api"
+        to: "app_bot"
+        description: "Telegram-бот (через engine.calculate и/или косвенно через API) получает CalculationResult и использует meta.detailed_rates_used.display для формирования строки курса в сообщении. Банковская комиссия не управляется пользователем и не показана отдельной суммой, только как '+ X%' рядом с базовым курсом."
 
     intra_module_dependencies:
       - from: "engine.py"
@@ -787,7 +797,7 @@ rpg:
         description: "Расчёт по команде бота и данным WebApp"
       - from: "app_calculation"
         to: "app_api"
-        description: "engine.calculate() возвращает CalculationResult, включающий CostBreakdown и CalculationMeta. В CalculationMeta хранится rates_used: для каждой валютной пары (например, USD_RUB) логические поля base_rate, bank_commission_percent, effective_rate и строковое представление для UI вида 'BASE_RATE [+ PERCENT%]'. API не модифицирует эти значения, а лишь сериализует их в JSON."
+        description: "engine.calculate() возвращает CalculationResult, включающий CostBreakdown и CalculationMeta. В CalculationMeta хранится rates_used: для каждой валютной пары (например, USD_RUB) логические поля base_rate, bank_commission_percent, effective_rate и строковое представление для UI вида 'BASE_RATE [+ X%]'. API не модифицирует эти значения, а лишь сериализует их в JSON."
       - from: "app_api"
         to: "app_webapp"
         description: "WebApp вызывает POST /api/calculate и получает JSON с breakdown, meta и request. Из meta.rates_used WebApp берёт только строку курса для отображения пользователю (например, 'USD/RUB = 78.95 + 1%') и не знает ничего о внутренней формуле effective_rate или сумме банковской комиссии. В breakdown нет отдельных полей 'bank_commission_*'."
@@ -796,7 +806,7 @@ rpg:
         description: "Telegram-бот (через engine.calculate или косвенно через API) получает CalculationResult и использует meta.rates_used для формирования строки курса в сообщении (аналог WebApp). Банковская комиссия не управляется пользователем и не показана отдельной суммой, только как '+ X%' рядом с базовым курсом."
       - from: "config_data"
         to: "app_calculation"
-        description: "Движок читает config/commissions.yml::bank_commission (enabled, percent) и config/rates.yml (base_rate), вычисляет effective_rate = base_rate × (1 + bank_commission_percent/100) и использует его для конвертации валютных компонент в RUB. При этом в JSON-ответе /api/calculate банковская комиссия не выделяется отдельным полем; её эффект проявляется в breakdown.total_rub и в meta.rates_used.display."
+        description: "Движок читает config/commissions.yml::bank_commission (enabled, percent) и config/rates.yml (base_rate), вычисляет effective_rate = base_rate × (1 + bank_commission_percent/100) и использует его для конвертации валютных компонент в RUB. При этом в JSON-ответе /api/calculate банковская комиссия не выделяется отдельным полем; её эффект проявляется в breakdown.total_rub и в meta.rates_used/detailed_rates_used.display."
       - from: "app_calculation"
         to: "app_webapp"
         description: "Через API движок передаёт WebApp CalculationResult; WebApp опирается на meta.rates_used для отображения курса 'BASE_RATE [+ PERCENT%]' и на breakdown для сумм в рублях."

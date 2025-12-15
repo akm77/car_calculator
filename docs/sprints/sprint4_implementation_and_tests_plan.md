@@ -244,3 +244,40 @@
 - Для режима без банковской комиссии (`commissions_company_only.yml`) поведение совпадает с существующими тестами `tests/functional/test_api.py`, `tests/functional/test_engine.py` и `test_sprint4_duties.py`.
 - Специальный кейс ОАЭ (`uae`): `company_commission_rub` остаётся 0 во всех профилях комиссий.
 - Включение банковской комиссии не меняет выбор duty‑бандов и возрастных категорий — только пересчитывает валютные компоненты через `effective_rate`.
+
+---
+
+## Sprint 4.8: Документация, RPG и миграция по bank_commission
+
+**Цель:** синхронизировать документацию и RPG‑граф с фактической реализацией банковской комиссии (`bank_commission`) и подготовить миграционные материалы.
+
+### Задачи
+
+1. **SPEC (docs/SPECIFICATION.md):**
+   - Уточнить раздел 4.5 «Банковская комиссия (надбавка к валютному курсу)»:
+     - явно зафиксировать, что `bank_commission` уже используется в `engine` (через `_get_bank_commission_percent`, `_effective_currency_rate`, `_convert`, `_commission`);
+     - перечислить затронутые поля `breakdown` и инварианты (0% = режим без банка, монотонный рост `total_rub` при росте процента, особый случай `uae`).
+   - Описать контракт `meta.rates_used`/`meta.detailed_rates_used` и ожидаемый формат `display` («USD/RUB = BASE [+ P%]»).
+
+2. **Migration Guide (docs/MIGRATION_GUIDE.md):**
+   - Добавить раздел «Миграция комиссий: thresholds → fixed USD → bank_commission»:
+     - этап 0 — legacy v1 (`thresholds`, RUB);
+     - этап 1 — v2 без банка (фиксированная 1000 USD + `by_country.uae=0`);
+     - этап 2 — v2 + `bank_commission` (надбавка к курсу, без новых полей в API).
+   - Описать шаги для Backend/QA/DevOps и ссылаться на тестовые конфиги (`commissions_company_only.yml`, `commissions_with_bank.yml`) и тесты (`tests/unit/test_engine_bank_commission.py`, `tests/functional/test_api_bank_commission.py`).
+
+3. **RPG‑граф (docs/rpg.yaml):**
+   - Обновить `metadata.recent_changes` и узлы `config_data`, `app_calculation`, `app_api`, `app_webapp`, `app_bot`, `tests` так, чтобы:
+     - банк‑комиссия была отражена как завершённая часть ветки `bank_commission_runtime_support` (runtime‑поддержка + тесты);
+     - путь `config/commissions.yml (bank_commission) → engine._effective_currency_rate/_convert → CalculationMeta.(rates_used, detailed_rates_used) → API → WebApp/Bot → tests` был явно описан в `edges.component_relationships`.
+
+4. **CHANGELOG и README:**
+   - Зафиксировать в `CHANGELOG.md` и `README.md`, что:
+     - комиссии теперь считаются по v2‑схеме (фиксированная компания + опциональная банковская надбавка);
+     - итоговые суммы в WebApp/боте уже включают банковскую надбавку, что видно из строки курса.
+
+### Критерии готовности
+
+- SPEC, MIGRATION_GUIDE и RPG обновлены и согласованы между собой.
+- В RPG‑графе ветка `bank_commission_runtime_support` помечена как реализованная на уровне runtime и тестов.
+- В CHANGELOG/README присутствует краткое описание поведения с учётом `bank_commission`.
