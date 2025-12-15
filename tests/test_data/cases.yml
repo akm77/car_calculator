@@ -10,15 +10,15 @@ cases:
     freight_type: standard
   expected:
     age_category: lt3
-    purchase_price_rub: 700000
-    duties_rub: 990000
+    purchase_price_rub: 654938
+    duties_rub: 421032
     utilization_fee_rub: 3400
     customs_services_rub: 70000
     era_glonass_rub: 45000
-    freight_rub: 49500
-    country_expenses_rub: 153000
-    company_commission_rub: 90000
-    total_rub: 2055900
+    freight_rub: 43851
+    country_expenses_rub: 135540
+    company_commission_rub: 80527
+    total_rub: 1409288
 - name: lt3_percent_duty
   age_offset: 1
   request:
@@ -30,15 +30,15 @@ cases:
     freight_type: open
   expected:
     age_category: lt3
-    purchase_price_rub: 8000000
-    duties_rub: 3840000
+    purchase_price_rub: 7485008
+    duties_rub: 3592804
     utilization_fee_rub: 3400
     customs_services_rub: 70000
     era_glonass_rub: 45000
-    freight_rub: 45000
-    country_expenses_rub: 63000
-    company_commission_rub: 90000
-    total_rub: 12111400
+    freight_rub: 39865
+    country_expenses_rub: 55811
+    company_commission_rub: 80527
+    total_rub: 11327414
 - name: band_3_5_mid
   age_offset: 4
   request:
@@ -50,15 +50,15 @@ cases:
     freight_type: standard
   expected:
     age_category: '3_5'
-    purchase_price_rub: 1200000
-    duties_rub: 255000
+    purchase_price_rub: 1024276
+    duties_rub: 238585
     utilization_fee_rub: 5200
     customs_services_rub: 70000
     era_glonass_rub: 45000
-    freight_rub: 31500
-    country_expenses_rub: 90000
-    company_commission_rub: 90000
-    total_rub: 1741700
+    freight_rub: 27905
+    country_expenses_rub: 76821
+    company_commission_rub: 80527
+    total_rub: 1523314
 - name: gt5_large_engine
   age_offset: 6
   request:
@@ -77,8 +77,8 @@ cases:
     era_glonass_rub: 45000
     freight_rub: 225000
     country_expenses_rub: 108000
-    company_commission_rub: 90000
-    total_rub: 7697000
+    company_commission_rub: 0
+    total_rub: 7607000
 - name: japan_2022_1998cc
   age_offset: 3
   request:
@@ -151,15 +151,15 @@ cases:
     freight_type: standard
   expected:
     age_category: '3_5'
-    purchase_price_rub: 1200000
-    duties_rub: 621000
+    purchase_price_rub: 1024276
+    duties_rub: 581024
     utilization_fee_rub: 2880000
     customs_services_rub: 70000
     era_glonass_rub: 45000
-    freight_rub: 31500
-    country_expenses_rub: 90000
-    company_commission_rub: 90000
-    total_rub: 4982500
+    freight_rub: 27905
+    country_expenses_rub: 76821
+    company_commission_rub: 80527
+    total_rub: 4740553
 - name: band_3_5_boundary_3000cc
   age_offset: 4
   request:
@@ -252,11 +252,11 @@ cases:
   expected:
     age_category: lt3
     purchase_price_rub: 500000
-    duties_rub: 700000
+    duties_rub: 500000
     utilization_fee_rub: 3400
     customs_services_rub: 120000
     era_glonass_rub: 45000
     freight_rub: 45000
     country_expenses_rub: 63000
     company_commission_rub: 90000
-    total_rub: 1521400
+    total_rub: 1321400
