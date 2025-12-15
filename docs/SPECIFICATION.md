@@ -52,7 +52,7 @@
 
 Для каждой страны рассчитывается:
 
-### **4.1. Затраты в стране покупки**
+### **4.1. о**
 
 | Страна | Условия | Сумма |
 |--------|--------|--------|
@@ -333,67 +333,95 @@
 
 ### **4.5. Банковская комиссия (надбавка к валютному курсу)**
 
-Банковская комиссия вводится как **надбавка к валютному курсу**, а не как отдельная рублёвая сумма.
-Она настраивается в файле `config/commissions.yml` в секции `bank_commission`.
+ви все связанные документыБанковская комиссия вводится как **надбавка к валютному курсу**, а не как отдельная рублёвая сумма в breakdown. Она настраивается в `config/commissions.yml` в секции `bank_commission`.
 
-### 4.5.1. Структура секции `bank_commission` в `config/commissions.yml`
+#### 4.5.1. Структура `bank_commission` в `config/commissions.yml`
 
 ```yaml
 bank_commission:
-  enabled: false            # опционально; false или отсутствие секции = 0% комиссии
-  percent: 0.0              # глобальная надбавка к курсу, в процентах
-
+  enabled: false
+  percent: 0.0
   meta:
-    recommended_min: 0.0    # рекомендуемый минимум
-    recommended_max: 10.0   # рекомендуемый максимум (мягкое ограничение)
-    warn_above: 10.0        # порог, выше которого конфиг в будущем помечается warning'ом
-    default_percent: 0.0    # значение по умолчанию, если percent не задан
+    recommended_min: 0.0
+    recommended_max: 10.0
+    warn_above: 10.0
+    default_percent: 0.0
 ```
 
-**Инварианты и поведение по умолчанию**
+- `enabled`: если `false` или секция `bank_commission` отсутствует — комиссия считается равной 0%.
+- `percent`: глобальный процент надбавки к курсу (в процентах).
+- `meta.default_percent`: используется, если `percent` не задан.
+- `meta.recommended_min` / `meta.recommended_max` / `meta.warn_above`: диапазоны и пороги, полезные для валидации и предупреждений в будущем.
 
-- Если секция `bank_commission` **отсутствует** в `commissions.yml`, поведение эквивалентно:
-  - `bank_commission.enabled = false` и `bank_commission.percent = 0.0`.
-- Если секция присутствует, но:
-  - `enabled: false` — фактический процент комиссии = 0.0 независимо от `percent`;
-  - ключ `enabled` отсутствует — по умолчанию трактуем как `enabled = true`;
-  - ключ `percent` отсутствует — используется `meta.default_percent` (если он не задан, трактуем как 0.0).
-- Рекомендуемый диапазон значений:
-  - `meta.recommended_min` — обычно 0.0;
-  - `meta.recommended_max` — 10.0 (значения выше считаются допустимыми, но нежелательными).
-- `meta.warn_above` задаёт мягкий порог, при превышении которого конфиг должен в будущем помечаться предупреждением (warning), но не считается невалидным.
+Если секции `bank_commission` нет, или она не является словарём, или `enabled=false`, или значение `percent`/`default_percent` не удаётся привести к числу, движок трактует банковскую комиссию как 0%.
 
-### 4.5.2. Контракт с движком и метаданными
+#### 4.5.2. Алгоритм применения комиссии в движке
 
-- `bank_commission.percent` интерпретируется как процентная надбавка к базовому курсу валюты:
+Пусть `base_rate` — базовый курс `VALUTA/RUB` из `rates_conf["currencies"]["<CODE>_RUB"]` после слияния статических и live‑курсов в `get_effective_rates`. Тогда движок считает:
 
-  \[
+\[
   effective\_rate = base\_rate \times (1 + bank\_commission\_percent / 100)
-  \]
+\]
 
-- Все рублёвые суммы, зависящие от валютного курса (стоимость авто, фрахт, расходы по стране,
-  комиссия компании и т.д.), в будущей реализации должны вычисляться через `effective_rate`.
-- Эффект банковской комиссии **не выводится отдельной строкой** в breakdown; он отражается только через:
-  - изменённое значение `breakdown.total_rub`;
-  - структуру `CalculationMeta.rates_used`.
+где `bank_commission_percent` извлекается функцией `_get_bank_commission_percent(commissions_conf)` в `app/calculation/engine.py`.
 
-### 4.5.3. Контракт с API и `CalculationMeta.rates_used`
+Внутри движка используются следующие функции:
 
-- Структура JSON-ответов `/api/calculate` и `/api/rates` остаётся прежней: новые поля
-  `bank_commission_*` в публичный контракт **не добавляются**.
-- Знание о банковской комиссии для клиентов доступно только через метаданные о курсах.
-- В будущем для каждой валюты в `CalculationMeta.rates_used` должны быть доступны:
-  - `base_rate` — базовый курс без банковской комиссии;
-  - `bank_commission_percent` — применённый процент надбавки;
-  - `effective_rate` — фактический курс, использованный при расчётах.
+- `_currency_rate(rates_conf, code) -> Decimal` — возвращает **базовый** курс `VALUTA/RUB` без надбавки.
+- `_effective_currency_rate(rates_conf, code, bank_commission_percent) -> Decimal` — реализует формулу `effective_rate`.
+- `_convert(amount, currency, rates_conf, bank_commission_percent=None) -> Decimal`:
+  - если `bank_commission_percent is None` — использует `base_rate` (режим обратной совместимости);
+  - иначе — использует `effective_rate`.
+- `_convert_from_rub(amount_rub, currency, rates_conf) -> Decimal` — обратная конверсия `RUB -> VALUTA` всегда по базовому курсу, только для внутренних расчётов (например, нормализация японских тиров).
 
-**Обратная совместимость**
+Функция `app/services/cbr.get_effective_rates(base_rates_conf)` **не применяет банковскую комиссию**: она только объединяет статические курсы с live‑данными CBR.
 
-- При отсутствии секции `bank_commission` или её ключей (`enabled`, `percent`) текущее поведение
-  калькулятора сохраняется: используется базовый курс без надбавки.
-- Добавление секции `bank_commission` в `commissions.yml` не должно требовать изменений от
-  существующих клиентов API до тех пор, пока не будет реализована логика `effective_rate` в движке
-  и расширение метаданных `rates_used`.
+#### 4.5.3. Операции, на которые влияет банковская комиссия
+
+Комиссия влияет на все реальные валютные платежи пользователя, которые конвертируются в RUB через `_convert(..., bank_commission_percent)`:
+
+- **Стоимость автомобиля (`purchase_price_rub`)**, если входная валюта не RUB:
+  - `purchase_price_rub = _convert(req.purchase_price, req.currency, rates_conf, bank_commission_percent)`.
+- **Затраты в стране покупки (`country_expenses_rub`)**:
+  - Япония: сумма в JPY, полученная по внутренним тира́м, конвертируется в RUB через `_convert(..., "JPY", rates_conf, bank_commission_percent)`.
+  - Прочие страны: суммы в USD/других валютах из `fees.yml` конвертируются через `_convert(..., expenses_currency, rates_conf, bank_commission_percent)`.
+- **Фрахт (`freight_rub_dec`)**:
+  - выбранный тариф в USD/другой валюте конвертируется через `_convert(freight_val, freight_currency, rates_conf, bank_commission_percent)`.
+- **Комиссия компании в валюте (`_commission`)**:
+  - для конфигурации `default_commission_usd` и `by_country.*.commission_usd` 1000 USD (или переопределённая сумма) переводится в RUB через `_convert(commission_usd, "USD", rates_conf, bank_commission_percent)`.
+
+При этом некоторые операции используют только базовый курс и **не** получают дополнительной банковской надбавки:
+
+- Внутренняя нормализация цены в Японии: `purchase_price_jpy = _convert_from_rub(purchase_price_rub, "JPY", rates_conf)`.
+- Пошлина: в `_compute_duty` используется `eur_rub = _currency_rate(rates_conf, "EUR")` как базовый курс для расчёта таможенных формул в EUR.
+- Утильсбор и внутренние расходы в РФ считаются в RUB без валютной конверсии.
+
+#### 4.5.4. Влияние на total_rub и метаданные CalculationMeta
+
+- Итоговая сумма `breakdown.total_rub` **включает эффект банковской комиссии** за счёт того, что все перечисленные выше валютные компоненты считают RUB‑эквивалент по `effective_rate`.
+- В API не добавляются отдельные поля `bank_commission_*` в breakdown: эффект комиссии отражается только в величине `total_rub` и в метаданных о курсах.
+
+Мета‑информация о применённых курсах и комиссии хранится в `CalculationMeta`:
+
+- `rates_used: dict[str, float]` — упрощённое представление курсов (для обратной совместимости клиенты могут продолжать читать оттуда просто число курса).
+- `detailed_rates_used: dict[str, RateUsage]` — расширенная структура для каждого кода валюты, содержащая:
+  - `base_rate: float` — базовый курс без надбавки;
+  - `effective_rate: float` — курс с учётом `bank_commission_percent`;
+  - `bank_commission_percent: float` — применённый процент;
+  - `display: str` — строка вида `"USD/RUB = 78.95 + 1%"` или `"USD/RUB = 78.95"` при нулевой комиссии.
+
+Таким образом, клиенты (WebApp, Telegram‑бот) видят комиссию только косвенно: в виде надбавки `+ X%` к строке курса и увеличенных рублёвых сумм.
+
+#### 4.5.5. Инварианты и монотонность
+
+- При отключённой комиссии (`bank_commission` отсутствует или `enabled=false`) и/или нулевых значениях `percent`/`default_percent`:
+  - все конверсии происходят по базовому курсу;
+  - `total_rub` и все RUB‑компоненты совпадают с поведением калькулятора до внедрения банковской комиссии.
+- При увеличении `bank_commission_percent` при прочих равных `total_rub` не должен уменьшаться:
+  - для любого входного запроса и фиксированных конфигураций `rates.yml`, `fees.yml`, `duties.yml` выполняется неравенство:
+    - если `p2 > p1 >= 0`, то `total_rub(p2) >= total_rub(p1)`.
+
+Этот инвариант проверяется юнит‑тестами, которые запускают расчёт с разными тестовыми конфигурациями `commissions.yml` (без секции `bank_commission`, с `enabled=true, percent=0`, с `enabled=true, percent>0`) и сравнивают `total_rub`.
 
 ---
 
