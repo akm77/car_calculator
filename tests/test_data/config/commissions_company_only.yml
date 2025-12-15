@@ -1,0 +1,11 @@
+# Test commissions config: company commission only, no bank_commission
+# Global company commission in USD
+default_commission_usd: 1000
+
+by_country:
+  uae:
+    # For UAE, company commission is 0 because it is included in country_expenses
+    commission_usd: 0
+
+# No bank_commission section here on purpose: tests relying on company commission
+# should behave exactly as in runtime config without any bank commission effects.

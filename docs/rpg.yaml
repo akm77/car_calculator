@@ -280,7 +280,7 @@ rpg:
         description: "Страны, валюта покупки, фрахт, базовые расходы/тиеры"
       - name: "commissions.yml"
         parent_module: "config_data"
-        description: "Фиксированная комиссия компании (default_commission_usd: 1000, by_country.uae.commission_usd: 0) и специфицированная (пока не используемая в коде) секция bank_commission: enabled, percent (0–10% рекомендованный диапазон), meta.recommended_min/max, warn_above, default_percent, а также возможное будущее расширение by_component."
+        description: "Фиксированная комиссия компании (default_commission_usd: 1000, by_country.uae.commission_usd: 0) и специфицированная (пока не используемая в коде) секция bank_commission: enabled, percent (0–10% рекомендованный диапазон), meta.recommended_min/max, warn_above, default_percent, а также возможное будущее расширение by_component. Для тестов используются отдельные YAML-конфиги в tests/test_data/config (commissions_company_only.yml, commissions_with_bank.yml), совместимые по формату с этим файлом."
       - name: "rates.yml"
         parent_module: "config_data"
         description: "Статические курсы, утилизационный сбор (utilization_m1_personal: 2D-таблица объём+мощность, 80+ записей), ЭРА-ГЛОНАСС (era_glonass_rub: 45000), прочие ставки"
@@ -299,7 +299,15 @@ rpg:
         description: "Юнит-тест парсера CBR XML и get_effective_rates (monkeypatch)"
       - name: "conftest.py"
         parent_module: "tests"
-        description: "Фикстура TestClient(app)"
+        description: "Фикстура TestClient(app) и служебные фикстуры.
+
+          В т.ч. _ensure_test_commissions_defaults: исторически подменяла cfg.commissions
+          legacy-структурой порогов (thresholds). В рамках миграции на v2-схему комиссий
+          переведена на использование тестового YAML-конфига commissions_company_only.yml,
+          совместимого с config/commissions.yml (default_commission_usd/by_country и без
+          секции bank_commission). Это обеспечивает детерминированность тестов и позволяет
+          в будущем добавлять сценарии с commissions_with_bank.yml для проверки
+          bank_commission_runtime_support без влияния на боевой конфиг."
 
     components:
       - name: "AppSettings"
