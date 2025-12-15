@@ -10,6 +10,8 @@ rpg:
     supported_countries: ["japan", "korea", "uae", "china", "georgia"]
     recent_changes:
       - date: "2025-12-08"
+        description: "SPRINT 1 SPEC COMPLETED: Формализована банковская комиссия как надбавка к валютному курсу в документации (SPEC + RPG) без изменений кода. Добавлена концептуальная секция bank_commission в config/commissions.yml (enabled, percent, meta.recommended_min/max, warn_above, default_percent), описан контракт effective_rate = base_rate × (1 + bank_commission_percent/100), зафиксировано влияние на total_rub и CalculationMeta.rates_used (base_rate, bank_commission_percent, effective_rate), разведены понятия 'комиссия компании' (фиксированная 1000 USD) и 'банковская комиссия' (процент к курсу)."
+      - date: "2025-12-08"
         description: "MVP UI HINTS COMPLETED: Реализована система визуальных подсказок для критичных полей формы (возраст, мощность) - цветовая индикация (4 зоны: optimal/acceptable/warning/prohibitive), краткие текстовые подсказки под полями, информационные иконки ℹ️ с tooltip'ами, real-time обновление при вводе (debounced 300ms), ARIA accessibility (aria-describedby, aria-live, keyboard support), создан hints.css (8.2K, 350+ строк) и hints.js (10K, 335 строк) модуль с HintsManager классом, обновлены constants.js (HINT_THRESHOLDS) и messages.js (hints messages), интегрировано в index.html, создан test_hints_mvp.html для мануального тестирования, ~300 LOC добавлено ✅"
       - date: "2025-12-08"
         description: "SPRINT 9 COMPLETED: Актуализирована вся документация проекта - обновлён SPECIFICATION.md (добавлены маркеры 'Реализовано в v2.0' для всех новых требований: утильсбор, комиссия, пошлины, ЭРА-ГЛОНАСС), создан MIGRATION_GUIDE.md (полное руководство миграции с v1.x на v2.0 с примерами для Python/JavaScript/cURL, breaking changes, rollback plan, FAQ), обновлён CHANGELOG.md (v2.0.0 release notes с полной статистикой изменений), финализирован rpg.yaml (версия 2.0.0, все спринты 0-9 задокументированы) ✅"
@@ -24,7 +26,7 @@ rpg:
       - date: "2025-12-08"
         description: "SPRINT 4 COMPLETED: Обновлены пошлины lt3 (6 брэкетов: 325k-6500k RUB → 3250-65000 EUR), исправлена логика _commission() для поддержки commission_usd в by_country, создан test_sprint4_duties.py (7 тестов duty brackets + commissions), все тесты проходят ✅"
       - date: "2025-12-08"
-        description: "REFACTORING SPRINT 0-3 COMPLETED: Реализована новая система утильсбора 2025 (2D таблица объём+мощность), добавлено обязательное поле engine_power_hp в модели, создан config/utilization_2025.yml с 80+ записями, обновлена логика _utilization_fee_v2() с конвертацией л.с.→кВт, унифицирована комиссия на 1000 USD, установлен ERA-GLONASS 45000 руб., manual tests проходят"
+        description: "REFACTORING SPRINT 0-3 COMPLETED: Реализована новая система утильсбора 2025 (2D таблица объём+мощность), добавлено обязательное поле engine_power_hp в модели, создан config/utilization_2025.yml с 80+ записями, обновлена логика _utilization_fee_v2() с конвертацией л.с.���кВт, унифицирована комиссия на 1000 USD, установлен ERA-GLONASS 45000 руб., manual tests проходят"
       - date: "2025-12-07"
         description: "BUGFIX CRITICAL: Исправлено отображение результатов - удалена нерабочая обертка displayResult в DOMContentLoaded (функция определялась позже), добавлен прямой вызов showResultsTab() в конце displayResult для переключения вкладки, исправлены вызовы showToast()→ui.showToast() (2x). Результаты теперь корректно отображаются в Telegram WebApp"
       - date: "2025-12-07"
@@ -79,6 +81,15 @@ rpg:
           - "Calculator controller (orchestration)"
           - "Minimal index.html (structure only)"
           - "Basic unit tests (optional)"
+      - priority: "HIGH"
+        component: "bank_commission_runtime_support"
+        description: "Реализовать чтение и применение банковской комиссии (bank_commission) в движке и метаданных."
+        reference: "docs/sprints/sprint1_bank_commission_config.md"
+        estimated_time: "2-3 спринта (design + implementation + tests)"
+        stages:
+          - "SPRINT 2: Спроектировать алгоритм применения bank_commission в engine.py (выделить все валютные конвертации, добавить расчёт effective_rate)."
+          - "SPRINT 3: Расширить CalculationMeta.rates_used (base_rate, bank_commission_percent, effective_rate) и описать формат в API/клиентах."
+          - "SPRINT 4: Реализовать чтение bank_commission из config/commissions.yml, внедрить effective_rate в расчёты, добавить unit- и функциональные тесты."
 
     sprint_prompts:
       location: "docs/sprint_prompts/"
@@ -236,7 +247,7 @@ rpg:
           next_stage: "SPRINT_6_UI_MODULE"
       - name: "config_data"
         path: "config"
-        description: "YAML-конфиги тарифов: fees.yml, commissions.yml, rates.yml, duties.yml"
+        description: "YAML-конфиги тарифов: fees.yml, commissions.yml, rates.yml, duties.yml. В рамках SPRINT 1 формализована секция bank_commission в commissions.yml (как спецификация, без изменений runtime-кода): глобальный процент банковской комиссии (enabled, percent) и метаданные (recommended_min/max, warn_above, default_percent)."
       - name: "tests"
         path: "tests"
         description: "Функциональные тесты API/движка и юнит-тесты CBR"
@@ -295,7 +306,7 @@ rpg:
         description: "Константы конфигурации: Constraints (YEAR_MIN=1990, YEAR_MAX, ENGINE_CC_MIN=500, ENGINE_CC_MAX=10000, ENGINE_POWER_HP_MIN=1, ENGINE_POWER_HP_MAX=1500 - синхронизированы с models.py), CONVERSION_FACTORS (HP_TO_KW=0.7355, KW_TO_HP=1.35962), API_ENDPOINTS, API_CONFIG (retry, timeout, payload limits), DEFAULT_VALUES (COUNTRY='japan', ENGINE_CC=1500, YEAR_OFFSET=3), COUNTRY_EMOJI (fruit emojis), FALLBACK_META, HAPTIC_TYPES, TOAST_CONFIG, ANIMATION, DEBOUNCE, form/result element IDs"
       - name: "validator.js"
         parent_module: "app_webapp"
-        description: "Модуль валидации форм: FormValidator класс (единый источник правил валидации), методы: validate(formData) → {isValid, errors[]}, validateField(name, value) → error|null (поддержка year, engine_cc, engine_power_hp, purchase_price, country), getFieldConstraints(name) → {min, max, step, required, type}, addCustomValidator(fieldName, fn), removeCustomValidator(), clearCustomValidators(); поддержка кастомных валидаторов для расширяемости; синхронизирован с backend Pydantic моделями"
+        description: "Модуль валидации форм: FormValidator класс (единый источник правил валидации), методы: validate(formData) → {isValid, errors[]}, validateField(name, value) → error|null (поддержка year, engine_cc, engine_power_hp, purchase_price, country), getFieldConstraints(name) → {min, max, step, required, type}, addCustomValidator(fieldName, fn), removeCustomValidator(), clearCustomValidators; поддержка кастомных валидаторов для расширяемости; синхронизирован с backend Pydantic моделями"
       - name: "api.js"
         parent_module: "app_webapp"
         description: "Модуль HTTP клиента: APIClient класс (singleton), методы: calculate/getMeta/getRates/refreshRates (специфичные для API), _request (базовый HTTP с retry, timeout, payload size check), _handleError (маппинг HTTP статусов); APIError класс (code, httpStatus, getUserMessage, toLogFormat); конфигурация: MAX_RETRIES=3, REQUEST_TIMEOUT=10s, MAX_PAYLOAD_SIZE=10MB"
@@ -314,7 +325,7 @@ rpg:
         description: "Страны, валюта покупки, фрахт, базовые расходы/тиеры"
       - name: "commissions.yml"
         parent_module: "config_data"
-        description: "Фиксированная комиссия (default_commission_usd: 1000), исключения по странам (by_country.uae.commission_usd: 0)"
+        description: "Фиксированная комиссия компании (default_commission_usd: 1000, by_country.uae.commission_usd: 0) и специфицированная (пока не используемая в коде) секция bank_commission: enabled, percent (0–10% рекомендованный диапазон), meta.recommended_min/max, warn_above, default_percent, а также возможное будущее расширение by_component."
       - name: "rates.yml"
         parent_module: "config_data"
         description: "Статические курсы, утилизационный сбор (utilization_m1_personal: 2D-таблица объём+мощность, 80+ записей), ЭРА-ГЛОНАСС (era_glonass_rub: 45000), прочие ставки"
@@ -374,7 +385,7 @@ rpg:
       - name: "CalculationMeta"
         parent_file: "models.py"
         type: "class"
-        description: "Метаданные расчёта: возраст/категории/ставки/использованные курсы"
+        description: "Метаданные расчёта: возраст/категории/ставки/использованные курсы. В будущем (см. SPRINT 1) поле rates_used должно хранить для каждой валюты base_rate, bank_commission_percent и effective_rate для прозрачного отображения курса вида 'BASE_RATE + X%'."
         testable: true
         test_priority: "medium"
 
