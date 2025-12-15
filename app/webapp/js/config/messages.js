@@ -48,6 +48,7 @@ export const Messages = {
         AGE: 'Возраст авто',
         TOTAL_COST: 'Общая стоимость',
         BREAKDOWN: 'Детализация',
+        EXCHANGE_RATE: 'Курс валюты', // NEW 2025-12-15: label for exchange rate line
     },
 
     // Breakdown item labels (cost components)
@@ -103,6 +104,7 @@ export const Messages = {
         TITLE_GENERIC: '🚗 Расчет растаможки: {total}',
         BREAKDOWN_TITLE: 'Детализация:',
         WARNINGS_TITLE: 'Предупреждения:',
+        RATE_LINE_PREFIX: 'Курс для расчета:', // NEW 2025-12-15
     },
 
     // Freight type labels (loaded from meta, but these are fallbacks)
@@ -181,4 +183,3 @@ export const Messages = {
 
 // Export default for convenience
 export default Messages;
-

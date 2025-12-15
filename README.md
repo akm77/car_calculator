@@ -11,6 +11,9 @@ Telegram Bot + FastAPI backend + WebApp for calculating the total import cost of
 - Currency handling:
   - Static rates in config + optional live rates via CBR
   - Response meta contains rates_used with all applied rates; logs include purchase_rate_rub
+  - Clients (WebApp и Telegram‑бот) показывают использованный валютный курс
+    из meta.detailed_rates_used (например, `USD/RUB = 78.95 + 1%`), так что
+    итоговая сумма на экране уже учитывает настроенную банковскую надбавку.
 - WebApp (served from the API at /web/) for quick calculations
 - Telegram Bot (aiogram v3) with /start and WebApp launch
 - REST API endpoints:

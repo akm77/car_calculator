@@ -4,6 +4,7 @@
 Changelog:
 - 2025-12-08: Добавлена поддержка engine_power_hp в cmd_calc и on_webapp_data
 - 2025-12-08: Создан helper _format_result для единообразного форматирования
+- 2025-12-15: Добавлен вывод курса валюты с учётом банковской комиссии
 """
 
 from __future__ import annotations
@@ -28,6 +29,78 @@ if TYPE_CHECKING:  # pragma: no cover
     from aiogram.types import Message
 
 router = Router()
+
+
+def _format_rate_line(meta, req):
+    """Сформировать строку курса для Telegram на основе meta.detailed_rates_used.
+
+    Использует backend-подготовленное поле RateUsage.display, при его отсутствии
+    собирает строку в формате:
+      "USD/RUB = 90"        при комиссии 0%
+      "USD/RUB = 90 + 3%"  при ненулевой комиссии.
+    """
+    detailed = getattr(meta, "detailed_rates_used", None) or {}
+    if not isinstance(detailed, dict) or not detailed:
+        return None
+
+    # 1) Определяем приоритетную валюту: сначала валюта покупки, затем USD/EUR/JPY, затем любая
+    code: str | None = None
+    if getattr(req, "currency", None) and req.currency in detailed:
+        code = req.currency
+    else:
+        for fallback in ("USD", "EUR", "JPY"):
+            if fallback in detailed:
+                code = fallback
+                break
+        if code is None:
+            # берем первую доступную валюту
+            code = next(iter(detailed.keys()), None)
+
+    if not code:
+        return None
+
+    usage = detailed.get(code)
+    if not usage:
+        return None
+
+    # Pydantic-модель RateUsage обычно имеет атрибут display; try/except на случай dict
+    display = getattr(usage, "display", None)
+    if not display and isinstance(usage, dict):
+        display = usage.get("display")
+
+    if isinstance(display, str) and display.strip():
+        return display.strip()
+
+    # Fallback: собрать строку из base_rate и bank_commission_percent
+    base_rate = getattr(usage, "base_rate", None)
+    if base_rate is None and isinstance(usage, dict):
+        base_rate = usage.get("base_rate")
+
+    try:
+        base_val = float(base_rate) if base_rate is not None else None
+    except (TypeError, ValueError):  # pragma: no cover - защитный код
+        base_val = None
+
+    if base_val is None:
+        return None
+
+    bank_percent = getattr(usage, "bank_commission_percent", None)
+    if bank_percent is None and isinstance(usage, dict):
+        bank_percent = usage.get("bank_commission_percent")
+
+    try:
+        pct_val = float(bank_percent) if bank_percent is not None else 0.0
+    except (TypeError, ValueError):  # pragma: no cover
+        pct_val = 0.0
+
+    base_str = f"{base_val:.2f}".rstrip("0").rstrip(".")
+
+    if pct_val > 0:
+        # Округляем комиссию до 1 знака, как в спецификации
+        pct_str = f"{pct_val:.1f}".rstrip("0").rstrip(".")
+        return f"{code}/RUB = {base_str} + {pct_str}%"
+
+    return f"{code}/RUB = {base_str}"
 
 
 def _format_result(result: CalculationResult, req: CalculationRequest) -> str:
@@ -69,6 +142,12 @@ def _format_result(result: CalculationResult, req: CalculationRequest) -> str:
         msg += f"<i>({meta.engine_power_kw:.2f} кВт)</i>\n"
 
     msg += f"💵 <b>Цена:</b> {req.purchase_price:,.0f} {req.currency}\n"
+
+    # NEW 2025-12-15: строка курса с учётом банковской комиссии
+    rate_line = _format_rate_line(meta, req)
+    if rate_line:
+        msg += f"💱 <b>Курс:</b> {rate_line}\n"
+
     msg += "\n"
 
     # Детализация стоимости
@@ -79,7 +158,7 @@ def _format_result(result: CalculationResult, req: CalculationRequest) -> str:
 
     # NEW: Коэффициент утильсбора (если есть)
     if meta.utilization_coefficient is not None:
-        msg += f"  <i>(базовая ставка 20,000 ₽ × коэфф. {meta.utilization_coefficient})</i>\n"
+        msg += f"  <i>(базовая ставка 20,000 ₽ × коэффициент {meta.utilization_coefficient})</i>\n"
 
     msg += f"• Таможенное оформление: {breakdown.customs_services_rub:,.0f} ₽\n"
     msg += f"• Фрахт: {breakdown.freight_rub:,.0f} ₽\n"

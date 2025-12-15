@@ -1040,6 +1040,20 @@
                 parts.push(`<div>${Messages.labels.COUNTRY}: ${countryLabel}</div>`);
             }
 
+            // NEW 2025-12-15: Exchange rate info (with bank commission effect)
+            try {
+                const detailedRates = (meta && meta.detailed_rates_used) || {};
+                const code = formatters.getPrimaryCurrencyCode({ meta, request: result.request });
+                if (code) {
+                    const rateLine = formatters.formatRateDisplay(detailedRates, code);
+                    if (rateLine && rateLine !== '—') {
+                        parts.push(`<div>${Messages.labels.EXCHANGE_RATE}: ${rateLine}</div>`);
+                    }
+                }
+            } catch (e) {
+                console.warn('[displayResult] Failed to render exchange rate line:', e);
+            }
+
             parts.push(`<div>${Messages.labels.AGE}: ${meta.age_years} лет (${formatters.getAgeCategory(meta.age_category)})</div>`);
             parts.push(`<div>${Messages.labels.ENGINE}: ${engineDisplay}</div>`);
 
@@ -1130,6 +1144,21 @@
             if (r.purchase_price && r.currency) lines.push(`${Messages.labels.PRICE}: ${fnum(r.purchase_price)} ${r.currency}`);
             if (r.freight_type) lines.push(`${Messages.labels.FREIGHT_TYPE}: ${r.freight_type}`);
             if (m.age_years !== undefined && m.age_category) lines.push(`${Messages.labels.AGE}: ${m.age_years} лет (${formatters.getAgeCategory(m.age_category)})`);
+
+            // NEW 2025-12-15: Include exchange rate line in share text when available
+            try {
+                const detailedRates = (m && m.detailed_rates_used) || {};
+                const code = formatters.getPrimaryCurrencyCode(res);
+                if (code) {
+                    const rateLine = formatters.formatRateDisplay(detailedRates, code);
+                    if (rateLine && rateLine !== '—') {
+                        lines.push(`${Messages.share.RATE_LINE_PREFIX} ${rateLine}`);
+                    }
+                }
+            } catch (e) {
+                console.warn('[shareResult] Failed to append exchange rate line:', e);
+            }
+
             lines.push('');
             lines.push(Messages.share.BREAKDOWN_TITLE);
             if (b.purchase_price_rub) lines.push(`• ${Messages.breakdown.PURCHASE_PRICE}: ${fnum(b.purchase_price_rub)} ₽`);

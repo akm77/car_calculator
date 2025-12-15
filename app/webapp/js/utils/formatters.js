@@ -170,3 +170,84 @@ export function byteLength(str) {
     }
 }
 
+/**
+ * Select primary currency code for rate display based on result meta and request.
+ * Prefers request currency if detailed rate is available, otherwise falls back
+ * to common currencies (USD/EUR/JPY) or the first available entry.
+ *
+ * @param {object} result - Full API /api/calculate result
+ * @returns {string|null} - Selected currency code (e.g. 'USD') or null if none available
+ */
+export function getPrimaryCurrencyCode(result) {
+    if (!result || !result.meta) return null;
+    const detailed = result.meta.detailed_rates_used || {};
+    const codes = Object.keys(detailed || {});
+    if (!codes.length) return null;
+
+    const request = result.request || {};
+    const reqCurrency = request.currency || null;
+
+    // 1) Prefer request currency if detailed rate exists
+    if (reqCurrency && detailed[reqCurrency]) {
+        return reqCurrency;
+    }
+
+    // 2) If purchase is in RUB or no detailed for that currency,
+    // try common majors in a fixed priority
+    const fallbacks = ['USD', 'EUR', 'JPY'];
+    for (const code of fallbacks) {
+        if (detailed[code]) return code;
+    }
+
+    // 3) Fallback: first available code from detailed_rates_used
+    return codes[0] || null;
+}
+
+/**
+ * Format human-readable exchange rate line using detailed_rates_used meta.
+ *
+ * Prefers backend-provided RateUsage.display when available, falling back to
+ * constructing a string of the form:
+ *   "USD/RUB = 90"           when percent == 0
+ *   "USD/RUB = 90 + 3%"      when percent > 0
+ *
+ * @param {object} detailedRates - meta.detailed_rates_used
+ * @param {string} code - currency code, e.g. 'USD'
+ * @returns {string} - Formatted line or '—' if data is missing
+ */
+export function formatRateDisplay(detailedRates, code) {
+    if (!code || !detailedRates || typeof detailedRates !== 'object') {
+        return '—';
+    }
+
+    const usage = detailedRates[code];
+    if (!usage) return '—';
+
+    // Backend already prepares a correct human-readable line; reuse it when possible
+    if (usage.display && typeof usage.display === 'string' && usage.display.trim()) {
+        return usage.display.trim();
+    }
+
+    const base = typeof usage.base_rate === 'number' ? usage.base_rate : null;
+    const percentRaw = usage.bank_commission_percent;
+    const percent = typeof percentRaw === 'number' ? percentRaw : Number(percentRaw);
+
+    if (base == null || Number.isNaN(Number(base))) {
+        return '—';
+    }
+
+    const baseStr = new Intl.NumberFormat('ru-RU', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(base);
+
+    if (percent && !Number.isNaN(percent) && percent > 0) {
+        const percentStr = new Intl.NumberFormat('ru-RU', {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+        }).format(percent);
+        return `${code}/RUB = ${baseStr} + ${percentStr}%`;
+    }
+
+    return `${code}/RUB = ${baseStr}`;
+}
