@@ -5,7 +5,38 @@
 **API Endpoint**: `POST /api/calculate`
 
 > **⚠️ ВАЖНО (v2.0):** С версии 2.0.0 добавлено **обязательное поле** `engine_power_hp` (1-1500 л.с.)  
-> См. [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) для деталей миграции.
+> См. [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) для деталей миграции.  
+> **⚠️ ВАЖНО (bank_commission, sprint 3):** Формат JSON-ответа `/api/calculate` **не меняется**, но
+> семантика поля `breakdown.total_rub` уточняется: итоговая сумма **уже включает эффект банковской
+> комиссии**, так как все части, зависящие от валютного курса, рассчитываются по эффективному курсу
+> `effective_rate = base_rate × (1 + bank_commission_percent/100)` (см. раздел 4.5 в `SPECIFICATION.md`).
+
+---
+
+## 🔗 Обзор потока данных (движок → API → WebApp / бот)
+
+```text
+[User]
+  │  вводит параметры в WebApp или Telegram WebApp
+  ▼
+[WebApp JS]
+  │  POST /api/calculate (JSON-запрос)
+  ▼
+[FastAPI /api/calculate]
+  │  валидирует запрос → вызывает engine.calculate()
+  ▼
+[Calculation Engine]
+  │  считает CostBreakdown (в RUB)
+  │  формирует CalculationMeta (включая rates_used и detailed_rates_used)
+  ▼
+[CalculationResult]
+  │  сериализуется в JSON (breakdown, meta, request)
+  ▼
+[WebApp / Bot]
+  │  показывают breakdown.total_rub и детали
+  └▶ используют meta.rates_used (и detailed_rates_used) для отображения строки курса
+      вида: "USD/RUB = BASE_RATE [+ PERCENT%]" без раскрытия суммы комиссии
+```
 
 ---
 
@@ -175,7 +206,7 @@ async def calculate_endpoint(req: CalculationRequest):
         freight_type=req.freight_type,
         vehicle_type=req.vehicle_type
     )
-    
+
     return result  # ← Возвращает JSON с breakdown и meta
 ```
 
@@ -186,35 +217,53 @@ async def calculate_endpoint(req: CalculationRequest):
 ```json
 {
   "breakdown": {
-    "purchase_price_rub": 925000.0,      // Цена авто в рублях
-    "duties_rub": 185000.0,              // Пошлины
-    "utilization_fee_rub": 340000.0,     // Утилизационный сбор
-    "customs_services_rub": 5000.0,      // Таможенные услуги
-    "era_glonass_rub": 25000.0,          // ЭРА-ГЛОНАСС
-    "freight_rub": 150000.0,             // Фрахт
-    "country_expenses_rub": 50000.0,     // Расходы в стране покупки
-    "company_commission_rub": 20000.0,   // Комиссия компании
-    "total_rub": 1700000.0               // 💰 ИТОГО
+    "purchase_price_rub": 925000.0,
+    "duties_rub": 185000.0,
+    "utilization_fee_rub": 340000.0,
+    "customs_services_rub": 5000.0,
+    "era_glonass_rub": 25000.0,
+    "freight_rub": 150000.0,
+    "country_expenses_rub": 50000.0,
+    "company_commission_rub": 20000.0,
+    "total_rub": 1700000.0
   },
   "meta": {
-    "age_years": 2,                      // Возраст авто
-    "age_category": "3_5",               // Категория: от 3 до 5 лет
-    "volume_band": "1500-2000",          // Диапазон объема двигателя
-    "engine_power_hp": 110,              // ← NEW v2.0: Мощность в л.с.
-    "engine_power_kw": 80.91,            // ← NEW v2.0: Мощность в кВт (hp × 0.7355)
-    "utilization_coefficient": 0.26,     // ← NEW v2.0: Коэффициент утильсбора
-    "customs_value_eur": 9500.0,         // Таможенная стоимость
-    "duty_formula_mode": "percent",      // Режим расчета пошлины
-    "duty_percent": 0.2,                 // 20% пошлина
-    "duty_min_rate_eur_per_cc": 0.5,     // Минимум 0.5 €/см³
+    "age_years": 2,
+    "age_category": "3_5",
+    "volume_band": "1500-2000",
+    "engine_power_hp": 110,
+    "engine_power_kw": 80.91,
+    "utilization_coefficient": 0.26,
+    "customs_value_eur": 9500.0,
+    "duty_formula_mode": "percent",
+    "duty_percent": 0.2,
+    "duty_min_rate_eur_per_cc": 0.5,
     "vehicle_type": "M1",
-    "warnings": []                       // Предупреждения (если есть)
+    "warnings": [],
+    "rates_used": {
+      "USD_RUB": 78.95,
+      "EUR_RUB": 85.10
+    },
+    "detailed_rates_used": {
+      "USD": {
+        "base_rate": 78.95,
+        "effective_rate": 79.7395,
+        "bank_commission_percent": 1.0,
+        "display": "USD/RUB = 78.95 + 1%"
+      },
+      "EUR": {
+        "base_rate": 85.10,
+        "effective_rate": 85.951,
+        "bank_commission_percent": 1.0,
+        "display": "EUR/RUB = 85.10 + 1%"
+      }
+    }
   },
   "request": {
     "country": "georgia",
     "year": 2022,
     "engine_cc": 1500,
-    "engine_power_hp": 110,              // ← NEW v2.0: ОБЯЗАТЕЛЬНОЕ ПОЛЕ
+    "engine_power_hp": 110,
     "purchase_price": 10000.0,
     "currency": "USD",
     "freight_type": "open",
@@ -223,9 +272,19 @@ async def calculate_endpoint(req: CalculationRequest):
 }
 ```
 
+> **Важно про `total_rub` и банковскую комиссию:**  
+> * Структура объекта `breakdown` **не меняется** — новые поля
+>   вида `bank_commission_percent`, `bank_commission_rub` в JSON **не добавляются**.  
+> * Поля `purchase_price_rub`, `freight_rub`, `country_expenses_rub`,
+>   `company_commission_rub` и другие компоненты, зависящие от валюты, внутри движка
+>   рассчитываются по **эффективному курсу** `effective_rate`, в который уже
+>   «вшита» банковская комиссия (`base_rate × (1 + percent/100)`).  
+> * Соответственно, `breakdown.total_rub` — это сумма этих компонент **уже с учётом
+>   банковской комиссии**. Клиенты API не видят комиссию как отдельную сумму.
+
 ---
 
-### 6️⃣ Функция `displayResult(result)` - отображение результата
+### 6️⃣ Функция `displayResult(result)` - отображение результата в WebApp
 
 ```javascript
 // index.html, строки 958-1044
@@ -414,153 +473,134 @@ function displayResult(result) {
 
 ---
 
-## 🐛 ПРОБЛЕМЫ, КОТОРЫЕ БЫЛИ ИСПРАВЛЕНЫ
+## 💱 Как WebApp отображает курс и банковскую комиссию
 
-### Проблема 1: `ReferenceError: formatNumber is not defined`
+На уровне API и движка банковская комиссия применяется через эффективный курс валюты
+(`effective_rate`), а не отдельным числовым полем. Клиентам (WebApp, Telegram‑бот) нужна только
+подсказка, **какой курс был использован** и есть ли к нему надбавка.
 
-**Причина**: В `displayResult()` вызывалась глобальная функция `formatNumber()`, которая была удалена при переходе на модули в Sprint 6.
+### Источник данных
 
-**Было**:
-```javascript
-document.getElementById('totalAmount').textContent = formatNumber(breakdown.total_rub) + ' ₽';
+- Источником правды о курсах для UI служит `CalculationMeta.rates_used` (и/или
+  связанное поле, описанное в `docs/SPECIFICATION.md`, раздел 4.5.4).  
+- Для каждой пары вида `USD_RUB`, `JPY_RUB` сервер формирует **строковое
+  представление**, достаточное для показа пользователю.
+
+Пример логического содержимого (не меняет официальный JSON-контракт ответа, показывает идею):
+
+```json
+{
+  "meta": {
+    "rates_used": {
+      "USD_RUB": {
+        "display": "USD/RUB = 78.95 + 1%"
+      }
+    }
+  }
+}
 ```
 
-**Стало**:
-```javascript
-document.getElementById('totalAmount').textContent = formatters.formatNumber(breakdown.total_rub) + ' ₽';
-```
+### Правило форматирования строки курса в WebApp
 
-**Исправлено в строках**: 960, 980, 987, 1009, 1019
+WebApp **не вычисляет** курс и комиссию самостоятельно — он только
+использует подготовленную сервером информацию.
+
+- При ненулевой банковской комиссии (`bank_commission_percent > 0` в движке):  
+  **UI‑строка:** `USD/RUB = BASE_RATE + PERCENT%`  
+  Пример: `USD/RUB = 78.95 + 1%`
+- При комиссии 0% или отключённом блоке `bank_commission`:  
+  **UI‑строка:** `USD/RUB = BASE_RATE`  
+  Пример: `USD/RUB = 78.95`
+
+Где именно показывается строка в WebApp:
+
+- Строка с курсом выводится в блоке метаданных `metaInfo` (под общей суммой и
+  детализацией) отдельной строкой, например:
+  - `Курс: USD/RUB = 78.95 + 1%`
+- WebApp получает эту строку из `meta.rates_used` и вставляет её как есть, без
+  пересчётов и доступа к внутренним полям `base_rate` или `effective_rate`.
+
+### Что пользователь **не может** делать в WebApp
+
+- В форме ввода **нет** полей и переключателей, связанных с банковской
+  комиссией: нельзя задать процент, включить/выключить комиссию или редактировать её.  
+- Вся логика и значение комиссии управляются только конфигурацией сервера
+  (`config/commissions.yml::bank_commission`).
+- В `breakdown` **нет** строки «Банковская комиссия XXX ₽» — эффект комиссии
+  виден только
+  - в увеличившихся рублёвых суммах (`purchase_price_rub`, `freight_rub`, …),
+  - в строке курса вида `USD/RUB = 78.95 + 1%`.
 
 ---
 
-### Проблема 2: `ReferenceError: getAgeCategory is not defined`
+## 🤖 Как Telegram‑бот отображает курс и банковскую комиссию
 
-**Причина**: Функция `getAgeCategory()` тоже была перенесена в модуль `formatters.js`, но вызовы не обновились.
+Telegram‑бот использует те же данные, что и WebApp, но формирует
+текстовый ответ в чате.
 
-**Было**:
-```javascript
-parts.push(`...${getAgeCategory(meta.age_category)}...`);
+### Источник данных
+
+- Хендлеры бота (`app/bot/handlers/start.py`) получают объект
+  `CalculationResult` из движка.  
+- Для целей отображения курса бот опирается на ту же
+  информацию, что и WebApp — `meta.rates_used` (внутренне это может быть
+  либо готовая строка, либо набор полей для её сборки).  
+- В сообщениях пользователю бот **не показывает** отдельную сумму
+  банковской комиссии, только курс и рублёвые итоги.
+
+### Формат строки курса в ответе бота
+
+Рекомендуемый формат (аналогичен WebApp):
+
+- При комиссии > 0%:
+
+  ```text
+  Курс: USD/RUB = 78.95 + 1%
+  ```
+
+- При комиссии = 0% или отключённой:
+
+  ```text
+  Курс: USD/RUB = 78.95
+  ```
+
+Эта строка выводится в верхней части сообщения с результатом (после блока о
+стране/годе/двигателе, до детализации расходов), например:
+
+```text
+💰 Расчёт стоимости растаможки
+
+🇯🇵 Страна: Япония
+📅 Год: 2021 (3_5)
+⚙️ Объём: 1496 см³
+🔋 Мощность: 110 л.с. (80.91 кВт)
+Курс: USD/RUB = 78.95 + 1%
+
+📊 Детализация:
+• Стоимость покупки (в рублях): ...
+...
+💎 ИТОГО: 1 700 000 ₽
 ```
 
-**Стало**:
-```javascript
-parts.push(`...${formatters.getAgeCategory(meta.age_category)}...`);
-```
+### Ограничения интерфейса ��ота
 
-**Исправлено в строках**: 1004, 1072
+- Бот **не добавляет** новых команд для работы с банковской комиссией.  
+- В чате **нет** дополнительных полей ввода, связанных с комиссией.  
+- Настройки комиссии полностью задаются конфигурацией сервера, бот лишь
+  отражает надбавку к курсу через текст `+ X%`.
 
 ---
 
-## 📝 ПРОВЕРКА ИСПРАВЛЕНИЙ
+## 🧠 Краткое резюме для клиентов API
 
-### Команда для проверки:
-```bash
-grep -n "formatNumber\|getAgeCategory" app/webapp/index.html | grep -v "formatters\."
-```
-
-**Ожидаемый результат**: Пустой вывод (все вызовы используют `formatters.`)
-
----
-
-## ✅ ИТОГОВАЯ СХЕМА ПОТОКА ДАННЫХ
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ 1. USER CLICKS "Рассчитать стоимость"                      │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 2. calculateCost() - Сбор данных из формы                  │
-│    requestData = {country, year, engine_cc, ...}            │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 3. ui.showLoading() - Показываем спиннер                   │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 4. api.calculate(requestData) - HTTP POST запрос            │
-│    POST http://localhost:8000/api/calculate                 │
-│    Body: JSON(requestData)                                  │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 5. BACKEND - FastAPI обрабатывает запрос                   │
-│    /api/calculate → calculate() engine                      │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 6. BACKEND RESPONSE - JSON                                  │
-│    { breakdown: {...}, meta: {...}, request: {...} }        │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 7. const result = await api.calculate(...)                 │
-│    result содержит breakdown, meta, request                 │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 8. displayResult(result) - Обработка и отображение         │
-│    - Извлекаем breakdown и meta                             │
-│    - Форматируем числа через formatters.formatNumber()      │
-│    - Форматируем возраст через formatters.getAgeCategory()  │
-│    - Создаём DOM элементы                                   │
-│    - Вставляем в HTML                                       │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌──��──────────────────────────────────────────────────────────┐
-│ 9. ui.showResult() - Показываем карточку результата         │
-│    - Анимация fade-in                                       │
-│    - Scroll к результату                                    │
-│    - Показываем кнопку "Поделиться"                         │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 10. ui.hideLoading() - Скрываем спиннер                    │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 11. ✅ РЕЗУЛЬТАТ ПОКАЗАН НА ЭКРАНЕ                         │
-│     "1 700 000 ₽" + детализация + метаданные              │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🔍 ЛОГИ В КОНСОЛИ (что вы видите)
-
-### Успешный расчет:
-```
-[calculateCost] Request data: {country: 'georgia', year: 2022, ...}
-[APIClient] POST http://localhost:8000/api/calculate {country: 'georgia', ...}
-[APIClient] Response 200 OK
-[displayResult] Received result: {breakdown: {...}, meta: {...}}
-[UI] Showing result card
-[UI] Scrolling to result
-```
-
-### При ошибке:
-```
-[calculateCost] Request data: {...}
-[APIClient] POST http://localhost:8000/api/calculate
-[APIClient] Error: HTTP 500
-[APIClient] Error details: {...}
-Calculation error: APIError {...}
-[UI] Showing error: "Ошибка расчета: ..."
-```
-
----
-
-## 🎯 КЛЮЧЕВЫЕ МОМЕНТЫ
-
-1. **Async/Await**: `await api.calculate()` ждёт ответа от сервера
-2. **Деструктуризация**: `const { breakdown, meta } = result` извлекает данные
-3. **Модули**: Все функции используют префиксы `formatters.` и `ui.`
-4. **Error Handling**: Try-catch ловит ошибки API
-5. **Finally**: Спиннер всегда скрывается, даже при ошибке
-
----
-
-**Всё работает корректно после всех исправлений!** ✅
-
+- Формат JSON‑ответа `/api/calculate` **стабилен**: поля объекта `breakdown`
+  и `meta` остаются прежними.  
+- Банковская комиссия **не имеет собственных полей** в JSON — она
+  учитывается только через:
+  - эффективные курсы, по которым считаются рублёвые суммы,  
+  - строковое представление курса в `meta.rates_used` вида
+    `BASE_RATE [+ PERCENT%]`.
+- WebApp и Telegram‑бот:
+  - используют `meta.rates_used` для отображения курса;  
+  - показывают надбавку только в виде `+ X%` рядом с курсом;  
+  - не предоставляют пользователю возможности управлять размером комиссии.
