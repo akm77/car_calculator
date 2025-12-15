@@ -494,14 +494,17 @@ def calculate(req: CalculationRequest) -> CalculationResult:
             base_rate = float(currencies_table[key])
         except Exception:  # pragma: no cover - defensive
             continue
-        effective_rate = float(
-            _effective_currency_rate(rates_conf, code, bank_commission_percent)
-        )
+        # effective_rate всегда зависит от сконфигурированного процента комиссии
+        effective_rate_dec = _effective_currency_rate(rates_conf, code, bank_commission_percent)
+        effective_rate = float(effective_rate_dec)
         percent = float(bank_commission_percent or 0.0)
+        # Форматируем человекочитаемую строку: округляем base до 2 знаков, процент до целого
+        base_str = f"{base_rate:.2f}".rstrip("0").rstrip(".")
         if percent:
-            display = f"{code}/RUB = {base_rate} + {percent}%"
+            percent_str = f"{percent:.0f}".rstrip(".0")
+            display = f"{code}/RUB = {base_str} + {percent_str}%"
         else:
-            display = f"{code}/RUB = {base_rate}"
+            display = f"{code}/RUB = {base_str}"
         detailed_rates_used[code] = RateUsage(
             base_rate=base_rate,
             effective_rate=effective_rate,
