@@ -19,6 +19,7 @@ from .models import (
     CalculationResult,
     CostBreakdown,
     WarningItem,
+    RateUsage,
 )
 from .rounding import quantize4, round_rub, to_decimal
 from .tariff_tables import (
@@ -50,11 +51,76 @@ def _currency_rate(rates_conf: dict[str, Any], code: str) -> Decimal:
         raise CalculationError.missing_currency_rate(key) from e
 
 
-def _convert(amount: Decimal, currency: str, rates_conf: dict[str, Any]) -> Decimal:
-    return quantize4(amount * _currency_rate(rates_conf, currency))
+def _get_bank_commission_percent(commissions_conf: dict[str, Any]) -> float:
+    """Extract effective bank commission percent from commissions config.
+
+    Behaviour (per sprint1 spec):
+    - If `bank_commission` section is missing -> 0.0
+    - If `enabled` is explicitly False -> 0.0
+    - If `percent` is missing -> use `meta.default_percent` or 0.0
+    - Otherwise return `percent` as float.
+    """
+
+    bank_conf = commissions_conf.get("bank_commission")
+    if not isinstance(bank_conf, dict):
+        return 0.0
+
+    if bank_conf.get("enabled") is False:
+        return 0.0
+
+    percent = bank_conf.get("percent")
+    if percent is None:
+        meta = bank_conf.get("meta") or {}
+        default_percent = meta.get("default_percent", 0.0)
+        try:
+            return float(default_percent)
+        except (TypeError, ValueError):
+            return 0.0
+
+    try:
+        return float(percent)
+    except (TypeError, ValueError):  # pragma: no cover - defensive
+        return 0.0
+
+
+def _effective_currency_rate(
+    rates_conf: dict[str, Any],
+    code: str,
+    bank_commission_percent: float,
+) -> Decimal:
+    """Return effective VALUTA/RUB rate with bank commission applied.
+
+    effective_rate = base_rate * (1 + bank_commission_percent / 100).
+    """
+
+    base = _currency_rate(rates_conf, code)
+    if not bank_commission_percent:
+        return base
+    factor = Decimal("1") + (to_decimal(bank_commission_percent) / Decimal("100"))
+    return quantize4(base * factor)
+
+
+def _convert(
+    amount: Decimal,
+    currency: str,
+    rates_conf: dict[str, Any],
+    bank_commission_percent: float | None = None,
+) -> Decimal:
+    """Convert from VALUTA to RUB using effective rate and bank commission.
+
+    Backwards compatible: if bank_commission_percent is None, use base rate only.
+    """
+
+    if bank_commission_percent is None:
+        rate = _currency_rate(rates_conf, currency)
+    else:
+        rate = _effective_currency_rate(rates_conf, currency, bank_commission_percent)
+    return quantize4(amount * rate)
+
 
 # New: convert RUB -> target currency using configured rates (RUB per unit)
 # Safe utility for internal use (e.g., normalize Japan tiers input)
+
 
 def _convert_from_rub(amount_rub: Decimal, currency: str, rates_conf: dict[str, Any]) -> Decimal:
     rate = _currency_rate(rates_conf, currency)
@@ -204,12 +270,17 @@ def _commission(
     commissions_conf: dict[str, Any],
     country: str | None = None,
     rates_conf: dict[str, Any] | None = None,
+    bank_commission_percent: float | None = None,
 ) -> Decimal:
     """Return commission in RUB (NEW 2025: fixed 1000 USD or country override).
 
     Selection order:
     1) if by_country[country] exists -> use commission_usd from there
     2) else use default_commission_usd (converted to RUB)
+
+    Банковская комиссия применяется как надбавка к валютному курсу при
+    конвертации комиссии компании (1000 USD → RUB), если задан
+    bank_commission_percent.
     """
     # Check for country-specific override (e.g., UAE = 0)
     if country:
@@ -220,7 +291,13 @@ def _commission(
             if isinstance(country_config, dict) and "commission_usd" in country_config:
                 commission_usd = to_decimal(country_config["commission_usd"])
                 if rates_conf:
-                    return _convert(commission_usd, "USD", rates_conf)
+                    # Apply bank commission via effective rate
+                    return _convert(
+                        commission_usd,
+                        "USD",
+                        rates_conf,
+                        bank_commission_percent,
+                    )
                 return Decimal("0")
             # Legacy structure: list with amount
             elif isinstance(country_config, list) and country_config:
@@ -230,7 +307,12 @@ def _commission(
     default_usd = commissions_conf.get("default_commission_usd", 1000)
     if rates_conf:
         commission_usd = to_decimal(default_usd)
-        return _convert(commission_usd, "USD", rates_conf)
+        return _convert(
+            commission_usd,
+            "USD",
+            rates_conf,
+            bank_commission_percent,
+        )
 
     # Fallback if no rates (shouldn't happen in practice)
     return Decimal("0")
@@ -244,6 +326,9 @@ def calculate(req: CalculationRequest) -> CalculationResult:
     commissions_conf = configs.commissions
     duties_conf = configs.duties
 
+    # Bank commission percent from config (global for now)
+    bank_commission_percent = _get_bank_commission_percent(commissions_conf)
+
     # Track which currency rates were used in this calculation
     used_currency_codes: set[str] = set()
 
@@ -254,7 +339,12 @@ def calculate(req: CalculationRequest) -> CalculationResult:
 
     # Purchase price conversion
     used_currency_codes.add(req.currency.upper())
-    purchase_price_rub = _convert(to_decimal(req.purchase_price), req.currency, rates_conf)
+    purchase_price_rub = _convert(
+        to_decimal(req.purchase_price),
+        req.currency,
+        rates_conf,
+        bank_commission_percent,
+    )
 
     warnings: list[WarningItem] = []
 
@@ -304,13 +394,23 @@ def calculate(req: CalculationRequest) -> CalculationResult:
         expenses_currency = fees_conf.get("country_currency", req.currency)
 
     used_currency_codes.add(expenses_currency.upper())
-    country_expenses_rub_dec = _convert(expenses_val, expenses_currency, rates_conf)
+    country_expenses_rub_dec = _convert(
+        expenses_val,
+        expenses_currency,
+        rates_conf,
+        bank_commission_percent,
+    )
 
     freight_amount, _freight_type_used, freight_currency = _select_freight(
         fees_conf, req.freight_type
     )
     used_currency_codes.add(freight_currency.upper())
-    freight_rub_dec = _convert(freight_amount, freight_currency, rates_conf)
+    freight_rub_dec = _convert(
+        freight_amount,
+        freight_currency,
+        rates_conf,
+        bank_commission_percent,
+    )
 
     customs_services_map = rates_conf.get("customs_services", {})
     customs_services_rub_dec = to_decimal(customs_services_map.get(req.country, 0))
@@ -326,7 +426,7 @@ def calculate(req: CalculationRequest) -> CalculationResult:
             WarningItem(
                 code="NON_M1",
                 message=(
-                    "Расчет утильсбора выполнен для легковых (M1). Для выбранного типа ТС "  # noqa: RUF001
+                    "Расчёт утилизационного сбора выполнен для легковых (M1). Для выбранного типа ТС "  # noqa: RUF001
                     "обратитесь в поддержку для уточнения ставки."
                 ),
             )
@@ -339,7 +439,11 @@ def calculate(req: CalculationRequest) -> CalculationResult:
 
     # Commission: NEW 2025 - fixed 1000 USD (or 0 for UAE)
     commission_rub_dec = _commission(
-        purchase_price_rub, commissions_conf, req.country, rates_conf
+        purchase_price_rub,
+        commissions_conf,
+        req.country,
+        rates_conf,
+        bank_commission_percent,
     )
     if commission_rub_dec > 0:
         used_currency_codes.add("USD")  # Commission uses USD
@@ -369,7 +473,7 @@ def calculate(req: CalculationRequest) -> CalculationResult:
     eur_rate = _currency_rate(rates_conf, "EUR")
     eur_source = rates_conf.get("live_source", "static")
 
-    # Collect actual rates used
+    # Collect actual base rates used (legacy view)
     rates_used: dict[str, float] = {}
     currencies_table = rates_conf.get("currencies", {})
     for code in sorted({c.upper() for c in used_currency_codes}):
@@ -377,8 +481,33 @@ def calculate(req: CalculationRequest) -> CalculationResult:
         if key in currencies_table:
             try:
                 rates_used[key] = float(currencies_table[key])
-            except Exception:
+            except Exception:  # pragma: no cover - defensive
                 continue
+
+    # New: detailed rates with bank commission applied
+    detailed_rates_used: dict[str, RateUsage] = {}
+    for code in sorted({c.upper() for c in used_currency_codes}):
+        key = f"{code}_RUB"
+        if key not in currencies_table:
+            continue
+        try:
+            base_rate = float(currencies_table[key])
+        except Exception:  # pragma: no cover - defensive
+            continue
+        effective_rate = float(
+            _effective_currency_rate(rates_conf, code, bank_commission_percent)
+        )
+        percent = float(bank_commission_percent or 0.0)
+        if percent:
+            display = f"{code}/RUB = {base_rate} + {percent}%"
+        else:
+            display = f"{code}/RUB = {base_rate}"
+        detailed_rates_used[code] = RateUsage(
+            base_rate=base_rate,
+            effective_rate=effective_rate,
+            bank_commission_percent=percent,
+            display=display,
+        )
 
     # Extract purchase currency rate (if available)
     purchase_rate_key = f"{req.currency.upper()}_RUB"
@@ -401,26 +530,16 @@ def calculate(req: CalculationRequest) -> CalculationResult:
         duty_min_rate_eur_per_cc=duty_details.get("duty_min_rate_eur_per_cc"),
         duty_rate_eur_per_cc=duty_details.get("duty_rate_eur_per_cc"),
         duty_value_bracket_max_eur=duty_details.get("duty_value_bracket_max_eur"),
-        vehicle_type=getattr(req, "vehicle_type", None),
-        # NEW 2025: Power and utilization coefficient
+        vehicle_type=req.vehicle_type,
         engine_power_hp=req.engine_power_hp,
         engine_power_kw=engine_power_kw,
         utilization_coefficient=utilization_coefficient,
         rates_used=rates_used,
+        detailed_rates_used=detailed_rates_used,
     )
 
-    logger.info(
-        "calculation_done",
-        country=req.country,
-        age_category=age_category,
-        duty_mode=duty_mode,
-        eur_rate=str(eur_rate),
-        eur_source=eur_source,
-        purchase_currency=req.currency.upper(),
-        purchase_rate_key=purchase_rate_key,
-        purchase_rate_rub=purchase_rate_val,
-        rates_used=rates_used,
-        total=breakdown.total_rub,
-    )
+    # For backward compatibility, keep purchase_rate_val implicitly available via
+    # meta.rates_used[purchase_rate_key] if present; we don't introduce
+    # dedicated fields to avoid changing API surface.
 
     return CalculationResult(request=req, meta=meta, breakdown=breakdown)

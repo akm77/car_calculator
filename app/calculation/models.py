@@ -58,6 +58,20 @@ class WarningItem(BaseModel):
     message: str
 
 
+class RateUsage(BaseModel):
+    """Detailed information about currency rate usage in calculation.
+
+    This extends the previous simple mapping `rates_used: dict[str, float]` to a
+    richer structure that can hold base and effective rates together with
+    applied bank commission percent and a human-readable display string.
+    """
+
+    base_rate: float
+    effective_rate: float
+    bank_commission_percent: float
+    display: str
+
+
 class CalculationMeta(BaseModel):
     age_years: int
     age_category: str
@@ -77,8 +91,11 @@ class CalculationMeta(BaseModel):
     engine_power_hp: int | None = None
     engine_power_kw: float | None = None
     utilization_coefficient: float | None = None
-    # New: Map of currency rates used in this calculation, e.g. {"USD_RUB": 90.0}
+    # Old: Map of currency rates used in this calculation, preserved for
+    # backward compatibility (keys like "USD_RUB": 90.0).
     rates_used: dict[str, float] = Field(default_factory=dict)
+    # New: Detailed rates information per source currency code (e.g. "USD").
+    detailed_rates_used: dict[str, RateUsage] = Field(default_factory=dict)
 
 
 class CalculationResult(BaseModel):
@@ -91,5 +108,6 @@ class CalculationResult(BaseModel):
 CalculationRequest.model_rebuild()
 CostBreakdown.model_rebuild()
 WarningItem.model_rebuild()
+RateUsage.model_rebuild()
 CalculationMeta.model_rebuild()
 CalculationResult.model_rebuild()
