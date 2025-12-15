@@ -142,3 +142,105 @@
   - создаётся новый экземпляр `ConfigRegistry` с обновлённой секцией `bank_commission`;
   - поля `hash` и `loaded_at` сохраняются из оригинальной конфигурации для корректной валидации pydantic.
 - Для helper‑тестов используются минимальные словари без загрузки YAML/CBR, чтобы проверки оставались локальными и быстрыми.
+
+## Sprint 4.6: Функциональные тесты API для bank_commission и регрессия комиссий/пошлин
+
+### Цели
+
+- Проверить, что при **отключённой** банковской комиссии (`bank_commission.enabled=false` или отсутствие секции) поведение `/api/calculate` полностью соответствует «старому» режиму без банка.
+- Проверить, что при **включённой** банковской комиссии стоимость в RUB (все валютные компоненты и `total_rub`) **возрастает**, а структура ответа и логика пошлин/утильсбора не меняются.
+- Зафиксировать базовый контракт по метаданным курсов (`meta.rates_used` и `meta.detailed_rates_used`) на уровне функциональных тестов API.
+
+### Механизм управления bank_commission в тестах
+
+Используются два тестовых профиля комиссий в каталоге `tests/test_data/config`:
+
+- `commissions_company_only.yml` — только комиссия компании (1000 USD, `uae` = 0), **без** секции `bank_commission`.
+  - Этот профиль применяется глобально для функциональных тестов через фикстуру `_ensure_test_commissions_defaults` в `tests/conftest.py` и служит регрессионным baseline без банка.
+- `commissions_with_bank.yml` — тот же формат, но с включённой секцией `bank_commission` (enabled + percent + meta).
+  - В функциональных тестах bank_commission он подмешивается поверх baseline через вспомогательную фикстуру `_patch_commissions`, которая временно меняет `cfg.commissions` и затем восстанавливает исходное значение.
+
+Таким образом, тесты могут локально переключать профиль комиссий (без банка / с банком) без изменения боевого `config/commissions.yml` и без влияния на остальные сценарии.
+
+### Новые функциональные тесты `/api/calculate`
+
+Файл: `tests/functional/test_api_bank_commission.py`.
+
+#### 1. `test_calculate_without_bank_commission_regression`
+
+- **Профиль комиссий:** `commissions_company_only.yml` (через `_patch_commissions`).
+- **Payload:**
+  - `country="japan"`, возраст стабильно в диапазоне 3–5 лет (год = текущий − 4, но не раньше 1990);
+  - `engine_cc=1500`, `engine_power_hp=150`;
+  - `purchase_price=10_000`, `currency="USD"`, `freight_type="standard"`.
+- **Проверяет:**
+  - наличие ключей `breakdown`, `meta`, `request`;
+  - полный набор полей в `breakdown` (`purchase_price_rub`, `duties_rub`, `utilization_fee_rub`, `customs_services_rub`, `era_glonass_rub`, `freight_rub`, `country_expenses_rub`, `company_commission_rub`, `total_rub`), все ≥ 0;
+  - базовые неравенства: `purchase_price_rub > 0`, `duties_rub > 0`, `total_rub > purchase_price_rub`;
+  - диапазон `company_commission_rub` (условно 10–200 тыс. RUB) как грубую регрессию 1000 USD по статичному курсу;
+  - наличие `USD_RUB` в `meta.rates_used` и, если `meta.detailed_rates_used` присутствует, равенство `effective_rate ≈ base_rate` и `bank_commission_percent ≈ 0`.
+
+Это — **регрессионный тест** для режима без банковской комиссии.
+
+#### 2. `test_calculate_with_bank_commission_increases_costs`
+
+- **Профили комиссий:**
+  - A: `commissions_company_only.yml` (без банкомиссии);
+  - B: `commissions_with_bank.yml` (с ненулевым `bank_commission.percent`, сейчас 2%).
+- **Payload:** тот же, что в первом тесте.
+- **Проверяет:**
+  - идентичность набора ключей в `breakdown` между профилями A и B;
+  - рост валютно-зависимых полей при включении bank_commission:
+    - `purchase_price_rub`, `country_expenses_rub`, `freight_rub`, `company_commission_rub`, `total_rub` из профиля B строго больше, чем в A;
+  - инварианты по логике пошлин и возрасту: если `meta.age_category` и `meta.duty_mode` присутствуют, они совпадают между A и B (bank_commission не должна менять выбор банда по пошлинам);
+  - для `USD_RUB`:
+    - `base_rate` из профилей A и B совпадает с точностью до небольшого допуска;
+    - `effective_rate` в профиле B строго больше, чем `effective_rate`/`base_rate` в A;
+    - `bank_commission_percent` в A ≈ 0, а в B — неотрицательный (по данным конфига);
+  - в списке `meta.warnings` не появляется специального кода `BANK_COMMISSION_HIGH` (текущая реализация ещё не добавляет такой warning для допустимых процентов).
+
+Этот тест фиксирует **монотонный рост валютных компонент** и `total_rub` при включении банковской комиссии и показывает, что основная логика расчёта (пошлины, возраст, утильсбор) при этом не меняется.
+
+#### 3. `test_calculate_with_high_bank_commission_triggers_warning`
+
+- **Профили комиссий:**
+  - A: `commissions_company_only.yml`;
+  - B: `commissions_with_bank.yml`, модифицированный в фикстуре `commissions_profile_with_bank_high` так, чтобы `percent > warn_above` (например, warn_above=10.0, percent=15.0).
+- **Payload:** тот же.
+- **Проверяет:**
+  - рост `total_rub` и `purchase_price_rub` в профиле B по сравнению с A;
+  - рост `effective_rate` для `USD_RUB` при сохранении одинакового `base_rate`;
+  - если `bank_commission_percent` присутствует в метаданных, он строго больше 5.0 (помогаем поймать сильно завышенные значения);
+  - `meta.warnings` остаётся списком (структурно корректен), но пока **не навязывает** наличие конкретного warning-кода по банку, чтобы не фиксировать недореализованную бизнес-логику.
+
+При появлении в движке явного warning-кода (например, `BANK_COMMISSION_HIGH`) данный тест можно будет ужесточить: проверить конкретный `code` в `meta.warnings` и диапазон рекомендуемых значений на основе `meta.*` из конфига.
+
+### Дополнительный регрессионный тест для `/api/meta`
+
+В `tests/functional/test_api.py` добавлен тест:
+
+- `test_meta_notes_include_commission_info`
+  - GET `/api/meta`;
+  - проверяет, что в ответе есть поле `notes`, и хотя бы одна запись содержит упоминание комиссий (по подстроке `"комисс"` или `"commission"`).
+
+Этот тест служит лёгким регрессионным якорем, что текстовая документация в API продолжает объяснять политику комиссий для пользователя.
+
+### Связь с RPG и SPEC
+
+- Описание `bank_commission` в `docs/SPECIFICATION.md` синхронизировано с фактическим поведением движка и тестами:
+  - комиссия влияет только через надбавку к валютным курсам;
+  - не добавляет новых полей breakdown в JSON;
+  - её эффект виден в `breakdown.total_rub` и в полях `meta.rates_used`/`meta.detailed_rates_used`.
+- В `docs/rpg.yaml` узлы `app_calculation`, `config_data` и `tests` уже отражают наличие:
+  - секции `bank_commission` в `config/commissions.yml`;
+  - вспомогательных тестовых конфигов `commissions_company_only.yml` и `commissions_with_bank.yml`;
+  - функциональных тестов API (`tests/functional/test_api.py`, `tests/functional/test_engine.py`) и теперь — отдельного файла `tests/functional/test_api_bank_commission.py`.
+
+### Инварианты регрессии
+
+Новые функциональные тесты не меняют и дополнительно защищают следующие инварианты:
+
+- Структура ответа `/api/calculate` (`breakdown`, `meta`, `request`) и состав полей `breakdown` не меняются.
+- Для режима без банковской комиссии (`commissions_company_only.yml`) поведение совпадает с существующими тестами `tests/functional/test_api.py`, `tests/functional/test_engine.py` и `test_sprint4_duties.py`.
+- Специальный кейс ОАЭ (`uae`): `company_commission_rub` остаётся 0 во всех профилях комиссий.
+- Включение банковской комиссии не меняет выбор duty‑бандов и возрастных категорий — только пересчитывает валютные компоненты через `effective_rate`.

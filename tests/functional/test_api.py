@@ -98,6 +98,18 @@ def test_get_meta_backward_compatibility(client: TestClient) -> None:
     assert len(data["age_categories"]) == 3  # lt3, 3_5, gt5
 
 
+def test_meta_notes_include_commission_info(client: TestClient) -> None:
+    """Meta notes should contain information about commission policy (regression)."""
+    response = client.get("/api/meta")
+    assert response.status_code == 200
+    data = response.json()
+
+    notes = data.get("notes") or []
+    # At least one note should mention commission explicitly (Russian or English spelling).
+    joined = " ".join(str(n) for n in notes).lower()
+    assert "комисс" in joined or "commission" in joined
+
+
 def test_calculate_japan_basic(client: TestClient) -> None:
     """
     Basic calculation test for Japan with engine_power_hp field.
