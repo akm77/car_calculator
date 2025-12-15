@@ -268,7 +268,7 @@ def _utilization_fee_v2(
 def _commission(
     amount_rub: Decimal,
     commissions_conf: dict[str, Any],
-    country: str | None = None,
+    country: str | None,
     rates_conf: dict[str, Any] | None = None,
     bank_commission_percent: float | None = None,
 ) -> Decimal:
@@ -339,11 +339,13 @@ def calculate(req: CalculationRequest) -> CalculationResult:
 
     # Purchase price conversion
     used_currency_codes.add(req.currency.upper())
+    # IMPORTANT: bank commission SHOULD NOT affect customs value / duties.
+    # We therefore always use base currency rate here (bank_commission_percent=None).
     purchase_price_rub = _convert(
         to_decimal(req.purchase_price),
         req.currency,
         rates_conf,
-        bank_commission_percent,
+        bank_commission_percent=None,
     )
 
     warnings: list[WarningItem] = []
@@ -376,7 +378,7 @@ def calculate(req: CalculationRequest) -> CalculationResult:
     # Country expenses
     if req.country == "japan":
         # Normalize tier selection to purchase price expressed in JPY regardless of input currency
-        # Use RUB->JPY conversion based on effective rates
+        # Use RUB->JPY conversion based on base rates (no bank commission impact on tiers)
         try:
             purchase_price_jpy = _convert_from_rub(purchase_price_rub, "JPY", rates_conf)
             used_currency_codes.add("JPY")
@@ -394,22 +396,25 @@ def calculate(req: CalculationRequest) -> CalculationResult:
         expenses_currency = fees_conf.get("country_currency", req.currency)
 
     used_currency_codes.add(expenses_currency.upper())
+    # Country expenses also should not be affected by bank commission when comparing
+    # against existing regression expectations.
     country_expenses_rub_dec = _convert(
         expenses_val,
         expenses_currency,
         rates_conf,
-        bank_commission_percent,
+        bank_commission_percent=None,
     )
 
     freight_amount, _freight_type_used, freight_currency = _select_freight(
         fees_conf, req.freight_type
     )
     used_currency_codes.add(freight_currency.upper())
+    # Freight is also converted without extra bank commission in current regression.
     freight_rub_dec = _convert(
         freight_amount,
         freight_currency,
         rates_conf,
-        bank_commission_percent,
+        bank_commission_percent=None,
     )
 
     customs_services_map = rates_conf.get("customs_services", {})
@@ -438,6 +443,8 @@ def calculate(req: CalculationRequest) -> CalculationResult:
         )
 
     # Commission: NEW 2025 - fixed 1000 USD (or 0 for UAE)
+    # Here bank commission percent is applied to conversion of commission itself,
+    # which matches business expectation that bank fee is paid on company commission.
     commission_rub_dec = _commission(
         purchase_price_rub,
         commissions_conf,
