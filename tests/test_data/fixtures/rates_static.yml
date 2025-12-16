@@ -1,0 +1,16 @@
+# Статические курсы для тестов (не меняются со временем)
+# Используются для детерминированных unit-тестов
+# НЕ ИСПОЛЬЗОВАТЬ в production!
+
+currencies:
+  USD_RUB: 90.0
+  EUR_RUB: 100.0
+  JPY_RUB: 0.6
+  CNY_RUB: 12.5
+  AED_RUB: 24.5
+
+meta:
+  description: "Фиксированные курсы для unit-тестов"
+  last_updated: "2025-12-16"
+  note: "Эти курсы используются для расчёта expected values в cases.yml"
+

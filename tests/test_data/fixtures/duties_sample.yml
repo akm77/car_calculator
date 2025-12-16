@@ -1,0 +1,57 @@
+# Упрощённая структура пошлин для unit-тестов
+# Копия из config/duties.yml для изоляции тестов
+
+age_categories:
+  lt3:
+    value_brackets:
+      - max_customs_value_eur: 8500
+        percent: 0.54
+        min_rate_eur_per_cc: 2.5
+      - max_customs_value_eur: 16700
+        percent: 0.48
+        min_rate_eur_per_cc: 3.5
+      - max_customs_value_eur: 42300
+        percent: 0.48
+        min_rate_eur_per_cc: 5.5
+      - max_customs_value_eur: 84500
+        percent: 0.48
+        min_rate_eur_per_cc: 7.5
+      - max_customs_value_eur: 169000
+        percent: 0.48
+        min_rate_eur_per_cc: 15
+      - percent: 0.48
+        min_rate_eur_per_cc: 20
+
+  "3_5":
+    bands:
+      - max_cc: 1000
+        rate_eur_per_cc: 1.5
+      - max_cc: 1500
+        rate_eur_per_cc: 1.7
+      - max_cc: 1800
+        rate_eur_per_cc: 2.5
+      - max_cc: 2300
+        rate_eur_per_cc: 2.7
+      - max_cc: 3000
+        rate_eur_per_cc: 3.0
+      - rate_eur_per_cc: 3.6
+
+  gt5:
+    bands:
+      - max_cc: 1000
+        rate_eur_per_cc: 3.0
+      - max_cc: 1500
+        rate_eur_per_cc: 3.2
+      - max_cc: 1800
+        rate_eur_per_cc: 3.5
+      - max_cc: 2300
+        rate_eur_per_cc: 4.8
+      - max_cc: 3000
+        rate_eur_per_cc: 5.0
+      - rate_eur_per_cc: 5.7
+
+meta:
+  description: "Упрощённая конфигурация пошлин для быстрых unit-тестов"
+  source: "config/duties.yml"
+  last_updated: "2025-12-16"
+
