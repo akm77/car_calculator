@@ -336,9 +336,18 @@ def calculate(req: CalculationRequest) -> CalculationResult:
 
     # Purchase price conversion
     used_currency_codes.add(req.currency.upper())
-    # IMPORTANT: bank commission SHOULD NOT affect customs value / duties.
-    # We therefore always use base currency rate here (bank_commission_percent=None).
+    # Bank commission affects the purchase price that user pays
+    # (per SPEC § 4.5.3: bank commission affects all real currency payments including purchase_price_rub)
     purchase_price_rub = _convert(
+        to_decimal(req.purchase_price),
+        req.currency,
+        rates_conf,
+        bank_commission_percent=bank_commission_percent,
+    )
+
+    # For customs duty calculation, use base purchase price without bank commission
+    # (customs value must use official rates, not inflated by bank fees)
+    purchase_price_for_customs = _convert(
         to_decimal(req.purchase_price),
         req.currency,
         rates_conf,
@@ -365,7 +374,7 @@ def calculate(req: CalculationRequest) -> CalculationResult:
         duties_conf,
         rates_conf,
         warnings,
-        purchase_price_rub,
+        purchase_price_for_customs,  # Use customs value without bank commission
     )
     # Duty always uses EUR
     used_currency_codes.add("EUR")
