@@ -54,6 +54,7 @@ mypy = ">=1.10.0"
 ruff = ">=0.5.0"
 httpx = ">=0.27.0"
 pillow = "^11.3.0"
+pytest-cov = "^7.0.0"
 
 [build-system]
 requires = ["poetry-core>=2.1.3,<3.0.0"]
@@ -129,6 +130,9 @@ skip-magic-trailing-comma = false
 [tool.pytest.ini_options]
 addopts = "-q"
 python_files = "test_*.py"
+markers = [
+    "functional: marks tests as functional tests (integration/API tests)",
+]
 
 # ---------------- Mypy ----------------
 [tool.mypy]
