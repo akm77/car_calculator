@@ -18,8 +18,8 @@ from .models import (
     CalculationRequest,
     CalculationResult,
     CostBreakdown,
-    WarningItem,
     RateUsage,
+    WarningItem,
 )
 from .rounding import quantize4, round_rub, to_decimal
 from .tariff_tables import (
@@ -202,10 +202,7 @@ def _compute_duty(
 
 
 def _utilization_fee_v2(
-    age_category: str,
-    engine_cc: int,
-    engine_power_hp: int,
-    rates_conf: dict[str, Any]
+    age_category: str, engine_cc: int, engine_power_hp: int, rates_conf: dict[str, Any]
 ) -> tuple[Decimal, float]:
     """
     Новая система утильсбора (2025): 2D-таблица по объёму и мощности.
@@ -386,9 +383,7 @@ def calculate(req: CalculationRequest) -> CalculationResult:
             purchase_price_jpy = to_decimal(req.purchase_price)  # fallback to raw value
         if req.currency.upper() != "JPY":
             # Keep soft warning for UX, but compute tiers correctly
-            warnings.append(
-                WarningItem(code="JAPAN_CURRENCY", message=WARN_JAPAN_TIER_CURRENCY)
-            )
+            warnings.append(WarningItem(code="JAPAN_CURRENCY", message=WARN_JAPAN_TIER_CURRENCY))
         expenses_val = _japan_country_expenses(fees_conf, purchase_price_jpy)
         expenses_currency = fees_conf.get("country_currency", "JPY")
     else:
@@ -462,6 +457,7 @@ def calculate(req: CalculationRequest) -> CalculationResult:
         + customs_services_rub_dec
         + freight_rub_dec
         + country_expenses_rub_dec
+        + era_glonass_rub_dec
         + commission_rub_dec
     )
 
