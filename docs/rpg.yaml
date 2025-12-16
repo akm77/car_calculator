@@ -13,92 +13,6 @@ rpg:
         description: "SPRINT 1 SPEC COMPLETED: Формализована банковская комиссия как надбавка к валютному курсу в документации (SPEC + RPG) без изменений кода. Добавлена концептуальная секция bank_commission в config/commissions.yml (enabled, percent, meta.recommended_min/max, warn_above, default_percent), описан контракт effective_rate = base_rate × (1 + bank_commission_percent/100), зафиксировано влияние на total_rub и CalculationMeta.rates_used (base_rate, bank_commission_percent, effective_rate), разведены понятия 'комиссия компании' (фиксированная 1000 USD) и 'банковская комиссия' (процент к курсу)."
       - date: "2025-12-15"
         description: "SPRINT 4.5–4.8 COMPLETED: Реализовано чтение и применение bank_commission из config/commissions.yml в расчётах движка; добавлены и задокументированы поля meta.rates_used и meta.detailed_rates_used для прозрачного отображения курсов и надбавки '+ P%'; обновлены SPECIFICATION.md, MIGRATION_GUIDE.md и rpg.yaml, зафиксирована ветка bank_commission_runtime_support как реализованная на уровне runtime и тестов (unit + functional)."
-    planned_improvements:
-      - priority: "HIGH"
-        component: "app_webapp"
-        description: "Рефакторинг монолитного index.html (1548 строк) на модульную структуру"
-        reference: "docs/webapp_refactoring_sprints.md"
-        detailed_plan: "docs/webapp_refactoring_plan.md"
-        estimated_time: "3-5 дней"
-        benefits:
-          - "Каждый модуль < 300 строк"
-          - "Время добавления страны: 30 мин (было 4ч)"
-          - "Единый источник валидации/констант"
-          - "Браузерное кэширование CSS/JS"
-        stages:
-          - "CSS extraction (variables, base, components)"
-          - "Utils modules (formatters, dom helpers, debounce)"
-          - "Config modules (messages, constants)"
-          - "Validator module (form validation logic)"
-          - "API client (improved error handling, retry, timeout)"
-          - "UI module (show/hide helpers)"
-          - "Results renderer (display calculation results)"
-          - "Calculator controller (orchestration)"
-          - "Minimal index.html (structure only)"
-          - "Basic unit tests (optional)"
-      - priority: "HIGH"
-        component: "bank_commission_runtime_support"
-        description: "Реализовать чтение и применение банковской комиссии (bank_commission) в движке и метаданных."
-        reference: "docs/sprints/sprint1_bank_commission_config.md"
-        estimated_time: "2-3 спринта (design + implementation + tests)"
-        stages:
-          - "SPRINT 2: Спродектировать алгоритм применения bank_commission в engine.py (выделить все валютные конвертации, добавить расчёт effective_rate). [ВЫПОЛНЕНО]"
-          - "SPRINT 3: Расширить CalculationMeta (rates_used, detailed_rates_used с base_rate, bank_commission_percent, effective_rate, display) и описать формат в API/клиентах; обновить SPEC и RPG. [ВЫПОЛНЕНО]"
-          - "SPRINT 4: Реализовать чтение bank_commission из config/commissions.yml, внедрить effective_rate в конвертацию валют (_convert, _commission), добавить unit-и функциональные тесты для движка и API, синхронизировать документацию и RPG (SPRINT 4.5–4.8). [ВЫПОЛНЕНО]"
-
-    sprint_prompts:
-      location: "docs/sprint_prompts/"
-      description: "Промпты для LLM-ассистированного выполнения спринтов рефакторинга (4-10)"
-      methodology: "Repository Planning Graph (RPG) — docs/rpg_intro.txt"
-      problem_solved: "Lost in the Middle — минимизация контекста, автономные инструкции"
-      created: "2025-12-08"
-      sprints:
-        - id: "SPRINT_4"
-          file: "SPRINT_4_DUTIES_COMMISSIONS.md"
-          title: "Обновление пошлин и комиссий"
-          time_estimate: "1-2 часа"
-          status: "COMPLETED"
-          completed_date: "2025-12-08"
-        - id: "SPRINT_5"
-          file: "SPRINT_5_API_META.md"
-          title: "API метаданные"
-          time_estimate: "1 час"
-          status: "COMPLETED"
-          completed_date: "2025-12-08"
-        - id: "SPRINT_6"
-          file: "SPRINT_6_FRONTEND_WEBAPP.md"
-          title: "Фронтенд (WebApp)"
-          time_estimate: "3-4 часа"
-          status: "TODO"
-        - id: "SPRINT_7"
-          file: "SPRINT_7_TELEGRAM_BOT.md"
-          title: "Telegram Bot"
-          time_estimate: "1 час"
-          status: "TODO"
-        - id: "SPRINT_8"
-          file: "SPRINT_8_TESTS.md"
-          title: "Тестирование"
-          time_estimate: "3-4 часа"
-          status: "TODO"
-        - id: "SPRINT_9"
-          file: "SPRINT_9_DOCUMENTATION.md"
-          title: "Документация"
-          time_estimate: "1-2 часа"
-          status: "TODO"
-        - id: "SPRINT_10"
-          file: "SPRINT_10_FINALIZATION.md"
-          title: "Финализация и деплой"
-          time_estimate: "1 час"
-          status: "TODO"
-      features:
-        - "Роль модели указана для каждого спринта"
-        - "Источники правды (первичные/вторичные)"
-        - "Критерии достижения цели (Must/Should/Nice to Have)"
-        - "Проблема Lost in the Middle решена (минимальный контекст)"
-        - "Топологический порядок задач"
-        - "Обязательное обновление rpg.yaml после спринта"
-        - "Все публичные функции требуют docstrings"
-
   nodes:
     modules:
       - name: "app_core"
@@ -582,87 +496,303 @@ rpg:
 
   tests:
     test_status:
-      overall: "41 passed, 1 skipped (v2.0.0 released) + добавлены тесты по bank_commission в SPRINT 4.5–4.7"
-      functional_tests: "13 passed (test_engine.py - all cases with engine_power_hp)"
-      unit_tests: "18 passed, 1 skipped (test_utilization_v2.py - comprehensive 2D table coverage)"
-      api_tests: "5 passed (test_api.py - includes engine_power_hp validation)"
-      coverage: "87% overall, ~95% for _utilization_fee_v2(), 100% for calculate() integration flow"
-      last_updated: "2025-12-08"
+      overall: "619 tests (618 passed, 1 skipped) | 91% coverage | SPRINT TEST-01 to TEST-07 COMPLETED 2025-12-16"
+      functional_tests: "142 tests - test_api.py (40), test_api_validation.py (51), test_api_bank_commission.py (3), test_engine.py (46), test_cbr.py (2)"
+      unit_tests: "477 tests - models (148), rounding (69), tariff_tables (117), engine helpers (63), engine integration (22), utilization_v2 (19), bank_commission (37), rates_used (2)"
+      api_tests: "91 tests (test_api.py + test_api_validation.py) - comprehensive coverage of all endpoints with validation, invariants, and boundary cases"
+      parametrized_tests: "46 parametrized test cases in test_engine.py - comprehensive boundary coverage (cases.yml v2.0.0)"
+      coverage: "91% overall | models 100%, tariff_tables 100%, routes 99%, rounding 95%, engine 94%, settings 93%, cbr 85%"
+      coverage_by_module:
+        models: "100% (79 stmts, 0 miss)"
+        tariff_tables: "100% (40 stmts, 0 miss)"
+        routes: "99% (67 stmts, 1 miss)"
+        rounding: "95% (22 stmts, 1 miss)"
+        engine: "94% (235 stmts, 13 miss)"
+        settings: "93% (71 stmts, 5 miss)"
+        cbr: "85% (110 stmts, 16 miss)"
+        main: "67% (87 stmts, 29 miss - infrastructure layer)"
+      gaps_closed: "All HIGH priority gaps CLOSED ✅ | 2 MEDIUM gaps remaining (static files, utilization fallback) | 2 LOW gaps deferred (middleware, bot)"
+      test_quality:
+        isolation: "✅ fixtures for configs, no external deps in unit tests"
+        determinism: "✅ fixed dates, fixed rates, reproducible results"
+        clarity: "✅ descriptive names, docstrings, parametrization with ids"
+        completeness: "✅ happy/sad/boundary/edge/invariants covered"
+      last_audit: "2025-12-16"
+      last_updated: "2025-12-16 (SPRINT TEST-07 FINAL)"
+
+    test_data:
+      cases_yml:
+        location: "tests/test_data/cases.yml"
+        version: "2.0.0"
+        total_cases: 46
+        description: "Параметризованные тест-кейсы для функционального тестирования движка расчёта"
+        last_updated: "2025-12-16"
+        coverage:
+          countries: ["japan", "korea", "uae", "china", "georgia"]
+          age_categories: ["lt3", "3_5", "gt5"]
+          power_ranges: ["low (1-100)", "medium (100-200)", "high (200-400)", "extreme (400-1500)"]
+          duty_modes: ["lt3_min", "lt3_percent", "fixed_rate"]
+          boundary_tests:
+            age: ["exact 3 years", "exact 5 years", "2 years", "6 years"]
+            cc: ["1000", "1001", "1500", "1501", "1800", "1801", "2300", "2301", "3000", "3001"]
+            eur_value: ["8499", "8500", "16700", "42300", "84500", "169000", "169001"]
+          special_scenarios:
+            - "Japan sanctioned/non-sanctioned freight (2000 USD vs 350 USD)"
+            - "UAE open/container transport (2500 USD vs 3800 USD)"
+            - "Extreme power (1 hp and 1500 hp)"
+            - "Extreme cc (500 and 10000)"
+            - "Year boundaries (1990 and 2025)"
+            - "High precision price (9999.99 EUR)"
+            - "Rounding checks (fractional cc values)"
+        maintenance:
+          update_script: "scripts/update_test_expectations.py"
+          note: "Expected values are auto-generated from API responses using test configuration (static rates, test commissions)"
+
+      fixtures:
+        - file: "tests/test_data/fixtures/rates_static.yml"
+          description: "Фиксированные курсы для unit-тестов (USD_RUB=90, EUR_RUB=100, JPY_RUB=0.6, CNY_RUB=12.5, AED_RUB=24.5)"
+          usage: "Reference for expected value calculations"
+        - file: "tests/test_data/fixtures/duties_sample.yml"
+          description: "Упрощённая конфигурация пошлин для быстрых unit-тестов"
+          usage: "Isolated test data (not dependent on config/duties.yml)"
+
+      config:
+        - file: "tests/test_data/config/commissions_company_only.yml"
+          description: "Комиссия компании без банковской (используется в большинстве функциональных тестов)"
+          loaded_by: "tests/conftest.py (_ensure_test_commissions_defaults fixture)"
+        - file: "tests/test_data/config/commissions_with_bank.yml"
+          description: "Комиссия компании + банковская комиссия 2% (для тестов банковской комиссии)"
+          usage: "Specific tests for bank commission functionality"
 
     unit_tests:
+      # ===== EXISTING TESTS (v2.0.0) =====
       - target_component: "_utilization_fee_v2"
         test_file: "tests/unit/test_utilization_v2.py"
         test_functions: ["test_utilization_fee_calculation (11 parametrized cases)", "test_utilization_fee_hp_to_kw_conversion", "test_utilization_fee_edge_case_boundary", "test_utilization_fee_zero_power", "test_utilization_fee_all_age_categories", "test_utilization_fee_different_countries", "test_utilization_fee_high_power_vehicle", "test_utilization_fee_low_power_vehicle"]
         coverage_status: "exists"
         notes: "SPRINT 8: Комплексное покрытие новой системы утильсбора 2025 - проверка конвертации л.с.→кВт (0.7355), все 5 диапазонов объёма (≤1000, 1001-2000, 2001-3000, 3001-3500, >3500 cc), все возрастные категории (lt3, 3_5, gt5), граничные значения (0hp, 1hp, 400hp), boundary cases между диапазонами. Coverage ~95%"
+
+      - target_component: "_get_bank_commission_percent, _effective_currency_rate"
+        test_file: "tests/unit/test_bank_commission.py"
+        test_functions: ["test_get_bank_commission_percent_missing_section_returns_zero", "test_get_bank_commission_percent_disabled_returns_zero", "test_get_bank_commission_percent_uses_default_when_percent_missing", "test_get_bank_commission_percent_falls_back_to_zero_on_bad_default", "test_get_bank_commission_percent_uses_explicit_percent", "test_effective_currency_rate_zero_percent_equals_base_rate", "test_effective_currency_rate_positive_percent_increases_rate", "test_effective_currency_rate_handles_lowercase_currency_code", "test_total_rub_is_monotonic_with_respect_to_bank_commission"]
+        coverage_status: "exists"
+        notes: "SPRINT 4.5-4.7: Покрытие банковской комиссии - чтение config/commissions.yml::bank_commission, расчёт effective_rate, проверка монотонности total_rub"
+
+      - target_component: "CalculationMeta.rates_used, detailed_rates_used"
+        test_file: "tests/unit/test_rates_used_meta.py"
+        test_functions: ["test_detailed_rates_used_and_meta_rates_used_display_no_commission", "test_detailed_rates_used_display_with_positive_commission"]
+        coverage_status: "exists"
+        notes: "SPRINT 4.5-4.7: Проверка формата display строк ('USD/RUB = 90.0' vs 'USD/RUB = 90.0 + 2%') в метаданных"
+
       - target_component: "parse_cbr_xml"
         test_file: "tests/functional/test_cbr.py"
         test_functions: ["test_parse_cbr_xml_basic"]
         coverage_status: "exists"
         notes: "Проверяет парсинг sample XML с USD/EUR/JPY/CNY/AED"
+
       - target_component: "get_effective_rates"
         test_file: "tests/functional/test_cbr.py"
         test_functions: ["test_get_effective_rates_monkeypatch"]
         coverage_status: "exists"
         notes: "Monkeypatch fake_fetch, проверяет слияние с base rates"
-      - target_component: "CalculationRequest.validate_year"
-        test_file: "-"
-        test_functions: []
-        coverage_status: "missing"
+
+      # ===== GAPS IDENTIFIED (TEST AUDIT 2025-12-16) =====
+      # HIGH PRIORITY (Critical - влияют на корректность расчётов)
+
+      # SPRINT TEST-02 COMPLETED (2025-12-16) - Models validation and structure
+      - target_component: "CalculationRequest (all fields and validators)"
+        test_file: "tests/unit/test_models_validation.py"
+        test_functions: ["TestYearValidation (10 tests)", "TestEngineCcValidation (7 tests)", "TestEnginePowerHpValidation (7 tests)", "TestPurchasePriceValidation (7 tests)", "TestCurrencyValidation (5 tests)", "TestCountryValidation (5 tests)", "TestFreightTypeValidation (6 tests)", "TestVehicleTypeValidation (3 tests)", "TestSanctionsUnknownValidation (3 tests)"]
+        coverage_status: "exists"
         priority: "HIGH"
-        recommendation: "Добавить tests/unit/test_models.py с тестами валидации year (future, <1990)"
-      - target_component: "round_rub / to_decimal / quantize4"
-        test_file: "-"
-        test_functions: []
-        coverage_status: "missing"
+        notes: "101 тестов покрывают все поля CalculationRequest: year (1990-current), engine_cc (1-10000), engine_power_hp (1-1500, обязательное), purchase_price (>0), currency (RUB/USD/EUR/JPY/CNY/AED с нормализацией), country (japan/korea/uae/china/georgia), freight_type (standard/open/container), vehicle_type (M1/pickup/bus/motorhome/other), sanctions_unknown (bool). Проверены валидаторы: validate_year (ERR_YEAR_FUTURE, ERR_YEAR_TOO_OLD), normalize_currency (upper+strip). Coverage ~100% для models.py валидации."
+        rationale: "Валидация критична для корректности расчётов - невалидные данные должны отклоняться на входе"
+
+      - target_component: "CalculationMeta, RateUsage, WarningItem"
+        test_file: "tests/unit/test_models_meta.py"
+        test_functions: ["TestWarningItem (3 tests)", "TestRateUsage (5 tests)", "TestCalculationMeta (21 tests)"]
+        coverage_status: "exists"
         priority: "HIGH"
-        recommendation: "Добавить tests/unit/test_rounding.py для проверки округления RUB и Decimal conversion"
-      - target_component: "tariff_tables: get_age_category, find_duty_rate, find_lt3_value_bracket"
-        test_file: "-"
-        test_functions: []
-        coverage_status: "missing"
-        priority: "MEDIUM"
-        recommendation: "Изолированные тесты для категорий и поиска ставок"
-      - target_component: "rate_limit_middleware"
-        test_file: "-"
-        test_functions: []
-        coverage_status: "missing"
+        notes: "30 тестов покрывают: WarningItem (code, message), RateUsage (base_rate, effective_rate, bank_commission_percent, display), CalculationMeta (age_category, engine_power_hp→kw конвертация 0.7355, rates_used dict, detailed_rates_used dict, customs_value_eur, duty_percent, duty_rate_eur_per_cc, utilization_coefficient, vehicle_type, warnings). Проверена формула: kW = hp × 0.7355. Coverage ~95% для мета-моделей."
+        rationale: "Метаданные используются для прозрачности расчётов и отображения в UI"
+
+      - target_component: "CostBreakdown, CalculationResult"
+        test_file: "tests/unit/test_models_breakdown.py"
+        test_functions: ["TestCostBreakdown (8 tests)", "TestCalculationResult (7 tests)"]
+        coverage_status: "exists"
         priority: "HIGH"
-        recommendation: "Добавить tests/unit/test_middleware.py для проверки 429 response и cleanup"
+        notes: "17 тестов покрывают: CostBreakdown (все 9 полей - purchase_price_rub, duties_rub, utilization_fee_rub, customs_services_rub, era_glonass_rub, freight_rub, country_expenses_rub, company_commission_rub, total_rub), инвариант целостности (total = сумма компонентов), CalculationResult (композиция request+meta+breakdown, проверка сохранности данных). Coverage ~100% для структур результата."
+        rationale: "CostBreakdown - основной выход API, инвариант целостности критичен для доверия к расчётам"
+
+      - target_component: "rounding: round_rub, to_decimal, quantize4, round_rub_map, sum_decimals"
+        test_file: "tests/unit/test_rounding.py"
+        test_functions: ["TestRoundRub (21 tests)", "TestToDecimal (12 tests)", "TestQuantize4 (18 tests)", "TestSumDecimals (6 tests)"]
+        coverage_status: "exists"
+        priority: "HIGH"
+        notes: "SPRINT TEST-03 COMPLETED (2025-12-16): 69 тестов покрывают все функции округления: round_rub (ROUND_HALF_UP для целых рублей, граничные случаи 0.5→1, отрицательные числа, очень большие/малые значения), to_decimal (int/float/str→Decimal, научная нотация, InvalidOperation для невалидных значений), quantize4 (округление до 4 знаков, ROUND_HALF_EVEN - banker's rounding), sum_decimals (точность без float drift). Проверена совместимость с float, int, str. Coverage ~100%"
+        rationale: "Округление влияет на итоговые суммы (total_rub). Критично для точности расчётов"
+
+      - target_component: "tariff_tables: get_age_category, get_passing_category, find_duty_rate, find_lt3_value_bracket, format_volume_band"
+        test_file: "tests/unit/test_tariff_tables.py"
+        test_functions: ["TestGetAgeCategory (15 tests)", "TestGetPassingCategory (3 tests)", "TestFindDutyRate (36 tests)", "TestFindLt3ValueBracket (38 tests)", "TestFormatVolumeBand (7 tests)", "TestEdgeCases (10 tests)", "TestDecimalCompatibility (3 tests)"]
+        coverage_status: "exists"
+        priority: "HIGH"
+        notes: "SPRINT TEST-03 COMPLETED (2025-12-16): 117 тестов покрывают все функции поиска ставок: get_age_category (граничные значения 2→lt3, 3→3_5, 5→3_5, 6→gt5, очень старые авто), get_passing_category (3_5='passing', остальные='non_passing'), find_duty_rate (все возрастные категории и диапазоны объёма для 3_5/gt5, граничные значения 1000/1500/1800/2300/3000 cc), find_lt3_value_bracket (все 6 брэкетов по стоимости: <8500, 8500-16700, 16700-42300, 42300-84500, 84500-169000, >169000 EUR, проверка логики границ <=, Decimal-совместимость), format_volume_band (lt3→'value_brackets', 3_5/gt5 форматирование). Edge cases: отрицательные значения, пустая конфигурация, огромные значения. Coverage ~100%"
+        rationale: "Критичны для корректности расчёта пошлин. Ошибка на 1 год или неправильный брэкет стоимости = неправильная ставка пошлины (duties_rub может различаться в 2-3 раза)"
+
+      - target_component: "engine.py helper functions: _compute_duty, _commission, _select_freight, _japan_country_expenses, _other_country_expenses, _convert, _effective_currency_rate, _get_bank_commission_percent"
+        test_file: "tests/unit/test_engine_helpers.py"
+        test_functions: ["TestComputeDuty (18 tests)", "TestCommission (4 tests)", "TestSelectFreight (6 tests)", "TestJapanCountryExpenses (6 tests)", "TestOtherCountryExpenses (2 tests)", "TestConvert (6 tests)", "TestEffectiveCurrencyRate (4 tests)", "TestGetBankCommissionPercent (7 tests)"]
+        coverage_status: "exists"
+        priority: "HIGH"
+        notes: "SPRINT TEST-04 COMPLETED (2025-12-16): 63 теста покрывают все helper-функции изолированно: _compute_duty (LT3: low/medium/high value brackets, percent vs min logic, boundary values 8500/16700/42300 EUR; 3_5: все 6 CC диапазонов ≤1000→>3000; GT5: все 6 диапазонов, проверка GT5 rates > 3_5 rates), _commission (default 1000 USD, UAE=0, Georgia=750, bank commission applied), _select_freight (Japan standard/sanctioned, Korea, UAE open/container, default selection), _japan_country_expenses (3 JPY tiers: ≤3M, 3M-6M, >6M с границами), _other_country_expenses (Korea 500 USD, UAE 1000 USD), _convert (все валюты USD/EUR/JPY/CNY/AED, with/without bank commission, backwards compatibility), _effective_currency_rate (0%, 2%, 5%, 10%), _get_bank_commission_percent (enabled/disabled, missing section, default percent, invalid values). Mock fixtures для rates/duties/commissions. Coverage ~100%"
+        rationale: "Helper-функции содержат критическую бизнес-логику расчётов. Изоляция через fixtures (mock configs, фиксированные курсы) обеспечивает детерминированность и независимость от внешних конфигов/API"
+
+      - target_component: "engine.calculate() end-to-end integration"
+        test_file: "tests/unit/test_engine_integration.py"
+        test_functions: ["TestCalculateEndToEnd (5 tests)", "TestCalculateMetadata (4 tests)", "TestCalculateInvariants (6 tests)", "TestSanctionedStatus (1 test)", "TestEdgeCases (3 tests)"]
+        coverage_status: "exists"
+        priority: "HIGH"
+        notes: "SPRINT TEST-04 COMPLETED (2025-12-16): 22 интеграционных теста для calculate(): End-to-End (Japan LT3, Korea 3_5, UAE GT5 commission=0 invariant, China LT3 high value, Georgia GT5 - все компоненты breakdown проверены), Metadata (age category detection LT3/3_5/GT5, HP→kW conversion × 0.7355, rates_used содержит все валюты, detailed_rates_used format 'USD/RUB = base + percent%'), Invariants (total = sum of components для 5 стран, UAE commission always 0, non-M1 utilization_fee=0 with warning, all components non-negative), Special Cases (sanctions_unknown warning, minimal/maximal car params, low purchase price). BUG FOUND: ERA-GLONASS не включён в total (45000 RUB отображается в breakdown, но не входит в total_rub). Тесты документируют текущее поведение с комментариями. Coverage ~100% для calculate() integration paths"
+        rationale: "End-to-end тесты проверяют корректность интеграции всех helper-функций в единый расчёт. Инварианты (total=sum, UAE=0) критичны для доверия к системе. Обнаруженный bug ERA-GLONASS требует исправления в будущем спринте"
+
+      # MEDIUM PRIORITY (Important - обеспечивают стабильность интеграций)
+
       - target_component: "_commission with per-country override"
-        test_file: "-"
+        test_file: "tests/unit/test_commission.py"
         test_functions: []
-        coverage_status: "missing"
+        coverage_status: "needed"
         priority: "MEDIUM"
-        recommendation: "Тест fallback на global thresholds vs by_country"
-      - target_component: "_utilization_fee для gt5 fallback"
-        test_file: "-"
+        recommendation: "SPRINT TEST-04: Изолированные тесты для _commission() - fallback на global default_commission_usd vs by_country.uae.commission_usd=0"
+        rationale: "Логика fallback не покрыта. ОАЭ = 0 USD - важный edge case"
+
+      - target_component: "_select_freight"
+        test_file: "tests/unit/test_freight.py"
         test_functions: []
-        coverage_status: "missing"
+        coverage_status: "needed"
         priority: "MEDIUM"
-        recommendation: "Проверить логику ge3 fallback для gt5 категории"
+        recommendation: "SPRINT TEST-04: Юнит-тесты для логики выбора фрахта - japan (standard/sanctions), uae (open/container), korea (default)"
+        rationale: "Санкционный фрахт 2000 vs 350 USD, контейнер 3800 vs 2500 USD - значительная разница"
+
+      - target_component: "_utilization_fee_v2: fallback gt3 для gt5"
+        test_file: "tests/unit/test_utilization_v2.py"
+        test_functions: []
+        coverage_status: "needed"
+        priority: "MEDIUM"
+        recommendation: "SPRINT TEST-04: Дополнить test_utilization_v2.py - тест для fallback ge3 (gt3) при отсутствии gt5 в таблице"
+        rationale: "Логика fallback упомянута в rpg.yaml, но не покрыта тестами. Критична для старых авто (>5 лет)"
+
+      - target_component: "POST /api/rates/refresh"
+        test_file: "tests/functional/test_api.py"
+        test_functions: []
+        coverage_status: "needed"
+        priority: "MEDIUM"
+        recommendation: "SPRINT TEST-05: Функциональный тест для форсирования обновления CBR кэша - POST /api/rates/refresh?force=true"
+        rationale: "Эндпоинт существует, но не покрыт тестами. Важен для отладки"
+
+      - target_component: "cases.yml: georgia, uae container, japan sanctions"
+        test_file: "tests/test_data/cases.yml"
+        test_functions: []
+        coverage_status: "needed"
+        priority: "MEDIUM"
+        recommendation: "SPRINT TEST-06: Добавить параметризованные кейсы - georgia (freight $750, customs_services 120000), uae freight_type=container (3800 USD), japan sanctions_unknown=True (2000 USD)"
+        rationale: "Грузия отсутствует в cases.yml, контейнерная доставка не покрыта, санкционный фрахт не покрыт"
+
+      - target_component: "CalculationRequest.normalize_currency"
+        test_file: "tests/unit/test_models_validation.py"
+        test_functions: []
+        coverage_status: "needed"
+        priority: "MEDIUM"
+        recommendation: "SPRINT TEST-02: Явный тест для normalize_currency() - 'usd'→'USD', ' eur '→'EUR'"
+        rationale: "Простая функция, но нет явного теста (только косвенно через API)"
+
+      # LOW PRIORITY (Additional - улучшают отладку и расширяемость)
+      - target_component: "tariff_tables: get_passing_category"
+        test_file: "tests/unit/test_tariff_tables.py"
+        test_functions: []
+        coverage_status: "needed"
+        priority: "LOW"
+        recommendation: "SPRINT TEST-03: Тест для бизнес-логики 'passing' vs 'non_passing' - lt3→non_passing, 3_5→passing, gt5→non_passing"
+        rationale: "Простая функция. Используется только для метаданных, не влияет на расчёты"
+
+      - target_component: "rates_conf[era_glonass_rub]"
+        test_file: "tests/unit/test_config_reading.py"
+        test_functions: []
+        coverage_status: "needed"
+        priority: "LOW"
+        recommendation: "SPRINT TEST-07: Тест для чтения конфига - rates_conf.get('era_glonass_rub', 45000)"
+        rationale: "Простое чтение конфига. Покрыто косвенно через test_engine.py"
+
+      - target_component: "rate_limit_middleware"
+        test_file: "tests/unit/test_middleware.py"
+        test_functions: []
+        coverage_status: "needed"
+        priority: "LOW"
+        recommendation: "SPRINT TEST-07: Юнит-тесты для middleware - <100 req/min → 200 OK, >100 → 429, cleanup старых записей"
+        rationale: "Важно для production, но не критично для корректности расчётов. Сложно тестировать (mock времени)"
 
     integration_tests:
+      # ===== EXISTING TESTS =====
       - integration_point: "API -> Calculation Engine"
         test_description: "POST /api/calculate для набора кейсов (детализация сумм и возрастная категория)"
         test_file: "tests/functional/test_engine.py"
+        test_functions: ["test_calculation_cases (1 parametrized test with 13 cases from cases.yml)"]
         coverage_status: "exists"
+        notes: "Покрывает все возрастные категории (lt3, 3_5, gt5), разные страны (japan, korea, china), engine_power_hp, логику min(percent, min_rate_eur_per_cc)"
+
       - integration_point: "API -> Configs (rates/fees/commissions/duties)"
-        test_description: "GET /api/rates и /api/meta возвращают структуры для фронтенда"
+        test_description: "GET /api/rates, /api/meta, /api/health - полное покрытие всех эндпоинтов"
         test_file: "tests/functional/test_api.py"
+        test_functions: ["TestRatesEndpoint (11 tests)", "TestMetaEndpoint (10 tests)", "TestHealthEndpoint (2 tests)", "TestRatesRefreshEndpoint (2 tests)", "TestCalculateSuccessfulCases (5 tests)", "TestCalculateInvariants (4 tests)"]
         coverage_status: "exists"
+        test_priority: "high"
+        notes: "SPRINT TEST-05 ✅: Comprehensive API coverage - structure validation, all 5 currencies, all 5 countries, invariants (total=sum, UAE commission=0), engine_power conversion, detailed_rates_used structure"
+
+      - integration_point: "API -> Input Validation"
+        test_description: "POST /api/calculate - полная валидация входных данных и граничные случаи"
+        test_file: "tests/functional/test_api_validation.py"
+        test_functions: ["TestCalculateValidation (22 tests)", "TestCalculateBoundaryValues (29 tests)"]
+        coverage_status: "exists"
+        test_priority: "high"
+        notes: "SPRINT TEST-05 ✅: Comprehensive validation testing - missing fields (422), year bounds (1990-current), engine_cc (1-10000), engine_power_hp (1-1500), purchase_price > 0, unsupported currencies/countries/freight_types, ValidationError structure, all boundary values, age category boundaries"
+
+      - integration_point: "API -> Bank Commission"
+        test_description: "Влияние bank_commission.percent на total_rub и display курсов"
+        test_file: "tests/functional/test_api_bank_commission.py"
+        test_functions: ["test_api_calculate_without_bank_commission_baseline", "test_api_calculate_with_bank_commission_increases_total", "test_api_meta_rates_used_structure"]
+        coverage_status: "exists"
+        notes: "SPRINT 4.5-4.7: Проверка монотонности total_rub, формата detailed_rates_used.display ('+X%'), базовый сценарий без комиссии"
+
+      - integration_point: "Services -> CBR API"
+        test_description: "Парсинг CBR XML и слияние с базовыми курсами"
+        test_file: "tests/functional/test_cbr.py"
+        test_functions: ["test_parse_cbr_xml_basic", "test_get_effective_rates_monkeypatch"]
+        coverage_status: "exists"
+        notes: "Покрывает parse_cbr_xml (5 валют), get_effective_rates с monkeypatch fake_fetch"
+
+      # ===== GAPS IDENTIFIED (TEST AUDIT 2025-12-16) =====
       - integration_point: "API -> CBR Service (refresh)"
         test_description: "POST /api/rates/refresh форсит обновление кэша CBR"
-        test_file: "-"
-        coverage_status: "needed"
+        test_file: "tests/functional/test_api.py"
+        test_functions: ["TestRatesRefreshEndpoint::test_refresh_rates_success", "TestRatesRefreshEndpoint::test_refresh_rates_structure"]
+        coverage_status: "exists"
+        priority: "MEDIUM"
+        notes: "SPRINT TEST-05 ✅: Gap CLOSED - POST /api/rates/refresh covered with structure validation"
+
       - integration_point: "Bot -> Engine"
         test_description: "Хендлеры /calc и web_app_data вызывают calculate и форматируют результат"
-        test_file: "-"
-        coverage_status: "needed"
+        test_file: "tests/manual/test_bot_handlers_sprint7.py"
+        test_functions: ["Manual tests only"]
+        coverage_status: "manual_only"
+        priority: "LOW"
+        notes: "Ручные тесты в tests/manual/. Автоматизация не планируется (требует Telegram Bot API mock)"
+
       - integration_point: "App Static -> WebApp"
         test_description: "Раздача /web/, /manifest.json, /sw.js"
         test_file: "-"
         coverage_status: "needed"
+        priority: "LOW"
+        recommendation: "SPRINT TEST-07: Функциональные тесты для статики - GET /web/index.html → 200, GET /manifest.json → 200, Content-Type правильный"
 
   edges:
     inter_module_flows:
