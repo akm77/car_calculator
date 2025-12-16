@@ -99,6 +99,91 @@ poetry run car-calculator-bot
 - POST /api/calculate → calculation result with breakdown and meta
   - meta includes: duty mode and details, passing/non‑passing, rates_used (e.g. {"JPY_RUB":0.6,"EUR_RUB":100})
 
+## Testing
+
+### Running Tests
+
+```bash
+# All tests (excluding manual)
+pytest tests/ -v --ignore=tests/manual
+
+# Only unit tests
+pytest tests/unit/ -v
+
+# Only functional/integration tests
+pytest tests/functional/ -v
+
+# With coverage report (HTML)
+pytest tests/ --cov=app --cov-report=html --ignore=tests/manual
+open htmlcov/index.html
+
+# With coverage report (terminal)
+pytest tests/ --cov=app --cov-report=term --ignore=tests/manual
+
+# Specific test file
+pytest tests/unit/test_models_validation.py -v
+
+# Stop on first failure
+pytest tests/ -x --ignore=tests/manual
+```
+
+### Test Structure
+
+- **tests/unit/** — Unit tests (isolated, no external dependencies)
+  - `test_models_*.py` — Pydantic models validation (148 tests)
+  - `test_rounding.py` — Rounding functions (69 tests)
+  - `test_tariff_tables.py` — Duty rates & age categories (117 tests)
+  - `test_engine_*.py` — Calculation engine helpers & integration (143 tests)
+  - `test_bank_commission.py` — Bank commission logic (9 tests)
+  - `test_utilization_v2.py` — Utilization fee 2025 (19 tests)
+
+- **tests/functional/** — Functional/integration tests
+  - `test_api.py` — REST API endpoints (40 tests)
+  - `test_api_validation.py` — Input validation & HTTP 422 (51 tests)
+  - `test_api_bank_commission.py` — Bank commission via API (3 tests)
+  - `test_engine.py` — Parametrized tests from cases.yml (46 tests)
+  - `test_cbr.py` — CBR service integration (2 tests)
+
+- **tests/test_data/** — Test data
+  - `cases.yml` — 46 parametrized test scenarios (all countries, age categories, boundaries)
+  - `config/` — Test configurations (rates, duties, commissions, fees)
+
+- **tests/manual/** — Manual tests (not run automatically)
+  - Browser-based tests for WebApp components
+  - Bot handler tests (require Telegram Bot API)
+
+### Test Coverage
+
+**Current coverage: 91%**
+
+Detailed coverage by module:
+- `app/calculation/models.py`: **100%**
+- `app/calculation/tariff_tables.py`: **100%**
+- `app/api/routes.py`: **99%**
+- `app/calculation/rounding.py`: **95%**
+- `app/calculation/engine.py`: **94%**
+- `app/core/settings.py`: **93%**
+- `app/services/cbr.py`: **85%**
+
+**Test statistics**:
+- Total: 619 tests (618 passed, 1 skipped)
+- Unit tests: 477
+- Functional tests: 142
+
+### Documentation
+
+- **Full test report**: `docs/sprints/TEST_FINAL_REPORT.md`
+- **Maintenance checklist**: `docs/sprints/TEST_MAINTENANCE_CHECKLIST.md`
+- **Coverage by SPECIFICATION.md**: See TEST_FINAL_REPORT.md § 3
+
+### Maintenance
+
+When making changes, follow the checklist in `docs/sprints/TEST_MAINTENANCE_CHECKLIST.md`:
+- Changing SPECIFICATION.md → update corresponding tests
+- Adding new fields → add validation tests in `test_models_validation.py`
+- Changing calculation logic → update `test_engine_helpers.py` and `cases.yml`
+- Adding new country → add tests and 3 cases (lt3, 3_5, gt5)
+
 ## Environment Variables (.env)
 ```ini
 # Network
