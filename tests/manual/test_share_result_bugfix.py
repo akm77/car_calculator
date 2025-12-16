@@ -88,10 +88,11 @@ def test_webapp_data_structure():
 
     if missing_fields:
         print(f"\n❌ FAILED: Missing fields: {missing_fields}")
-        return False
 
-    print("\n✅ All required fields present!")
-    return True
+    else:
+        print("\n✅ All required fields present!")
+
+    assert not missing_fields, f"Missing required fields: {missing_fields}"
 
 
 def test_minimal_payload_structure():
@@ -132,10 +133,10 @@ def test_minimal_payload_structure():
 
     if not all_present:
         print("\n❌ FAILED: Missing critical fields in minimal payload!")
-        return False
+    else:
+        print("\n✅ All critical fields present in minimal payload!")
 
-    print("\n✅ All critical fields present in minimal payload!")
-    return True
+    assert all_present, "Missing critical fields in minimal payload"
 
 
 def test_bot_validation():
@@ -187,7 +188,7 @@ def test_bot_validation():
         print("✅ Validation PASSED (unexpected)")
         result2 = False
 
-    return result1 and result2
+    assert result1 and result2, "Bot validation test failed"
 
 
 def main():
