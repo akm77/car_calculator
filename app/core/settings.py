@@ -45,7 +45,7 @@ class AppSettings(BaseSettings):
     cbr_cache_ttl_seconds: int = Field(default=1800, alias="CBR_CACHE_TTL_SECONDS")
     cbr_url: str = Field(default="https://www.cbr.ru/scripts/XML_daily.asp", alias="CBR_URL")
     available_countries: str | None = Field(default=None, alias="AVAILABLE_COUNTRIES")
-    rate_limit_per_minute: int = Field(default=600, alias="RATE_LIMIT_PER_MINUTE")
+    rate_limit_per_minute: int = Field(default=60, alias="RATE_LIMIT_PER_MINUTE")
 
     model_config = SettingsConfigDict(
         env_file=str(BASE_DIR / _env_file),
