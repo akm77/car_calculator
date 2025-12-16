@@ -4,7 +4,9 @@ from decimal import Decimal
 
 import pytest
 
+from app.calculation import engine as engine_mod
 from app.calculation.engine import (
+    CalculationError,
     _commission,
     _convert,
     _convert_from_rub,
@@ -134,7 +136,9 @@ class TestConvertHelpers:
 
 
 class TestCompanyCommission:
-    def test_default_commission_no_bank(self, commissions_conf_base: dict, rates_conf_basic: dict) -> None:
+    def test_default_commission_no_bank(
+        self, commissions_conf_base: dict, rates_conf_basic: dict
+    ) -> None:
         # 1000 USD * 90 = 90000 RUB
         result = _commission(
             amount_rub=Decimal("0"),
@@ -146,7 +150,9 @@ class TestCompanyCommission:
         assert result > Decimal("80000")
         assert result < Decimal("100000")
 
-    def test_default_commission_with_bank(self, commissions_conf_base: dict, rates_conf_basic: dict) -> None:
+    def test_default_commission_with_bank(
+        self, commissions_conf_base: dict, rates_conf_basic: dict
+    ) -> None:
         # 1000 USD, 5% bank commission: effective_rate = 94.5 -> ~94500 RUB
         result = _commission(
             amount_rub=Decimal("0"),
@@ -165,7 +171,9 @@ class TestCompanyCommission:
             bank_commission_percent=None,
         )
 
-    def test_uae_commission_zero_even_with_bank(self, commissions_conf_base: dict, rates_conf_basic: dict) -> None:
+    def test_uae_commission_zero_even_with_bank(
+        self, commissions_conf_base: dict, rates_conf_basic: dict
+    ) -> None:
         result = _commission(
             amount_rub=Decimal("0"),
             commissions_conf=commissions_conf_base,
@@ -175,7 +183,9 @@ class TestCompanyCommission:
         )
         assert result == Decimal("0")
 
-    def test_country_override_commission_usd_respects_bank(self, commissions_conf_base: dict, rates_conf_basic: dict) -> None:
+    def test_country_override_commission_usd_respects_bank(
+        self, commissions_conf_base: dict, rates_conf_basic: dict
+    ) -> None:
         # Georgia: 750 USD, 10% bank commission, USD_RUB=90 -> 750 * 99 = 74250
         result = _commission(
             amount_rub=Decimal("0"),
@@ -227,8 +237,6 @@ class TestCalculateWithBankCommission:
             0.0  -> enabled=True, percent=0.0
             >0   -> enabled=True, percent=<value>
         """
-
-        from app.calculation import engine as engine_mod
 
         def fake_get_effective_rates(base_rates: dict) -> dict:
             # Ignore base_rates; always return fixed values
@@ -312,11 +320,15 @@ class TestCalculateWithBankCommission:
         self._patch_configs(monkeypatch, percent=12.5)
         result125 = calculate(req)
 
-        assert result0.breakdown.total_rub < result10.breakdown.total_rub < result125.breakdown.total_rub
+        assert (
+            result0.breakdown.total_rub
+            < result10.breakdown.total_rub
+            < result125.breakdown.total_rub
+        )
 
-    def test_uae_total_increases_but_company_commission_zero(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from app.calculation import engine as engine_mod
-
+    def test_uae_total_increases_but_company_commission_zero(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         # Use same fixed rates as above
         def fake_get_effective_rates(base_rates: dict) -> dict:
             return {
@@ -358,9 +370,22 @@ class TestCalculateWithBankCommission:
         monkeypatch.setattr(engine_mod, "get_configs", lambda: fake_get_configs(10.0))
         result10 = calculate(req)
 
+        # UAE invariant: company_commission_rub always = 0
         assert result0.breakdown.company_commission_rub == Decimal("0")
         assert result10.breakdown.company_commission_rub == Decimal("0")
+
+        # Per SPEC § 4.5.3: bank commission affects purchase_price_rub
+        # purchase_price_rub should increase with bank commission
+        assert result10.breakdown.purchase_price_rub > result0.breakdown.purchase_price_rub
+
+        # Expected: 25000 USD × 90 = 2250000 (0% commission)
+        # Expected: 25000 USD × 90 × 1.10 = 2475000 (10% commission)
+        assert result0.breakdown.purchase_price_rub == Decimal("2250000")
+        assert result10.breakdown.purchase_price_rub == Decimal("2475000")
+
+        # Total should increase by the same amount (225000 RUB difference)
         assert result10.breakdown.total_rub > result0.breakdown.total_rub
+        assert result10.breakdown.total_rub - result0.breakdown.total_rub == Decimal("225000")
 
 
 class TestEffectiveCurrencyRateEdgeCases:
@@ -382,8 +407,6 @@ class TestEffectiveCurrencyRateEdgeCases:
 class TestConvertUnknownCurrency:
     def test_unknown_currency_raises_calculation_error(self) -> None:
         """При отсутствии курса по валюте _convert должен пробрасывать CalculationError."""
-
-        from app.calculation.engine import CalculationError
 
         rates_conf = {"currencies": {"USD_RUB": 90.0}}
         with pytest.raises(CalculationError):
