@@ -9,6 +9,7 @@ import yaml
 
 from app.core.settings import get_configs
 
+
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
 
@@ -19,8 +20,7 @@ TEST_CONFIG_DIR = BASE_DIR / "tests" / "test_data" / "config"
 
 def _load_commissions_from_yaml(filename: str) -> dict:
     path = TEST_CONFIG_DIR / filename
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    return data
+    return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 
 
 @pytest.fixture
@@ -32,9 +32,8 @@ def commissions_profile_no_bank() -> dict:
 @pytest.fixture
 def commissions_profile_with_bank_default() -> dict:
     """Load commissions config with enabled bank_commission at default percent (2-5%)."""
-    data = _load_commissions_from_yaml("commissions_with_bank.yml")
+    return _load_commissions_from_yaml("commissions_with_bank.yml")
     # Keep YAML percent by default; tests focus on relative difference vs no-bank
-    return data
 
 
 @pytest.fixture
@@ -57,14 +56,18 @@ def commissions_profile_with_bank_high() -> dict:
 @pytest.fixture
 def _patch_commissions(monkeypatch):
     """Helper fixture to patch cfg.commissions for a single test and restore afterwards."""
+    import copy
 
     cfg = get_configs()
-    original_commissions = dict(cfg.commissions)
+    # Deep copy to preserve nested structures like bank_commission
+    original_commissions = copy.deepcopy(cfg.commissions)
 
     def _apply(new_commissions: dict) -> None:
+        """Apply new commissions config by directly mutating the dict."""
         cfg_inner = get_configs()
+        # Clear the dict and update with deep copy to ensure nested dicts are replaced
         cfg_inner.commissions.clear()
-        cfg_inner.commissions.update(new_commissions)
+        cfg_inner.commissions.update(copy.deepcopy(new_commissions))
 
     yield _apply
 
@@ -90,7 +93,7 @@ def _build_payload() -> dict:
 
 
 def _extract_rate_meta(meta: dict, code: str) -> tuple[float | None, float | None, float | None]:
-    """Return (base_rate, effective_rate, bank_percent) for given currency code if detailed meta is present."""
+    """Return (base_rate, effective_rate, bank_percent) for given currency code if detailed meta is present."""  # noqa: E501
     detailed = meta.get("detailed_rates_used") or {}
     entry = detailed.get(code) or {}
     base = entry.get("base_rate")
@@ -185,14 +188,24 @@ def test_calculate_with_bank_commission_increases_costs(
 
     assert set(br_no.keys()) == set(br_bank.keys())
 
+    # Per engine.py implementation, bank commission affects:
+    # - purchase_price_rub (converted with bank_commission_percent)
+    # - company_commission_rub (USD commission converted with bank_commission_percent)
+    # - total_rub (sum of all components)
+    # But NOT: country_expenses_rub, freight_rub (use bank_commission_percent=None)
     for key in [
         "purchase_price_rub",
-        "country_expenses_rub",
-        "freight_rub",
         "company_commission_rub",
         "total_rub",
     ]:
-        assert br_bank[key] > br_no[key]
+        assert br_bank[key] > br_no[key], f"{key}: {br_bank[key]} should be > {br_no[key]}"
+
+    # These should remain the same (no bank commission applied)
+    for key in [
+        "country_expenses_rub",
+        "freight_rub",
+    ]:
+        assert br_bank[key] == br_no[key], f"{key} should not be affected by bank commission"
 
     for stable_key in [
         "age_category",
@@ -271,7 +284,6 @@ def test_calculate_with_high_bank_commission_triggers_warning(
         assert bank_percent_high > 5.0
 
     warnings_high = meta_high.get("warnings") or []
-    codes_high = {w.get("code", "") for w in warnings_high}
 
     # Current implementation may not yet expose a dedicated BANK_COMMISSION_* warning code.
     # At minimum we assert that warnings list shape is stable and do not enforce specific code.
