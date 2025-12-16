@@ -1,18 +1,27 @@
-# Test commissions config: company commission + example bank_commission
+# Test commissions config: company commission + bank_commission
+# Соответствует SPEC § 4.4
 
 default_commission_usd: 1000
 
 by_country:
+  japan:
+    commission_usd: 1000
+  korea:
+    commission_usd: 1000
   uae:
     commission_usd: 0
+  china:
+    commission_usd: 1000
+  georgia:
+    commission_usd: 1000
 
+# Банковская комиссия включена для тестирования
 bank_commission:
   enabled: true
   percent: 2.0
-
   meta:
     recommended_min: 0.0
     recommended_max: 10.0
     warn_above: 10.0
-    default_percent: 2.0
+    default_percent: 0.0
 

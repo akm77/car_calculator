@@ -1,11 +1,27 @@
 # Test commissions config: company commission only, no bank_commission
-# Global company commission in USD
+# Соответствует SPEC § 4.4
+
 default_commission_usd: 1000
 
 by_country:
+  japan:
+    commission_usd: 1000
+  korea:
+    commission_usd: 1000
   uae:
     # For UAE, company commission is 0 because it is included in country_expenses
     commission_usd: 0
+  china:
+    commission_usd: 1000
+  georgia:
+    commission_usd: 1000
 
-# No bank_commission section here on purpose: tests relying on company commission
-# should behave exactly as in runtime config without any bank commission effects.
+# Банковская комиссия отключена (для большинства тестов)
+bank_commission:
+  enabled: false
+  percent: 0.0
+  meta:
+    recommended_min: 0.0
+    recommended_max: 10.0
+    warn_above: 10.0
+    default_percent: 0.0
