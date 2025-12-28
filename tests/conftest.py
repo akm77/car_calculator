@@ -10,6 +10,8 @@ from app.core.settings import CONFIG_DIR, ConfigRegistry, get_configs
 from app.main import app
 
 
+
+
 @pytest.fixture(scope="session")
 def client() -> TestClient:
     return TestClient(app)

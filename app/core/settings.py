@@ -10,7 +10,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import structlog
 import yaml
+
+
+logger = structlog.get_logger()
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -46,6 +50,11 @@ class AppSettings(BaseSettings):
     cbr_url: str = Field(default="https://www.cbr.ru/scripts/XML_daily.asp", alias="CBR_URL")
     available_countries: str | None = Field(default=None, alias="AVAILABLE_COUNTRIES")
     rate_limit_per_minute: int = Field(default=60, alias="RATE_LIMIT_PER_MINUTE")
+    admin_user_ids: str = Field(
+        default="",
+        alias="ADMIN_USER_IDS",
+        description="Comma-separated Telegram user IDs with admin access to config management",
+    )
 
     model_config = SettingsConfigDict(
         env_file=str(BASE_DIR / _env_file),
@@ -67,6 +76,27 @@ class AppSettings(BaseSettings):
         if not self.available_countries:
             return []
         return [c.strip().lower() for c in self.available_countries.split(",") if c.strip()]
+
+    @property
+    def admin_ids(self) -> set[int]:
+        """
+        Парсинг списка admin user IDs из переменной окружения.
+
+        Returns:
+            Множество целочисленных user IDs
+
+        Examples:
+            ADMIN_USER_IDS="123456,789012" → {123456, 789012}
+            ADMIN_USER_IDS="" → set()
+        """
+        if not self.admin_user_ids:
+            return set()
+
+        try:
+            return {int(uid.strip()) for uid in self.admin_user_ids.split(",") if uid.strip()}
+        except ValueError:
+            logger.exception("invalid_admin_user_ids", value=self.admin_user_ids)
+            return set()
 
 
 class ConfigRegistry(BaseModel):

@@ -63,12 +63,15 @@ async def main_async() -> None:
     started = False
     try:
         bot = _build_bot()
-        dp = _build_dispatcher()
+        dp = _build_dispatcher(settings.admin_ids)
         try:
             await _set_commands(bot)
         except TelegramNotFound as error:
             raise InvalidBotTokenError(ERR_BAD_BOT_TOKEN) from error
-        logger.info(INFO_BOT_STARTED)
+        logger.info(
+            INFO_BOT_STARTED,
+            admin_count=len(settings.admin_ids),
+        )
         started = True
         # Явно указываем allowed_updates чтобы включить web_app_data
 

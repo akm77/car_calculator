@@ -538,3 +538,40 @@ async def handle_rates_upload(message: Message, state: FSMContext):
 async def handle_duties_upload(message: Message, state: FSMContext):
     """Обработать загруженный duties.yml."""
     await process_config_upload(message, state, ConfigFile.DUTIES)
+
+
+# ============================================================================
+# WHOAMI COMMAND
+# ============================================================================
+
+
+@router.message(Command("whoami"))
+async def cmd_whoami(message: Message):
+    """
+    Показать информацию о текущем пользователе.
+
+    Полезно для получения своего user ID для добавления в ADMIN_USER_IDS.
+    """
+    user = message.from_user
+
+    if not user:
+        await message.answer("❌ Unable to identify user")
+        return
+
+    info = [
+        "👤 **Your Telegram Profile:**\n",
+        f"🆔 User ID: `{user.id}`",
+        f"👤 Username: @{user.username}" if user.username else "👤 Username: (not set)",
+        f"📛 First Name: {user.first_name}",
+    ]
+
+    if user.last_name:
+        info.append(f"📛 Last Name: {user.last_name}")
+
+    info.append(f"🤖 Is Bot: {'Yes' if user.is_bot else 'No'}")
+    info.append(f"💬 Language: {user.language_code or 'unknown'}")
+
+    info.append("\n💡 **Tip:** Share your User ID with the admin to get access.")
+
+    await message.answer("\n".join(info))
+
