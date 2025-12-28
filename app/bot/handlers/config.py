@@ -29,7 +29,9 @@ from pathlib import Path
 from typing import Any
 
 from aiogram import Router
+from aiogram.filters import Command
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import FSInputFile, Message
 
 
 # ============================================================================
@@ -123,11 +125,104 @@ def get_backup_path(config_type: ConfigFile) -> Path:
     return CONFIG_DIR / f"{filename}.backup.{timestamp}"
 
 
+async def send_config_file(
+    message: Message,
+    config_type: ConfigFile,
+) -> bool:
+    """
+    Отправить конфигурационный файл администратору.
+
+    Args:
+        message: Telegram message объект
+        config_type: Тип конфигурационного файла
+
+    Returns:
+        True если файл успешно отправлен, False если файл не найден
+    """
+    file_path = get_config_path(config_type)
+    metadata = CONFIG_METADATA[config_type]
+
+    # Проверка существования файла
+    if not file_path.exists():
+        await message.answer(
+            f"❌ **File not found:** `{metadata['filename']}`\n\n"
+            f"Config file may have been deleted or moved."
+        )
+        return False
+
+    # Отправка файла
+    document = FSInputFile(file_path, filename=metadata["filename"])
+    caption = (
+        f"📄 **{metadata['filename']}**\n"
+        f"📝 {metadata['description']}\n\n"
+        f"📊 Size: {file_path.stat().st_size:,} bytes"
+    )
+
+    await message.answer_document(document, caption=caption)
+    return True
+
+
+def format_config_list() -> str:
+    """Отформатировать список всех доступных конфигов."""
+    lines = ["📁 **Available Configuration Files:**\n"]
+
+    for config_type in ConfigFile:
+        metadata = CONFIG_METADATA[config_type]
+        file_path = get_config_path(config_type)
+
+        status = "✅" if file_path.exists() else "❌"
+        lines.append(
+            f"{status} `{metadata['filename']}`\n"
+            f"   └─ {metadata['description']}\n"
+            f"   └─ Command: `/get_{config_type.value}`\n"
+        )
+
+    return "\n".join(lines)
+
+
 # ============================================================================
 # ROUTER
 # ============================================================================
 
 router = Router(name="config_handlers")
 
-# Хэндлеры будут добавлены в следующих спринтах
+
+# ============================================================================
+# COMMAND HANDLERS
+# ============================================================================
+
+@router.message(Command("list_configs"))
+async def cmd_list_configs(message: Message):
+    """Показать список всех конфигурационных файлов."""
+    config_list = format_config_list()
+
+    await message.answer(
+        f"{config_list}\n"
+        f"💡 **Tip:** Use `/get_<name>` to download a config file.\n"
+        f"📤 Use `/set_<name>` to upload a new version (available in next sprint)."
+    )
+
+
+@router.message(Command("get_fees"))
+async def cmd_get_fees(message: Message):
+    """Отправить fees.yml администратору."""
+    await send_config_file(message, ConfigFile.FEES)
+
+
+@router.message(Command("get_commissions"))
+async def cmd_get_commissions(message: Message):
+    """Отправить commissions.yml администратору."""
+    await send_config_file(message, ConfigFile.COMMISSIONS)
+
+
+@router.message(Command("get_rates"))
+async def cmd_get_rates(message: Message):
+    """Отправить rates.yml администратору."""
+    await send_config_file(message, ConfigFile.RATES)
+
+
+@router.message(Command("get_duties"))
+async def cmd_get_duties(message: Message):
+    """Отправить duties.yml администратору."""
+    await send_config_file(message, ConfigFile.DUTIES)
 

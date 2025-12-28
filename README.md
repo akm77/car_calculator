@@ -300,6 +300,47 @@ Notes
 
 ---
 
+## Config Management Commands (Admin only)
+
+The Telegram bot provides admin-only commands for managing configuration files:
+
+### View Available Configs
+```bash
+/list_configs  # Show all configuration files with status (✅/❌)
+```
+
+### Download Configuration Files
+```bash
+/get_fees          # Download config/fees.yml (тарифы стран и фрахта)
+/get_commissions   # Download config/commissions.yml (комиссии)
+/get_rates         # Download config/rates.yml (курсы валют и утильсбор)
+/get_duties        # Download config/duties.yml (таблицы пошлин)
+```
+
+Each downloaded file includes:
+- 📄 Filename
+- 📝 Description
+- 📊 File size
+- ✅ Status indicator (file exists/missing)
+
+### Upload Configuration Files (Coming in CONFIG-03)
+```bash
+/set_fees          # Upload new fees.yml (with validation)
+/set_commissions   # Upload new commissions.yml (with validation)
+/set_rates         # Upload new rates.yml (with validation)
+/set_duties        # Upload new duties.yml (with validation)
+/reload_configs    # Reload all configs into memory (hot reload)
+```
+
+**Features:**
+- 🔒 Admin-only access (controlled by middleware)
+- 🔄 Automatic backups with timestamp before upload
+- ✅ YAML validation before saving
+- 📦 FSM-based upload flow for safety
+- ❌ User-friendly error messages
+
+---
+
 ## Development & QA
 Run tests
 ```bash

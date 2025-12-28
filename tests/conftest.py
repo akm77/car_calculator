@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 import pytest
-from pathlib import Path
 import yaml
 
 from app.core.settings import CONFIG_DIR, ConfigRegistry, get_configs

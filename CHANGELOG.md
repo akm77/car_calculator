@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+- 📥 **Config Download Commands**: Реализованы команды для скачивания конфигурационных файлов
+  - `/get_fees` — скачать config/fees.yml (тарифы стран и фрахта)
+  - `/get_commissions` — скачать config/commissions.yml (комиссии)
+  - `/get_rates` — скачать config/rates.yml (курсы валют и утильсбор)
+  - `/get_duties` — скачать config/duties.yml (таблицы пошлин)
+  - `/list_configs` — просмотр всех доступных конфигов со статусом (✅/❌)
+
+- 📄 **File Handling**: Generic функция `send_config_file()` для отправки файлов через Telegram
+  - Использует `FSInputFile` из aiogram 3.x для отправки документов
+  - Информативные caption с описанием и размером файла
+  - Обработка случая отсутствия файла с user-friendly сообщением
+  - Функция `format_config_list()` для форматирования списка конфигов
+
+- 🧪 **Integration Tests**: Создан файл `tests/unit/test_config_download.py`
+  - 11 тестов: 3 для `send_config_file()`, 3 для `format_config_list()`, 5 для команд
+  - **92% coverage** для модуля config.py (превышает цель 90%)
+  - Используется anyio с asyncio backend для async тестов
+  - Моки aiogram Message, FSInputFile, проверка caption и error messages
+
 ### Added - SPRINT CONFIG-01 (2025-12-28)
 
 - 🔧 **Config Management Module**: Создан модуль `app/bot/handlers/config.py` для управления YAML-конфигами через Telegram
