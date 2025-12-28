@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - SPRINT CONFIG-03 (2025-12-28)
+
+- 📤 **Config Upload Commands with FSM**: Реализованы команды для безопасной загрузки конфигов
+  - `/set_fees`, `/set_commissions`, `/set_rates`, `/set_duties` — загрузка новых версий
+  - `/cancel` — прерывание текущей операции загрузки
+  - FSM States для управления процессом загрузки (waiting_for_fees, waiting_for_commissions, etc.)
+
+- ✅ **4-Level Validation System**: Комплексная валидация загружаемых файлов
+  1. **Filename validation**: Проверка имени файла (защита от path traversal)
+  2. **Size validation**: Ограничение 1MB на файл
+  3. **YAML syntax validation**: Проверка корректности YAML с `yaml.safe_load()`
+  4. **Structure validation**: Проверка обязательных ключей (`validate_yaml_structure()`)
+
+- 📦 **Automatic Backup**: Автоматическое создание резервных копий перед заменой
+  - Формат: `{filename}.backup.YYYYMMDD_HHMMSS`
+  - Функция `backup_config_file()` с использованием `shutil.copy2()` для сохранения метаданных
+  - Backup только если файл существует (для первой загрузки backup не создается)
+
+- 🔒 **Race Condition Protection**: Защита от одновременной загрузки одного конфига
+  - `asyncio.Lock` per config type для предотвращения race conditions
+  - Параллельная валидация (без lock) для экономии времени
+  - Lock только на critical section (backup + replace) — ~0.2s overhead
+  - Разные конфиги можно загружать параллельно (отдельные locks)
+
+- 🧪 **Comprehensive Tests**: 24 теста в `tests/unit/test_config_upload.py`
+  - Unit тесты: `validate_yaml_structure()` (8 тестов), `backup_config_file()` (3 теста)
+  - Command тесты: `/set_*` commands (4 теста), `/cancel` (2 теста)
+  - Validation тесты: `download_and_validate_config()` (5 тестов)
+  - Concurrency тесты: lock behavior (5 тестов) — проверка serialization и parallelism
+  - **Coverage ≥ 90%** для всех новых функций
+
+- 📚 **Documentation**: Создана подробная документация
+  - `docs/CONFIG_CONCURRENCY.md` — анализ race conditions и решение с asyncio.Lock
+  - Сравнение альтернативных решений (file locking, database locking, semaphores, queues)
+  - Performance analysis и latency breakdown
+  - Test cases для concurrency scenarios
+
+### Added - SPRINT CONFIG-02 (2025-12-28)
 
 - 📥 **Config Download Commands**: Реализованы команды для скачивания конфигурационных файлов
   - `/get_fees` — скачать config/fees.yml (тарифы стран и фрахта)

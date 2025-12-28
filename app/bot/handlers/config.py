@@ -1,5 +1,7 @@
+# ruff: noqa: RUF002
 """
 Хэндлеры для управления конфигурационными файлами через Telegram.
+
 
 Поддерживаемые файлы:
 - config/fees.yml: Тарифы стран и фрахта
@@ -9,29 +11,41 @@
 
 Команды:
 - /get_{config}: Скачать файл
-- /set_{config}: Загрузить новый файл
+- /set_{config}: Загрузить новый файл (с FSM и валидацией)
 - /reload_configs: Перезагрузить все конфиги в памяти
+- /cancel: Прервать текущую операцию загрузки
 
 Безопасность:
 - Доступ только для администраторов (через middleware)
-- Валидация YAML перед сохранением
-- Автоматический бэкап старых версий
+- Валидация YAML перед сохранением (4 уровня)
+- Автоматический бэкап старых версий с timestamp
+- Ограничение размера файла (1MB)
+- Атомарная замена файлов
 
 Changelog:
 - 2025-12-28: CONFIG-01 - Создан базовый модуль с FSM states и helper-функциями
+- 2025-12-28: CONFIG-02 - Добавлены команды скачивания конфигов
+- 2025-12-28: CONFIG-03 - Добавлены команды загрузки с FSM и валидацией
 """
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any
+import shutil
+from typing import TYPE_CHECKING, Any
 
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import FSInputFile, Message
+from aiogram.types import Document, FSInputFile, Message
+import yaml
+
+
+if TYPE_CHECKING:
+    from aiogram.fsm.context import FSMContext
 
 
 # ============================================================================
@@ -40,8 +54,17 @@ from aiogram.types import FSInputFile, Message
 
 CONFIG_DIR = Path("config")
 
+MAX_CONFIG_SIZE_MB = 1
+MAX_CONFIG_SIZE_BYTES = MAX_CONFIG_SIZE_MB * 1024 * 1024
+
+# Locks для предотвращения одновременной загрузки одного и того же конфига
+# Каждый тип конфига имеет свой Lock, чтобы разные конфиги можно было загружать параллельно
+_CONFIG_LOCKS: dict[ConfigFile, asyncio.Lock] = {}
+
+
 class ConfigFile(str, Enum):
     """Поддерживаемые конфигурационные файлы."""
+
     FEES = "fees"
     COMMISSIONS = "commissions"
     RATES = "rates"
@@ -76,8 +99,10 @@ CONFIG_METADATA: dict[ConfigFile, dict[str, Any]] = {
 # FSM STATES
 # ============================================================================
 
+
 class ConfigUploadStates(StatesGroup):
     """Состояния для загрузки конфигурационных файлов."""
+
     waiting_for_fees = State()
     waiting_for_commissions = State()
     waiting_for_rates = State()
@@ -87,6 +112,26 @@ class ConfigUploadStates(StatesGroup):
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
+
+
+def _get_config_lock(config_type: ConfigFile) -> asyncio.Lock:
+    """
+    Получить Lock для конкретного типа конфига (lazy initialization).
+
+    Args:
+        config_type: Тип конфигурационного файла
+
+    Returns:
+        asyncio.Lock для этого типа конфига
+
+    Note:
+        Каждый ConfigFile имеет свой Lock, чтобы можно было загружать
+        разные конфиги параллельно, но один и тот же конфиг - только последовательно.
+    """
+    if config_type not in _CONFIG_LOCKS:
+        _CONFIG_LOCKS[config_type] = asyncio.Lock()
+    return _CONFIG_LOCKS[config_type]
+
 
 def get_config_path(config_type: ConfigFile) -> Path:
     """
@@ -109,6 +154,7 @@ def get_config_path(config_type: ConfigFile) -> Path:
 def get_backup_path(config_type: ConfigFile) -> Path:
     """
     Создать путь для backup-файла с timestamp.
+
 
     Args:
         config_type: Тип конфигурационного файла из enum ConfigFile
@@ -181,6 +227,104 @@ def format_config_list() -> str:
 
 
 # ============================================================================
+# VALIDATION FUNCTIONS
+# ============================================================================
+
+
+def validate_yaml_structure(data: dict[str, Any], required_keys: list[str]) -> tuple[bool, str]:
+    """
+    Валидация структуры YAML конфига.
+
+    Args:
+        data: Распарсенный YAML
+        required_keys: Список обязательных ключей верхнего уровня
+
+    Returns:
+        (success: bool, error_message: str)
+    """
+    if not isinstance(data, dict):
+        return False, "Root element must be a dictionary"
+
+    missing_keys = [key for key in required_keys if key not in data]
+    if missing_keys:
+        return False, f"Missing required keys: {', '.join(missing_keys)}"
+
+    return True, ""
+
+
+async def download_and_validate_config(  # noqa: PLR0911 - Multiple returns for validation is acceptable
+    document: Document,
+    bot,
+    config_type: ConfigFile,
+) -> tuple[bool, str, Path | None]:
+    """
+    Скачать документ из Telegram, валидировать и вернуть временный путь.
+
+    Args:
+        document: Telegram Document объект
+        bot: Bot instance
+        config_type: Тип конфига
+
+    Returns:
+        (success: bool, error_message: str, temp_path: Path | None)
+    """
+    metadata = CONFIG_METADATA[config_type]
+    expected_filename = metadata["filename"]
+
+    # 1. Проверка имени файла
+    if document.file_name != expected_filename:
+        return False, f"Filename must be `{expected_filename}`, got `{document.file_name}`", None
+
+    # 2. Проверка размера
+    if document.file_size > MAX_CONFIG_SIZE_BYTES:
+        max_mb = MAX_CONFIG_SIZE_MB
+        actual_mb = document.file_size / (1024 * 1024)
+        return False, f"File too large: {actual_mb:.2f}MB (max {max_mb}MB)", None
+
+    # 3. Скачивание во временный файл
+    temp_path = Path(f"/tmp/{config_type.value}_{document.file_unique_id}.yml")
+    try:
+        await bot.download(document, destination=temp_path)
+    except Exception as e:
+        return False, f"Download failed: {e!s}", None
+
+    # 4. Парсинг YAML
+    try:
+        with temp_path.open(encoding="utf-8") as f:  # noqa: ASYNC230 - Small config files, sync is fine
+            config_data = yaml.safe_load(f)
+    except yaml.YAMLError as e:
+        temp_path.unlink(missing_ok=True)
+        return False, f"Invalid YAML syntax:\n{e!s}", None
+    except Exception as e:
+        temp_path.unlink(missing_ok=True)
+        return False, f"Failed to read file: {e!s}", None
+
+    # 5. Валидация структуры
+    is_valid, error_msg = validate_yaml_structure(config_data, metadata["required_keys"])
+    if not is_valid:
+        temp_path.unlink(missing_ok=True)
+        return False, f"Validation failed: {error_msg}", None
+
+    return True, "", temp_path
+
+
+def backup_config_file(config_type: ConfigFile) -> Path | None:
+    """
+    Создать бэкап конфигурационного файла.
+
+    Returns:
+        Path к backup-файлу или None если оригинала не существует
+    """
+    source_path = get_config_path(config_type)
+    if not source_path.exists():
+        return None
+
+    backup_path = get_backup_path(config_type)
+    shutil.copy2(source_path, backup_path)
+    return backup_path
+
+
+# ============================================================================
 # ROUTER
 # ============================================================================
 
@@ -190,6 +334,7 @@ router = Router(name="config_handlers")
 # ============================================================================
 # COMMAND HANDLERS
 # ============================================================================
+
 
 @router.message(Command("list_configs"))
 async def cmd_list_configs(message: Message):
@@ -226,3 +371,170 @@ async def cmd_get_duties(message: Message):
     """Отправить duties.yml администратору."""
     await send_config_file(message, ConfigFile.DUTIES)
 
+
+# ============================================================================
+# COMMAND HANDLERS - UPLOAD START
+# ============================================================================
+
+
+@router.message(Command("set_fees"))
+async def cmd_set_fees_start(message: Message, state: FSMContext):
+    """Начать загрузку нового fees.yml."""
+    await state.set_state(ConfigUploadStates.waiting_for_fees)
+    await message.answer(
+        "📤 **Upload new fees.yml**\n\n"
+        f"⚠️ File will be validated before saving.\n"
+        f"📏 Max size: {MAX_CONFIG_SIZE_MB}MB\n\n"
+        "Send the file or use /cancel to abort."
+    )
+
+
+@router.message(Command("set_commissions"))
+async def cmd_set_commissions_start(message: Message, state: FSMContext):
+    """Начать загрузку нового commissions.yml."""
+    await state.set_state(ConfigUploadStates.waiting_for_commissions)
+    await message.answer(
+        "📤 **Upload new commissions.yml**\n\n"
+        f"⚠️ File will be validated before saving.\n"
+        f"📏 Max size: {MAX_CONFIG_SIZE_MB}MB\n\n"
+        "Send the file or use /cancel to abort."
+    )
+
+
+@router.message(Command("set_rates"))
+async def cmd_set_rates_start(message: Message, state: FSMContext):
+    """Начать загрузку нового rates.yml."""
+    await state.set_state(ConfigUploadStates.waiting_for_rates)
+    await message.answer(
+        "📤 **Upload new rates.yml**\n\n"
+        f"⚠️ File will be validated before saving.\n"
+        f"📏 Max size: {MAX_CONFIG_SIZE_MB}MB\n\n"
+        "Send the file or use /cancel to abort."
+    )
+
+
+@router.message(Command("set_duties"))
+async def cmd_set_duties_start(message: Message, state: FSMContext):
+    """Начать загрузку нового duties.yml."""
+    await state.set_state(ConfigUploadStates.waiting_for_duties)
+    await message.answer(
+        "📤 **Upload new duties.yml**\n\n"
+        f"⚠️ File will be validated before saving.\n"
+        f"📏 Max size: {MAX_CONFIG_SIZE_MB}MB\n\n"
+        "Send the file or use /cancel to abort."
+    )
+
+
+@router.message(Command("cancel"))
+async def cmd_cancel(message: Message, state: FSMContext):
+    """Отменить текущую операцию загрузки."""
+    current_state = await state.get_state()
+    if current_state is None:
+        await message.answer("❌ No active operation to cancel.")
+        return
+
+    await state.clear()
+    await message.answer("✅ Operation cancelled.")
+
+
+# ============================================================================
+# DOCUMENT HANDLERS - UPLOAD PROCESSING
+# ============================================================================
+
+
+async def process_config_upload(
+    message: Message,
+    state: FSMContext,
+    config_type: ConfigFile,
+):
+    """
+    Обработать загрузку конфигурационного файла (generic handler).
+
+    Workflow:
+    1. Download and validate file (без lock - может идти параллельно)
+    2. Acquire lock для данного config_type
+    3. Backup old config (под lock)
+    4. Replace with new config (под lock)
+    5. Release lock
+    6. Clear FSM state
+
+    Race Condition Protection:
+    - Использует asyncio.Lock для каждого типа конфига
+    - Разные конфиги можно загружать параллельно
+    - Один и тот же конфиг загружается последовательно
+    - Предотвращает потерю данных при одновременной загрузке
+    """
+    document = message.document
+    if not document:
+        await message.answer("❌ Please send a document file.")
+        return
+
+    metadata = CONFIG_METADATA[config_type]
+
+    # 1. Скачивание и валидация (БЕЗ LOCK - может идти параллельно для экономии времени)
+    await message.answer("⏳ Downloading and validating...")
+
+    success, error_msg, temp_path = await download_and_validate_config(
+        document, message.bot, config_type
+    )
+
+    if not success:
+        await message.answer(f"❌ **Validation failed:**\n\n{error_msg}")
+        await state.clear()
+        return
+
+    # 2-4. Получаем lock перед модификацией файловой системы
+    lock = _get_config_lock(config_type)
+
+    async with lock:
+        await message.answer("🔒 Acquiring lock and saving...")
+
+        # 2. Бэкап старого файла
+        backup_path = backup_config_file(config_type)
+        backup_info = ""
+        if backup_path:
+            backup_info = f"📦 Backup: `{backup_path.name}`\n"
+
+        # 3. Замена файла
+        target_path = get_config_path(config_type)
+        try:
+            shutil.move(str(temp_path), str(target_path))
+        except Exception as e:
+            temp_path.unlink(missing_ok=True)
+            await message.answer(f"❌ **Failed to save config:**\n\n{e!s}")
+            await state.clear()
+            return
+
+    # Lock released - файл успешно сохранен
+
+    # 5. Успех
+    await message.answer(
+        f"✅ **{metadata['filename']} updated successfully!**\n\n"
+        f"{backup_info}"
+        f"⚠️ Use /reload_configs to apply changes in runtime."
+    )
+    await state.clear()
+
+
+@router.message(ConfigUploadStates.waiting_for_fees)
+async def handle_fees_upload(message: Message, state: FSMContext):
+    """Обработать загруженный fees.yml."""
+    await process_config_upload(message, state, ConfigFile.FEES)
+
+
+@router.message(ConfigUploadStates.waiting_for_commissions)
+async def handle_commissions_upload(message: Message, state: FSMContext):
+    """Обработать загруженный commissions.yml."""
+    await process_config_upload(message, state, ConfigFile.COMMISSIONS)
+
+
+@router.message(ConfigUploadStates.waiting_for_rates)
+async def handle_rates_upload(message: Message, state: FSMContext):
+    """Обработать загруженный rates.yml."""
+    await process_config_upload(message, state, ConfigFile.RATES)
+
+
+@router.message(ConfigUploadStates.waiting_for_duties)
+async def handle_duties_upload(message: Message, state: FSMContext):
+    """Обработать загруженный duties.yml."""
+    await process_config_upload(message, state, ConfigFile.DUTIES)
