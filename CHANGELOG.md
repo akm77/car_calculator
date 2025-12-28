@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - SPRINT CONFIG-01 (2025-12-28)
+
+- 🔧 **Config Management Module**: Создан модуль `app/bot/handlers/config.py` для управления YAML-конфигами через Telegram
+  - Определены типы файлов: fees, commissions, rates, duties в enum `ConfigFile`
+  - FSM States для безопасной загрузки файлов: `ConfigUploadStates` (waiting_for_fees, waiting_for_commissions, waiting_for_rates, waiting_for_duties)
+  - Helper-функции: `get_config_path()` для получения пути к конфигу, `get_backup_path()` для генерации backup-пути с timestamp (UTC)
+  - Метаданные для каждого конфига: filename, description, required_keys
+  - Router `config_handlers` для интеграции с ботом (хэндлеры будут добавлены в CONFIG-02)
+  
+- 🧪 **Unit Tests**: Создан файл `tests/unit/test_config_handlers.py` с полным покрытием
+  - 21 тест для helper-функций, констант и FSM States
+  - **100% coverage** для модуля config.py
+  - Используется unittest.mock.patch для контроля datetime.now()
+  - Тесты проверяют: корректность путей, формат timestamp, структуру метаданных, уникальность FSM states
+
 ### ✅ Testing (SPRINT TEST-07: Final Audit - 2025-12-16)
 
 - **Завершён полный цикл тестирования (SPRINT TEST-01 → TEST-07)**:

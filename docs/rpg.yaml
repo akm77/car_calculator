@@ -33,6 +33,29 @@ rpg:
       - name: "app_bot"
         path: "app/bot"
         description: "Telegram-бот (aiogram). Получает CalculationResult от движка / API и формирует HTML-сообщения с breakdown и строкой курса, используя человекочитаемое представление из метаданных (display в CalculationMeta.detailed_rates_used). Банковская комиссия отображается только как надбавка '+ X%' к курсу, без отдельных полей/команд для её изменения."
+      - name: "app_bot_config"
+        path: "app/bot/handlers/config.py"
+        description: "Управление конфигурационными YAML-файлами через Telegram. Позволяет администраторам скачивать, загружать и перезагружать конфиги (fees, commissions, rates, duties) без доступа к серверу. Включает FSM для загрузки, валидацию YAML, автоматический бэкап и интеграцию с ConfigRegistry."
+        dependencies:
+          - "app_core (ConfigRegistry)"
+          - "app_bot (Router, FSM)"
+        features:
+          - "4 типа конфигов: fees, commissions, rates, duties"
+          - "FSM States для безопасной загрузки: ConfigUploadStates (waiting_for_fees/commissions/rates/duties)"
+          - "Валидация структуры YAML перед сохранением"
+          - "Автоматический бэкап с timestamp (UTC): {filename}.backup.YYYYMMDD_HHMMSS"
+          - "Команды: /get_{config}, /set_{config}, /reload_configs (будут добавлены в CONFIG-02)"
+          - "Helper-функции: get_config_path(), get_backup_path()"
+          - "Метаданные: CONFIG_METADATA с filename, description, required_keys для каждого типа"
+        components:
+          - "ConfigFile enum: FEES, COMMISSIONS, RATES, DUTIES"
+          - "CONFIG_METADATA: dict[ConfigFile, dict[str, Any]] с метаданными для каждого файла"
+          - "ConfigUploadStates: StatesGroup для FSM диалогов загрузки"
+          - "Router 'config_handlers' для интеграции с главным диспетчером бота"
+        status: "SPRINT_CONFIG_01_COMPLETED"
+        implemented_date: "2025-12-28"
+        test_coverage: "100% (21 тестов в tests/unit/test_config_handlers.py)"
+        next_sprint: "CONFIG-02 (реализация /get_* команд для скачивания конфигов)"
       - name: "app_webapp"
         path: "app/webapp"
         description: "Статический PWA фронтенд. Получает результат расчёта через /api/calculate и отображает: breakdown (детализацию в рублях) и строку курса из метаданных (в текущей реализации — CalculationMeta.detailed_rates_used[CODE].display вида 'USD/RUB = BASE [+ PERCENT%]'). Пользователь не может управлять банковской комиссией — она задаётся только конфигом."
@@ -160,6 +183,9 @@ rpg:
       - name: "handlers/start.py"
         parent_module: "app_bot"
         description: "Router: @router.message(Command('start')) → cmd_start (проверка HTTPS для WebApp button, main_menu клавиатура), @router.message(Command('calc')) → cmd_calc (пример расчёта japan 2021 1496cc 110hp с _format_result), @router.message(F.web_app_data) → on_webapp_data (парсинг JSON с engine_power_hp, валидация обязательности, вызов calculate, форматирование через _format_result с мощностью и коэффициентом утильсбора); _format_result helper (HTML форматирование с breakdown, мощностью в кВт, коэффициентом утильсбора); register(dp: Dispatcher)"
+      - name: "handlers/config.py"
+        parent_module: "app_bot_config"
+        description: "Модуль управления конфигами: ConfigFile enum (FEES/COMMISSIONS/RATES/DUTIES), CONFIG_METADATA с описаниями и required_keys, ConfigUploadStates (FSM для загрузки файлов), helper-функции get_config_path() и get_backup_path() с UTC timestamp, Router 'config_handlers'. Создан в SPRINT CONFIG-01 как базовая инфраструктура для команд /get_*, /set_*, /reload_configs (хэндлеры будут добавлены в CONFIG-02)."
       - name: "keyboards.py"
         parent_module: "app_bot"
         description: "ReplyKeyboard с WebApp-кнопкой"
@@ -943,3 +969,245 @@ rpg:
       - from: "app_calculation"
         to: "app_bot"
         description: "Через API и/или прямые вызовы движка бот получает CalculationResult и форматирует ответ пользователю, используя breakdown.total_rub и meta.rates_used. Комиссия видна только как надбавка к курсу, а не как отдельная строка в детализации."
+
+  sprints:
+    config_management:
+      description: "Серия из 6 спринтов для реализации системы управления конфигурационными YAML-файлами через Telegram-бот"
+      total_time: "16 hours"
+      methodology: "RPG (Role-Playing Graph)"
+      created_date: "2025-12-28"
+      status: "READY_FOR_IMPLEMENTATION"
+      documentation: "sprints/README.md"
+
+      phases:
+        - id: "CONFIG-01"
+          name: "Module Scaffolding"
+          file: "sprints/SPRINT_CONFIG_01_module_scaffolding.md"
+          duration: "2h"
+          dependencies: []
+          status: "PENDING"
+          role: "Senior Backend Python Developer"
+          goals:
+            - "Создать модуль app/bot/handlers/config.py с базовой инфраструктурой"
+            - "Определить ConfigFile enum и CONFIG_METADATA"
+            - "Создать FSM States для всех 4 типов конфигов"
+            - "Реализовать helper-функции get_config_path(), get_backup_path()"
+          deliverables:
+            - "app/bot/handlers/config.py (структура модуля)"
+            - "tests/unit/test_config_handlers.py (unit-тесты)"
+          documentation_updates:
+            - "docs/rpg.yaml (новая секция app_bot_config)"
+            - "CHANGELOG.md (SPRINT CONFIG-01)"
+            - "README.md (Config Management секция)"
+
+        - id: "CONFIG-02"
+          name: "Download Commands Implementation"
+          file: "sprints/SPRINT_CONFIG_02_download_commands.md"
+          duration: "2h"
+          dependencies: ["CONFIG-01"]
+          status: "PENDING"
+          role: "Senior Python Developer (aiogram 3.x expert)"
+          goals:
+            - "Реализовать команды /get_fees, /get_commissions, /get_rates, /get_duties"
+            - "Реализовать команду /list_configs"
+            - "Добавить error handling для отсутствующих файлов"
+            - "Создать информативные caption'ы с описанием и размером"
+          deliverables:
+            - "app/bot/handlers/config.py (5 команд скачивания)"
+            - "tests/unit/test_config_download.py (integration тесты)"
+          documentation_updates:
+            - "docs/rpg.yaml (features: download commands)"
+            - "CHANGELOG.md (SPRINT CONFIG-02)"
+            - "README.md (Usage examples)"
+
+        - id: "CONFIG-03"
+          name: "Upload Commands with FSM"
+          file: "sprints/SPRINT_CONFIG_03_upload_commands.md"
+          duration: "3h"
+          dependencies: ["CONFIG-01", "CONFIG-02"]
+          status: "PENDING"
+          role: "Senior Python Developer (FSM & YAML validation expert)"
+          goals:
+            - "Реализовать команды /set_fees, /set_commissions, /set_rates, /set_duties с FSM"
+            - "Реализовать команду /cancel для прерывания загрузки"
+            - "Добавить 4-level validation (filename, size, YAML syntax, structure)"
+            - "Реализовать автоматический backup с timestamp"
+            - "Атомарная замена файлов (shutil.move)"
+          deliverables:
+            - "app/bot/handlers/config.py (4 команды загрузки + /cancel)"
+            - "tests/unit/test_config_upload.py (integration тесты)"
+            - "docs/CONFIG_MANAGEMENT.md (технический обзор)"
+          documentation_updates:
+            - "docs/rpg.yaml (features: upload with FSM)"
+            - "CHANGELOG.md (SPRINT CONFIG-03)"
+            - "docs/CONFIG_MANAGEMENT.md (Upload workflow)"
+
+        - id: "CONFIG-04"
+          name: "Admin Access Control"
+          file: "sprints/SPRINT_CONFIG_04_admin_middleware.md"
+          duration: "2h"
+          dependencies: ["CONFIG-01", "CONFIG-02", "CONFIG-03"]
+          status: "PENDING"
+          role: "Senior Security Engineer (aiogram middleware expert)"
+          goals:
+            - "Создать AdminOnlyMiddleware для проверки прав доступа"
+            - "Расширить AppSettings для хранения ADMIN_USER_IDS"
+            - "Реализовать команду /whoami для получения user ID"
+            - "Добавить audit logging (unauthorized_access_attempt, admin_command_executed)"
+            - "Применить middleware к config router"
+          deliverables:
+            - "app/bot/middlewares/admin_check.py (AdminOnlyMiddleware)"
+            - "app/core/settings.py (ADMIN_USER_IDS)"
+            - ".env.example (документация по admin setup)"
+            - "tests/unit/test_admin_middleware.py (unit-тесты)"
+          documentation_updates:
+            - "docs/rpg.yaml (новая секция app_bot_middlewares)"
+            - "CHANGELOG.md (SPRINT CONFIG-04)"
+            - "README.md (Admin Access Control)"
+            - "docs/CONFIG_MANAGEMENT.md (Access Control)"
+
+        - id: "CONFIG-05"
+          name: "Hot Reload Implementation"
+          file: "sprints/SPRINT_CONFIG_05_hot_reload.md"
+          duration: "3h"
+          dependencies: ["CONFIG-01", "CONFIG-02", "CONFIG-03", "CONFIG-04"]
+          status: "PENDING"
+          role: "Senior Backend Developer (runtime config management expert)"
+          goals:
+            - "Реализовать команду /reload_configs для hot reload"
+            - "Реализовать команду /config_status для проверки версии"
+            - "Реализовать команду /config_diff для сравнения памяти и диска"
+            - "Добавить config versioning (hash + timestamp)"
+            - "Реализовать graceful error handling с rollback"
+            - "Добавить performance metrics (load_time_ms)"
+          deliverables:
+            - "app/core/settings.py (reload_configs() function)"
+            - "app/bot/handlers/config.py (3 команды: reload, status, diff)"
+            - "tests/unit/test_config_reload.py (unit-тесты)"
+          documentation_updates:
+            - "docs/rpg.yaml (features: hot reload)"
+            - "CHANGELOG.md (SPRINT CONFIG-05)"
+            - "README.md (Hot Reload feature)"
+            - "docs/CONFIG_MANAGEMENT.md (Hot Reload workflow)"
+
+        - id: "CONFIG-06"
+          name: "Integration & Documentation"
+          file: "sprints/SPRINT_CONFIG_06_integration_docs.md"
+          duration: "4h"
+          dependencies: ["CONFIG-01", "CONFIG-02", "CONFIG-03", "CONFIG-04", "CONFIG-05"]
+          status: "PENDING"
+          role: "DevOps Engineer & Technical Writer"
+          goals:
+            - "Финализировать интеграцию в app/bot/main.py"
+            - "Создать E2E тесты для полного workflow"
+            - "Написать CONFIG_ADMIN_GUIDE.md (user guide)"
+            - "Написать CONFIG_INCIDENT_PLAYBOOK.md (ops guide)"
+            - "Обновить docker-compose.yml и .env.example"
+            - "Добавить health check endpoint"
+            - "Финализировать всю документацию"
+          deliverables:
+            - "app/bot/main.py (полная интеграция)"
+            - "tests/functional/test_config_management_e2e.py (E2E тесты)"
+            - "docs/CONFIG_ADMIN_GUIDE.md (complete user guide)"
+            - "docs/CONFIG_INCIDENT_PLAYBOOK.md (ops playbook)"
+            - "docker-compose.yml (health checks)"
+            - ".env.example (full documentation)"
+          documentation_updates:
+            - "docs/rpg.yaml (status: PRODUCTION_READY)"
+            - "CHANGELOG.md (v2.1.0 release notes)"
+            - "README.md (complete feature list)"
+            - "docs/CONFIG_MANAGEMENT.md (finalize)"
+
+      features:
+        download:
+          - "/get_fees - Download fees.yml"
+          - "/get_commissions - Download commissions.yml"
+          - "/get_rates - Download rates.yml"
+          - "/get_duties - Download duties.yml"
+          - "/list_configs - List all available configs"
+
+        upload:
+          - "/set_fees - Upload new fees.yml with FSM"
+          - "/set_commissions - Upload new commissions.yml with FSM"
+          - "/set_rates - Upload new rates.yml with FSM"
+          - "/set_duties - Upload new duties.yml with FSM"
+          - "/cancel - Cancel current upload operation"
+
+        reload:
+          - "/reload_configs - Hot reload without restart (zero downtime)"
+          - "/config_status - Check current version (hash + timestamp)"
+          - "/config_diff - Compare memory vs disk"
+
+        utility:
+          - "/whoami - Get your Telegram user ID"
+
+      security:
+        - "AdminOnlyMiddleware - Whitelist-based access control"
+        - "ADMIN_USER_IDS - Comma-separated list of admin user IDs"
+        - "4-level validation: filename, size (≤1MB), YAML syntax, structure"
+        - "Audit logging: all admin actions + unauthorized attempts"
+        - "Automatic backups with timestamp before replacement"
+        - "Graceful error handling with rollback"
+
+      technical_details:
+        module: "app/bot/handlers/config.py"
+        lines_of_code: "~850 LOC"
+        test_coverage: "≥90%"
+        dependencies:
+          - "aiogram 3.x (Bot, Dispatcher, Router, FSM)"
+          - "PyYAML (safe_load for parsing)"
+          - "structlog (logging)"
+          - "pathlib (file operations)"
+          - "hashlib (config versioning)"
+
+        config_files:
+          - name: "fees.yml"
+            required_keys: ["countries", "freight"]
+            description: "Тарифы стран и фрахта"
+          - name: "commissions.yml"
+            required_keys: ["company_commission", "bank_commission"]
+            description: "Комиссии (включая bank_commission)"
+          - name: "rates.yml"
+            required_keys: ["rates", "utilization"]
+            description: "Курсы валют и утильсбор"
+          - name: "duties.yml"
+            required_keys: ["petrol", "electric"]
+            description: "Таблицы пошлин"
+
+      testing:
+        unit_tests: "tests/unit/test_config_*.py"
+        integration_tests: "tests/unit/test_config_download.py, test_config_upload.py"
+        e2e_tests: "tests/functional/test_config_management_e2e.py"
+        coverage_target: "≥90%"
+        test_scenarios:
+          - "Download config (success, file not found)"
+          - "Upload config (success, validation failed, wrong filename, too large)"
+          - "Reload config (success, failure with rollback, hash change detection)"
+          - "Access control (admin granted, non-admin denied)"
+          - "FSM workflow (start, upload, cancel)"
+          - "Config diff (in sync, out of sync)"
+
+      deployment:
+        requirements:
+          - "BOT_TOKEN environment variable (required)"
+          - "ADMIN_USER_IDS environment variable (optional, comma-separated)"
+          - "config/ directory mounted in Docker"
+          - "logs/ directory for audit trail"
+
+        docker_compose:
+          - "Health check endpoint"
+          - "Volume mounts for config/ and logs/"
+          - "Environment variables from .env"
+
+        monitoring:
+          - "Health check: /health endpoint"
+          - "Logs: structured JSON with structlog"
+          - "Metrics: load_time_ms, hash_changed"
+          - "Alerts: config_reload_failed, unauthorized_access_attempt"
+
+      documentation:
+        user_guide: "docs/CONFIG_ADMIN_GUIDE.md"
+        ops_guide: "docs/CONFIG_INCIDENT_PLAYBOOK.md"
+        tech_overview: "docs/CONFIG_MANAGEMENT.md"
+        sprint_prompts: "sprints/SPRINT_CONFIG_*.md"
+        readme: "sprints/README.md"

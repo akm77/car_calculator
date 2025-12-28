@@ -3,6 +3,13 @@
 Telegram Bot + FastAPI backend + WebApp for calculating the total import cost of cars from Japan, Korea, UAE, and China.
 
 ## Features
+
+- **🎛️ Config Management (NEW)**: Admin-only Telegram commands для управления конфигурационными файлами
+  - Hot reload конфигов без перезапуска сервера
+  - Automatic backups с timestamp для rollback
+  - YAML validation перед сохранением
+  - Управление 4 типами конфигов: fees, commissions, rates, duties
+  
 - Full calculation engine per current tariff tables:
   - Duties: <3 years (percent with min €/cc), 3–5 years and >5 years (€/cc bands)
   - Country expenses and freight per country (Yen/USD, etc.)
