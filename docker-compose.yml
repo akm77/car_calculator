@@ -1,36 +1,131 @@
+# =============================================================================
+# Docker Compose Configuration for Car Calculator
+# =============================================================================
+# Version: 2.1.0
+# Services: api (FastAPI), bot (Telegram Bot)
+# Network: Internal bridge network for service communication
+#
+# Environment Variables:
+# - Set in .env file (see .env.example for reference)
+# - Required: BOT_TOKEN (for bot service)
+# - Recommended: ADMIN_USER_IDS (for config management)
+# - Optional: DOMAIN, LOG_LEVEL, ENABLE_LIVE_CBR
+# =============================================================================
+
 services:
+  # ===========================================================================
+  # API Service - FastAPI Application
+  # ===========================================================================
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: car-calculator:latest
     container_name: car-calculator-api
     environment:
+      # Network Configuration
       - API_HOST=0.0.0.0
       - API_PORT=8000
-      - LOG_LEVEL=info
-      - ENABLE_LIVE_CBR=false
-      - PUBLIC_BASE_URL=https://${DOMAIN}
+
+      # Application Settings
+      - PUBLIC_BASE_URL=https://${DOMAIN:-localhost}
+      - ENVIRONMENT=prod
+
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+
+      # External Services
+      - ENABLE_LIVE_CBR=${ENABLE_LIVE_CBR:-false}
+      - CBR_CACHE_TTL_SECONDS=${CBR_CACHE_TTL_SECONDS:-1800}
+      - CBR_URL=https://www.cbr.ru/scripts/XML_daily.asp
+
+      # Rate Limiting
+      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-60}
+
+      # Optional Filters
+      - AVAILABLE_COUNTRIES=${AVAILABLE_COUNTRIES:-}
+
+    # Mount config directory for hot reload (read-only for API)
+    volumes:
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+
     networks:
       - web
+
     restart: unless-stopped
 
+    # Health check using /ping endpoint
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Resource limits (adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # ===========================================================================
+  # Bot Service - Telegram Bot
+  # ===========================================================================
   bot:
     image: car-calculator:latest
     container_name: car-calculator-bot
     environment:
-      - BOT_TOKEN=${BOT_TOKEN}
-      - ADMIN_USER_IDS=${ADMIN_USER_IDS}
-      - PUBLIC_BASE_URL=https://${DOMAIN}
-      - LOG_LEVEL=info
+      # Telegram Bot Configuration (REQUIRED)
+      - BOT_TOKEN=${BOT_TOKEN:?BOT_TOKEN is required}
+
+      # Admin Access Control (RECOMMENDED)
+      # Comma-separated list of Telegram user IDs with admin rights
+      # Get your ID with /whoami command
+      - ADMIN_USER_IDS=${ADMIN_USER_IDS:-}
+
+      # Application Settings
+      - PUBLIC_BASE_URL=https://${DOMAIN:-localhost}
+      - ENVIRONMENT=prod
+
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+
+      # External Services
+      - ENABLE_LIVE_CBR=${ENABLE_LIVE_CBR:-false}
+      - CBR_CACHE_TTL_SECONDS=${CBR_CACHE_TTL_SECONDS:-1800}
+      - CBR_URL=https://www.cbr.ru/scripts/XML_daily.asp
+
+      # Rate Limiting
+      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-60}
+
+      # Optional Filters
+      - AVAILABLE_COUNTRIES=${AVAILABLE_COUNTRIES:-}
+
+    # Mount config directory for hot reload (read-write for bot)
+    # Bot needs write access for config management commands
     volumes:
-      - ./config:/app/config  # Mount config directory for hot reload
-      - ./logs:/app/logs      # Mount logs for monitoring
+      - ./config:/app/config
+      - ./logs:/app/logs
+
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+
+    # Override default command to run only bot
     command: >
       python -c "from app.bot.main import run_bot; run_bot()"
+
     networks:
       - web
+
     restart: unless-stopped
+
+    # Simple health check - verify Python runs
     healthcheck:
       test: ["CMD-SHELL", "python -c 'import sys; sys.exit(0)'"]
       interval: 30s
@@ -38,6 +133,30 @@ services:
       retries: 3
       start_period: 40s
 
+    # Resource limits (adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+# =============================================================================
+# Networks Configuration
+# =============================================================================
 networks:
   web:
     driver: bridge
+    name: car-calculator-network
+
+# =============================================================================
+# Volumes Configuration (Optional - for persistence)
+# =============================================================================
+# Uncomment if you want Docker-managed volumes instead of bind mounts
+# volumes:
+#   config:
+#     driver: local
+#   logs:
+#     driver: local
