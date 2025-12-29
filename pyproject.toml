@@ -135,6 +135,12 @@ markers = [
     "functional: marks tests as functional tests (integration/API tests)",
 ]
 
+[tool.pytest_asyncio]
+asyncio_mode = "auto"
+
+[tool.anyio]
+backends = ["asyncio"]
+
 # ---------------- Mypy ----------------
 [tool.mypy]
 python_version = "3.13"

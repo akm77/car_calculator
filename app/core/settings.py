@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import time
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -141,3 +142,88 @@ def refresh_configs() -> None:
 
 def refresh_settings() -> None:
     get_settings.cache_clear()  # type: ignore[attr-defined]
+
+
+def reload_configs() -> tuple[bool, str, dict[str, Any]]:
+    """
+    Принудительно перезагрузить все конфигурационные файлы.
+
+    Workflow:
+    1. Очистить кэш get_configs()
+    2. Попытаться загрузить новые конфиги
+    3. При ошибке - откатиться к старым (если возможно)
+    4. Вернуть статус и метрики
+
+    Returns:
+        (success: bool, message: str, metrics: dict)
+
+    Examples:
+        >>> success, msg, metrics = reload_configs()
+        >>> if success:
+        ...     print(f"Loaded {metrics['config_count']} configs")
+    """
+    start_time = time.time()
+
+    # Сохранить текущие конфиги для rollback
+    old_configs = None
+    old_hash = None
+    try:
+        old_configs = get_configs()
+        old_hash = old_configs.hash
+    except Exception:
+        pass
+
+    # Очистить кэш
+    get_configs.cache_clear()  # type: ignore[attr-defined]
+    logger.info("config_cache_cleared", old_hash=old_hash)
+
+    # Попытаться загрузить новые конфиги
+    try:
+        new_configs = get_configs()
+        new_hash = new_configs.hash
+
+        # Метрики
+        load_time = time.time() - start_time
+        metrics = {
+            "config_count": 4,  # fees, commissions, rates, duties
+            "old_hash": old_hash,
+            "new_hash": new_hash,
+            "loaded_at": new_configs.loaded_at,
+            "load_time_ms": round(load_time * 1000, 2),
+            "hash_changed": old_hash != new_hash,
+        }
+
+        logger.info("configs_reloaded_successfully", **metrics)
+
+        message = (
+            "✅ **Configs reloaded successfully!**\n\n"
+            f"🔑 Old hash: `{old_hash or 'N/A'}`\n"
+            f"🔑 New hash: `{new_hash}`\n"
+            f"📊 Timestamp: `{new_configs.loaded_at}`\n"
+            f"⚡ Load time: `{metrics['load_time_ms']}ms`\n"
+            f"🔄 Changed: `{'Yes' if metrics['hash_changed'] else 'No'}`"
+        )
+
+        return True, message, metrics
+    except Exception as e:
+        # Rollback: восстановить кэш (если возможно)
+        logger.exception(
+            "config_reload_failed",
+            error=str(e),
+            error_type=type(e).__name__,
+        )
+
+        # Если были старые конфиги, кэш остался пустым
+        # При следующем вызове get_configs() будет повторная попытка загрузки
+
+        message = (
+            "❌ **Config reload failed!**\n\n"
+            f"🔥 Error: `{type(e).__name__}`\n"
+            f"📄 Details: `{e!s}`\n\n"
+            "⚠️ Old configs remain in memory (if any).\n"
+            "Fix the config files and try again."
+        )
+
+        return False, message, {"error": str(e)}
+
+

@@ -33,6 +33,7 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime
 from enum import Enum
+import hashlib
 from pathlib import Path
 import shutil
 from typing import TYPE_CHECKING, Any
@@ -42,6 +43,8 @@ from aiogram.filters import Command
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Document, FSInputFile, Message
 import yaml
+
+from app.core.settings import _dict_hash, _read_yaml, get_configs, reload_configs
 
 
 if TYPE_CHECKING:
@@ -574,4 +577,151 @@ async def cmd_whoami(message: Message):
     info.append("\n💡 **Tip:** Share your User ID with the admin to get access.")
 
     await message.answer("\n".join(info))
+
+
+# ============================================================================
+# CONFIG MANAGEMENT COMMANDS
+# ============================================================================
+
+
+@router.message(Command("reload_configs"))
+async def cmd_reload_configs(message: Message):
+    """
+    Перезагрузить все конфигурационные файлы в памяти.
+
+    Очищает кэш ConfigRegistry и принудительно загружает конфиги из файлов.
+    Валидирует загруженные конфиги и обновляет hash/timestamp.
+    """
+    await message.answer("⏳ **Reloading configs...**")
+
+    from app.core.settings import reload_configs
+
+    success, msg, metrics = reload_configs()
+
+    await message.answer(msg)
+
+    if success and metrics.get("hash_changed"):
+        await message.answer(
+            "💡 **Tip:** All API endpoints will use the new configs immediately.\n"
+            "No server restart required!"
+        )
+
+
+@router.message(Command("config_status"))
+async def cmd_config_status(message: Message):
+    """
+    Показать текущий статус конфигурационных файлов.
+
+    Отображает:
+    - Config hash (версия)
+    - Время загрузки
+    - Список файлов и их размеры
+    """
+    from app.core.settings import get_configs
+
+    try:
+        configs = get_configs()
+
+        # Информация о файлах
+        config_files = []
+        total_size = 0
+
+        for config_type in ConfigFile:
+            file_path = get_config_path(config_type)
+            metadata = CONFIG_METADATA[config_type]
+
+            if file_path.exists():
+                size = file_path.stat().st_size
+                total_size += size
+                status = "✅"
+                size_str = f"{size:,} bytes"
+            else:
+                status = "❌"
+                size_str = "N/A"
+
+            config_files.append(f"{status} `{metadata['filename']}` - {size_str}")
+
+        files_list = "\n".join(config_files)
+
+        message_text = (
+            "📊 **Configuration Status**\n\n"
+            f"🔑 Config hash: `{configs.hash}`\n"
+            f"📅 Loaded at: `{configs.loaded_at}`\n"
+            f"📦 Total size: `{total_size:,} bytes`\n\n"
+            f"**Files:**\n{files_list}\n\n"
+            "💡 Use /reload_configs to reload from disk."
+        )
+
+        await message.answer(message_text)
+
+    except Exception as e:
+        await message.answer(
+            f"❌ **Failed to get config status:**\n\n"
+            f"`{type(e).__name__}: {str(e)}`"
+        )
+
+
+@router.message(Command("config_diff"))
+async def cmd_config_diff(message: Message):
+    """
+    Показать различия между конфигами на диске и в памяти.
+
+    Полезно после загрузки нового файла, чтобы проверить,
+    нужен ли reload.
+    """
+    try:
+        # Текущий hash в памяти
+        memory_configs = get_configs()
+        memory_hash = memory_configs.hash
+
+        # Вычислить hash файлов на диске
+        disk_hashes = {}
+        for config_type in ConfigFile:
+            file_path = get_config_path(config_type)
+            if file_path.exists():
+                content = file_path.read_bytes()
+                file_hash = hashlib.sha256(content).hexdigest()[:8]
+                disk_hashes[config_type.value] = file_hash
+
+        # Объединить в общий hash (используем тот же метод что и _dict_hash)
+        disk_aggregate = {
+            "fees": _read_yaml("fees.yml"),
+            "commissions": _read_yaml("commissions.yml"),
+            "rates": _read_yaml("rates.yml"),
+            "duties": _read_yaml("duties.yml"),
+        }
+
+        disk_hash = _dict_hash(disk_aggregate)
+
+        files_info = []
+        for config_type in ConfigFile:
+            metadata = CONFIG_METADATA[config_type]
+            if config_type.value in disk_hashes:
+                files_info.append(
+                    f"📄 `{metadata['filename']}`: `{disk_hashes[config_type.value]}`"
+                )
+
+        files_list = "\n".join(files_info)
+
+        if memory_hash == disk_hash:
+            status = "✅ **Up to date** - Memory and disk are synchronized"
+        else:
+            status = "⚠️ **Out of sync** - Use /reload_configs to apply disk changes"
+
+        message_text = (
+            "🔄 **Config Diff Check**\n\n"
+            f"💾 Memory hash: `{memory_hash}`\n"
+            f"💿 Disk hash: `{disk_hash}`\n\n"
+            f"{status}\n\n"
+            f"**Disk files:**\n{files_list}"
+        )
+
+        await message.answer(message_text)
+
+    except Exception as e:
+        await message.answer(
+            f"❌ **Failed to check diff:**\n\n"
+            f"`{type(e).__name__}: {e!s}`"
+        )
+
 
