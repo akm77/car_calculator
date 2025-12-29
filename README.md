@@ -4,11 +4,18 @@ Telegram Bot + FastAPI backend + WebApp for calculating the total import cost of
 
 ## Features
 
-- **🎛️ Config Management (NEW)**: Admin-only Telegram commands для управления конфигурационными файлами
-  - Hot reload конфигов без перезапуска сервера
-  - Automatic backups с timestamp для rollback
-  - YAML validation перед сохранением
-  - Управление 4 типами конфигов: fees, commissions, rates, duties
+- **🎛️ Config Management System**: Complete Telegram-based configuration management (NEW in v2.1.0)
+  - **Download configs**: `/get_fees`, `/get_commissions`, `/get_rates`, `/get_duties`
+  - **Upload with validation**: `/set_fees`, `/set_commissions`, `/set_rates`, `/set_duties`
+  - **Hot reload (zero downtime)**: `/reload_configs` - apply changes without restart
+  - **Monitoring**: `/config_status`, `/config_diff` - version tracking and sync check
+  - **Access control**: Admin-only via `ADMIN_USER_IDS` whitelist
+  - **4-level validation**: filename, size (≤1MB), YAML syntax, structure
+  - **Automatic backups**: Timestamped backups before each update
+  - **Config versioning**: Hash + timestamp for each load
+  - **Audit logging**: All admin actions + unauthorized attempts
+  - **Error recovery**: Graceful degradation, old configs retained on failure
+  - 📖 **[Admin Guide](docs/CONFIG_ADMIN_GUIDE.md)** | 📖 **[Incident Playbook](docs/CONFIG_INCIDENT_PLAYBOOK.md)**
   
 - Full calculation engine per current tariff tables:
   - Duties: <3 years (percent with min €/cc), 3–5 years and >5 years (€/cc bands)
@@ -73,9 +80,84 @@ docs/ (formulas, RPG methodology, webapp refactoring plan)
 ```
 
 ## 📚 Documentation
+- **Config Management**:
+  - 📖 **[Admin Guide](docs/CONFIG_ADMIN_GUIDE.md)** - Complete user guide for config management
+  - 📖 **[Incident Playbook](docs/CONFIG_INCIDENT_PLAYBOOK.md)** - Troubleshooting and recovery procedures
+  - 📖 **[Technical Overview](docs/CONFIG_MANAGEMENT.md)** - Architecture and workflows
 - **WebApp Refactoring Plan**: See `docs/README_WEBAPP_REFACTORING.md` for the modular architecture refactoring plan (10 stages, 22-35h)
 - **RPG Methodology**: See `docs/rpg_intro.txt` for the Repository Planning Graph approach used in this project
 - **Project Graph**: See `docs/rpg.yaml` for the complete dependency graph and architecture overview
+
+## 🎛️ Configuration Management (Quick Start for Admins)
+
+Manage configuration files through Telegram bot commands - **no SSH access or server restart required!**
+
+### Setup Admin Access
+
+1. **Get your user ID:**
+   ```
+   Telegram: /whoami
+   Bot: 👤 Your user ID: 123456789
+   ```
+
+2. **Add to admin list:**
+   ```bash
+   # Edit .env file
+   ADMIN_USER_IDS=123456789,987654321
+   
+   # Restart bot
+   docker-compose restart bot
+   ```
+
+### Managing Configs
+
+```
+# List available configs
+/list_configs
+
+# Download a config
+/get_fees            # Country fees and freight
+/get_commissions     # Company and bank commissions
+/get_rates           # Exchange rates and utilization
+/get_duties          # Duty calculation tables
+
+# Upload new config (with validation)
+/set_fees            # Then send the edited file
+/set_commissions
+/set_rates
+/set_duties
+
+# Apply changes (hot reload - zero downtime!)
+/reload_configs
+
+# Monitor status
+/config_status       # Check current version and hash
+/config_diff         # Check if memory and disk are in sync
+```
+
+### Typical Workflow
+
+```
+1. /get_fees         → Download current config
+2. Edit locally      → Make your changes
+3. Validate YAML     → Use online validator
+4. /set_fees         → Upload new version
+5. [Send file]       → Bot validates and saves
+6. /reload_configs   → Apply changes (instant!)
+7. /config_status    → Verify new version
+```
+
+### Features
+
+- ✅ **Hot reload** - zero downtime, no restart needed
+- ✅ **Automatic backups** - timestamped backups before each update
+- ✅ **YAML validation** - 4-level validation (filename, size, syntax, structure)
+- ✅ **Access control** - admin-only, whitelist-based
+- ✅ **Audit logging** - all actions logged with user info
+- ✅ **Config versioning** - hash + timestamp tracking
+- ✅ **Error recovery** - old configs retained on failure
+
+📖 **Full documentation:** [CONFIG_ADMIN_GUIDE.md](docs/CONFIG_ADMIN_GUIDE.md)
 ```
 
 ## Quick Start (local, Poetry)
