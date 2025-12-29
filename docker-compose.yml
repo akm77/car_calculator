@@ -45,7 +45,18 @@ services:
       # Optional Filters
       - AVAILABLE_COUNTRIES=${AVAILABLE_COUNTRIES:-}
 
+    # =======================================================================
+    # PERSISTENT STORAGE - Bind Mounts
+    # =======================================================================
+    # Why bind mounts:
+    # 1. Config files need to persist across container restarts
+    # 2. Allows direct file access for manual editing if needed
+    # 3. Easy backup to external systems (rsync, git, etc.)
+    # 4. Visible in host filesystem: ls config/
+    #
     # Mount config directory for hot reload (read-only for API)
+    # - API only reads configs, no write needed
+    # - :ro flag prevents accidental modifications
     volumes:
       - ./config:/app/config:ro
       - ./logs:/app/logs
@@ -106,6 +117,18 @@ services:
       # Optional Filters
       - AVAILABLE_COUNTRIES=${AVAILABLE_COUNTRIES:-}
 
+    # =======================================================================
+    # PERSISTENT STORAGE - Bind Mounts (Read-Write)
+    # =======================================================================
+    # Why bot needs write access:
+    # 1. Config management commands: /set_fees, /set_commissions, etc.
+    # 2. Automatic backups: creates .backup.TIMESTAMP files
+    # 3. Hot reload: updates configs without container restart
+    #
+    # Backup files created by bot:
+    # - config/fees.yml.backup.20251228_143022
+    # - config/commissions.yml.backup.20251228_150000
+    #
     # Mount config directory for hot reload (read-write for bot)
     # Bot needs write access for config management commands
     volumes:
