@@ -34,6 +34,7 @@ import asyncio
 from datetime import UTC, datetime
 from enum import Enum
 import hashlib
+import html
 from pathlib import Path
 import shutil
 from typing import TYPE_CHECKING, Any
@@ -344,10 +345,15 @@ async def cmd_list_configs(message: Message):
     """Показать список всех конфигурационных файлов."""
     config_list = format_config_list()
 
+    # Escape HTML special characters to prevent parsing errors
+    # <name> would be interpreted as an HTML tag without escaping
+    tip_text = html.escape("/get_<name>")
+    set_text = html.escape("/set_<name>")
+
     await message.answer(
         f"{config_list}\n"
-        f"💡 **Tip:** Use `/get_<name>` to download a config file.\n"
-        f"📤 Use `/set_<name>` to upload a new version (available in next sprint)."
+        f"💡 <b>Tip:</b> Use <code>{tip_text}</code> to download a config file.\n"
+        f"📤 Use <code>{set_text}</code> to upload a new version."
     )
 
 
@@ -594,7 +600,7 @@ async def cmd_reload_configs(message: Message):
     """
     await message.answer("⏳ **Reloading configs...**")
 
-    from app.core.settings import reload_configs
+
 
     success, msg, metrics = reload_configs()
 
@@ -617,7 +623,7 @@ async def cmd_config_status(message: Message):
     - Время загрузки
     - Список файлов и их размеры
     """
-    from app.core.settings import get_configs
+
 
     try:
         configs = get_configs()
@@ -657,7 +663,7 @@ async def cmd_config_status(message: Message):
     except Exception as e:
         await message.answer(
             f"❌ **Failed to get config status:**\n\n"
-            f"`{type(e).__name__}: {str(e)}`"
+            f"`{type(e).__name__}: {e!s}`"
         )
 
 
