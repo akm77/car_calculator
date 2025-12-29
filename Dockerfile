@@ -98,7 +98,7 @@ ENV RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE}
 ENV PUBLIC_BASE_URL=http://localhost:${API_PORT}
 
 # Runtime mode (both, api, bot) - set via docker-compose command
-ENV RUN_MODE=both
+ENV RUN_MODE=api
 
 # Environment type (dev, prod) - affects .env file selection
 ENV ENVIRONMENT=prod
