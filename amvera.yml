@@ -9,7 +9,7 @@ build:
   dockerfile: Dockerfile
   skip: false
 run:
-  persistenceMount: /data
+  persistenceMount: /config
   image: null
   command: ""
   args: null
