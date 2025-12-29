@@ -30,11 +30,6 @@ coverage.xml
 logs/
 *.log
 
-# Build / dist
-build/
-dist/
-wheelhouse/
-
 # IDE / Editors
 .idea/
 .vscode/
@@ -52,11 +47,4 @@ node_modules/
 *.bak
 *.tmp
 
-# Local overrides
-config/local/*.yml
-secrets*/
 
-# WebApp transpiled assets (placeholder if build step added later)
-app/webapp/dist/
-
-/sprints/
