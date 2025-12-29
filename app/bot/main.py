@@ -168,3 +168,6 @@ def run_bot() -> None:
             error_type=type(e).__name__,
         )
         raise
+
+if __name__ == "__main__":
+    run_bot()
