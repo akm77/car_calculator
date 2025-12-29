@@ -1,0 +1,17 @@
+---
+version: null
+meta:
+  environment: docker
+  toolchain:
+    name: docker
+    version: latest
+build:
+  dockerfile: Dockerfile
+  skip: false
+run:
+  persistenceMount: /data
+  image: null
+  command: ""
+  args: null
+  containerPort: 8000
+serviceType: compute
