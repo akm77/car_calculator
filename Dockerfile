@@ -105,12 +105,14 @@ ENV ENVIRONMENT=prod
 
 # Telegram Bot Configuration (must be set at runtime)
 # BOT_TOKEN - Telegram bot token from @BotFather (REQUIRED for bot mode)
+ENV BOT_TOKEN=${BOT_TOKEN}
 # ADMIN_USER_IDS - Comma-separated list of admin Telegram user IDs (OPTIONAL but recommended)
 # Example: ADMIN_USER_IDS=123456789,987654321
-
+ENV ADMIN_USER_IDS=${ADMIN_USER_IDS}
 # Optional Configuration
 # AVAILABLE_COUNTRIES - Comma-separated list of allowed countries (optional filter)
 # Example: AVAILABLE_COUNTRIES=japan,korea,uae,china,georgia
+ENV AVAILABLE_COUNTRIES=${AVAILABLE_COUNTRIES}
 
 # =============================================================================
 # Container Configuration
@@ -124,8 +126,8 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=40s \
     CMD curl -fsS http://127.0.0.1:${API_PORT}/ping || exit 1
 
 # Create directories for volumes (config and logs)
-RUN mkdir -p /app/logs
-RUN mkdir -p /app/config
+#RUN mkdir -p /app/logs
+#RUN mkdir -p /app/config
 
 # Use tini as PID 1 for proper signal handling and run supervisor script
 ENTRYPOINT ["/usr/bin/tini", "--"]
