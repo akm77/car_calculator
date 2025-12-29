@@ -125,6 +125,7 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=40s \
 
 # Create directories for volumes (config and logs)
 RUN mkdir -p /app/logs
+RUN mkdir -p /app/config
 
 # Use tini as PID 1 for proper signal handling and run supervisor script
 ENTRYPOINT ["/usr/bin/tini", "--"]
