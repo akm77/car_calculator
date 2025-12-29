@@ -84,7 +84,7 @@ CONFIG_METADATA: dict[ConfigFile, dict[str, Any]] = {
     ConfigFile.COMMISSIONS: {
         "filename": "commissions.yml",
         "description": "Комиссии (включая bank_commission)",
-        "required_keys": ["company_commission", "bank_commission"],
+        "required_keys": ["default_commission_usd", "bank_commission"],
     },
     ConfigFile.RATES: {
         "filename": "rates.yml",
