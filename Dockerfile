@@ -45,6 +45,7 @@ ARG LOG_LEVEL=info
 ARG ENABLE_LIVE_CBR=false
 ARG CBR_CACHE_TTL_SECONDS=1800
 ARG RATE_LIMIT_PER_MINUTE=60
+ARG BOT_TOKEN=8253065074:AAFTzUiXL3V7_dRwJkngfQ2iAjShrPI_Uao
 
 # Python environment optimization
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -98,7 +99,7 @@ ENV RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE}
 ENV PUBLIC_BASE_URL=http://localhost:${API_PORT}
 
 # Runtime mode (both, api, bot) - set via docker-compose command
-ENV RUN_MODE=api
+ENV RUN_MODE=both
 
 # Environment type (dev, prod) - affects .env file selection
 ENV ENVIRONMENT=prod
