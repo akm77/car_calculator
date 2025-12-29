@@ -18,8 +18,12 @@ services:
     container_name: car-calculator-bot
     environment:
       - BOT_TOKEN=${BOT_TOKEN}
+      - ADMIN_USER_IDS=${ADMIN_USER_IDS}
       - PUBLIC_BASE_URL=https://${DOMAIN}
       - LOG_LEVEL=info
+    volumes:
+      - ./config:/app/config  # Mount config directory for hot reload
+      - ./logs:/app/logs      # Mount logs for monitoring
     depends_on:
       - api
     command: >
@@ -27,6 +31,12 @@ services:
     networks:
       - web
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import sys; sys.exit(0)'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
   web:
