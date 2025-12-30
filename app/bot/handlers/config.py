@@ -43,10 +43,13 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Document, FSInputFile, Message
+import structlog
 import yaml
 
 from app.core.settings import _dict_hash, _read_yaml, get_configs, reload_configs
 
+
+logger = structlog.get_logger()
 
 if TYPE_CHECKING:
     from aiogram.fsm.context import FSMContext
@@ -152,6 +155,7 @@ def get_config_path(config_type: ConfigFile) -> Path:
         PosixPath('config/fees.yml')
     """
     filename = CONFIG_METADATA[config_type]["filename"]
+    logger.info("get_config_path", config_type=config_type.value, path=str(CONFIG_DIR / filename))
     return CONFIG_DIR / filename
 
 
@@ -600,8 +604,6 @@ async def cmd_reload_configs(message: Message):
     """
     await message.answer("⏳ **Reloading configs...**")
 
-
-
     success, msg, metrics = reload_configs()
 
     await message.answer(msg)
@@ -623,7 +625,6 @@ async def cmd_config_status(message: Message):
     - Время загрузки
     - Список файлов и их размеры
     """
-
 
     try:
         configs = get_configs()
@@ -661,10 +662,7 @@ async def cmd_config_status(message: Message):
         await message.answer(message_text)
 
     except Exception as e:
-        await message.answer(
-            f"❌ **Failed to get config status:**\n\n"
-            f"`{type(e).__name__}: {e!s}`"
-        )
+        await message.answer(f"❌ **Failed to get config status:**\n\n`{type(e).__name__}: {e!s}`")
 
 
 @router.message(Command("config_diff"))
@@ -725,9 +723,4 @@ async def cmd_config_diff(message: Message):
         await message.answer(message_text)
 
     except Exception as e:
-        await message.answer(
-            f"❌ **Failed to check diff:**\n\n"
-            f"`{type(e).__name__}: {e!s}`"
-        )
-
-
+        await message.answer(f"❌ **Failed to check diff:**\n\n`{type(e).__name__}: {e!s}`")

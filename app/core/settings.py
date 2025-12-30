@@ -27,6 +27,7 @@ _env_file = ".env" if _raw_env in {"prod", "production"} else ".env.dev"
 
 def _read_yaml(name: str) -> dict[str, Any]:
     path = CONFIG_DIR / name
+    logger.info(f"Settings: Reading {name} from {path}")
     if not path.exists():
         return {}
     with path.open("r", encoding="utf-8") as f:
