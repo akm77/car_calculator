@@ -49,7 +49,7 @@ import yaml
 from app.core.settings import _dict_hash, _read_yaml, get_configs, reload_configs
 
 
-logger = structlog.get_logger()
+logger = structlog.get_logger(__name__)
 
 if TYPE_CHECKING:
     from aiogram.fsm.context import FSMContext

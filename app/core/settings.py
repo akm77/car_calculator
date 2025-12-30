@@ -15,7 +15,7 @@ import structlog
 import yaml
 
 
-logger = structlog.get_logger()
+logger = structlog.get_logger(__name__)
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
