@@ -4,7 +4,6 @@ from datetime import UTC, datetime
 from functools import lru_cache
 import hashlib
 import json
-import logging
 import os
 from pathlib import Path
 import time
@@ -12,14 +11,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import structlog
 import yaml
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(filename)s:%(lineno)d #%(levelname)-8s [%(asctime)s] - %(name)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -31,7 +27,6 @@ _env_file = ".env" if _raw_env in {"prod", "production"} else ".env.dev"
 
 def _read_yaml(name: str) -> dict[str, Any]:
     path = CONFIG_DIR / name
-    logger.info(f"Settings: Reading {name} from {path.absolute()}")
     if not path.exists():
         return {}
     with path.open("r", encoding="utf-8") as f:

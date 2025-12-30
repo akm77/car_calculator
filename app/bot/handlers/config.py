@@ -35,7 +35,6 @@ from datetime import UTC, datetime
 from enum import Enum
 import hashlib
 import html
-import logging
 from pathlib import Path
 import shutil
 from typing import TYPE_CHECKING, Any
@@ -48,12 +47,6 @@ import yaml
 
 from app.core.settings import _dict_hash, _read_yaml, get_configs, reload_configs
 
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(filename)s:%(lineno)d #%(levelname)-8s [%(asctime)s] - %(name)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from aiogram.fsm.context import FSMContext
@@ -159,7 +152,9 @@ def get_config_path(config_type: ConfigFile) -> Path:
         PosixPath('config/fees.yml')
     """
     filename = CONFIG_METADATA[config_type]["filename"]
-    logger.info("get_config_path: %s, %s", config_type.value, str((CONFIG_DIR / filename).absolute()))
+    logger.info(
+        "get_config_path: %s, %s", config_type.value, str((CONFIG_DIR / filename).absolute())
+    )
     return CONFIG_DIR / filename
 
 
