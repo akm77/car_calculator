@@ -152,9 +152,7 @@ def get_config_path(config_type: ConfigFile) -> Path:
         PosixPath('config/fees.yml')
     """
     filename = CONFIG_METADATA[config_type]["filename"]
-    logger.info(
-        "get_config_path: %s, %s", config_type.value, str((CONFIG_DIR / filename).absolute())
-    )
+
     return CONFIG_DIR / filename
 
 
