@@ -68,8 +68,8 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt \
 
 # Copy application code
 COPY app ./app
-COPY config ./config
-COPY tests ./tests
+# COPY config ./config
+COPY tests /tests
 COPY README.md ./README.md
 
 # Copy and make supervisor script executable
