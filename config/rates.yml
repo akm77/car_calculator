@@ -32,90 +32,101 @@ utilization_m1_personal:
     # ≤ 1000 см³
     - volume_range: [0, 1000]
       power_brackets:
-        - {power_kw_max: 51.48, coefficient_lt3: 0.17, coefficient_gt3: 0.26}
-        - {power_kw_max: 73.55, coefficient_lt3: 0.17, coefficient_gt3: 0.26}
-        - {power_kw_max: 95.61, coefficient_lt3: 0.17, coefficient_gt3: 0.26}
-        - {power_kw_max: 117.68, coefficient_lt3: 0.17, coefficient_gt3: 0.26}
-        - {power_kw_max: null, coefficient_lt3: 0.17, coefficient_gt3: 0.26}
+        - {power_kw_max: 51.49, coefficient_lt3: 0.17, coefficient_gt3: 0.26}  # 70 HP
+        - {power_kw_max: 73.55, coefficient_lt3: 0.17, coefficient_gt3: 0.26}  # 100 HP
+        - {power_kw_max: 95.62, coefficient_lt3: 0.17, coefficient_gt3: 0.26}  # 130 HP
+        - {power_kw_max: 117.68, coefficient_lt3: 0.17, coefficient_gt3: 0.26}  # 160 HP
+        - {power_kw_max: 139.75, coefficient_lt3: 15.36, coefficient_gt3: 28.43}  # 190 HP
+        - {power_kw_max: 161.81, coefficient_lt3: 15.84, coefficient_gt3: 29.28}  # 220 HP
+        - {power_kw_max: 183.88, coefficient_lt3: 16.20, coefficient_gt3: 30.12}  # 250 HP
+        - {power_kw_max: 205.94, coefficient_lt3: 17.28, coefficient_gt3: 30.12}  # 280 HP
+        - {power_kw_max: 228.01, coefficient_lt3: 17.28, coefficient_gt3: 30.12}  # 310 HP
+        - {power_kw_max: 250.07, coefficient_lt3: 17.28, coefficient_gt3: 30.12}  # 340 HP
+        - {power_kw_max: 272.14, coefficient_lt3: 17.28, coefficient_gt3: 30.12}  # 370 HP
+        - {power_kw_max: 294.20, coefficient_lt3: 17.28, coefficient_gt3: 30.12}  # 400 HP
+        - {power_kw_max: 316.27, coefficient_lt3: 17.28, coefficient_gt3: 30.12}  # 430 HP
+        - {power_kw_max: 338.33, coefficient_lt3: 17.28, coefficient_gt3: 30.12}  # 460 HP
+        - {power_kw_max: 367.75, coefficient_lt3: 17.28, coefficient_gt3: 30.12}  # 500 HP
+        - {power_kw_max: null, coefficient_lt3: 17.28, coefficient_gt3: 30.12}  # > 500 HP
 
     # 1001–2000 см³
     - volume_range: [1001, 2000]
       power_brackets:
-        - {power_kw_max: 51.48, coefficient_lt3: 0.17, coefficient_gt3: 0.26}
-        - {power_kw_max: 73.55, coefficient_lt3: 0.17, coefficient_gt3: 0.26}
-        - {power_kw_max: 95.61, coefficient_lt3: 0.17, coefficient_gt3: 0.26}
-        - {power_kw_max: 117.68, coefficient_lt3: 0.17, coefficient_gt3: 0.26}
-        - {power_kw_max: 139.75, coefficient_lt3: 37.5, coefficient_gt3: 62.2}
-        - {power_kw_max: 161.81, coefficient_lt3: 39.7, coefficient_gt3: 66.0}
-        - {power_kw_max: 183.88, coefficient_lt3: 42.1, coefficient_gt3: 69.9}
-        - {power_kw_max: 205.94, coefficient_lt3: 47.6, coefficient_gt3: 76.6}
-        - {power_kw_max: 228.00, coefficient_lt3: 53.8, coefficient_gt3: 83.8}
-        - {power_kw_max: 250.07, coefficient_lt3: 60.8, coefficient_gt3: 91.8}
-        - {power_kw_max: 272.13, coefficient_lt3: 69.3, coefficient_gt3: 100.5}
-        - {power_kw_max: 294.20, coefficient_lt3: 79.0, coefficient_gt3: 110.0}
-        - {power_kw_max: 316.26, coefficient_lt3: 90.0, coefficient_gt3: 120.5}
-        - {power_kw_max: 338.33, coefficient_lt3: 102.7, coefficient_gt3: 132.0}
-        - {power_kw_max: 367.75, coefficient_lt3: 117.0, coefficient_gt3: 144.5}
-        - {power_kw_max: null, coefficient_lt3: 133.4, coefficient_gt3: 158.2}
+        - {power_kw_max: 51.49, coefficient_lt3: 0.17, coefficient_gt3: 0.26}  # 70 HP
+        - {power_kw_max: 73.55, coefficient_lt3: 0.17, coefficient_gt3: 0.26}  # 100 HP
+        - {power_kw_max: 95.62, coefficient_lt3: 0.17, coefficient_gt3: 0.26}  # 130 HP
+        - {power_kw_max: 117.68, coefficient_lt3: 0.17, coefficient_gt3: 0.26}  # 160 HP
+        - {power_kw_max: 139.75, coefficient_lt3: 45.00, coefficient_gt3: 76.64}  # 190 HP
+        - {power_kw_max: 161.81, coefficient_lt3: 47.64, coefficient_gt3: 79.20}  # 220 HP
+        - {power_kw_max: 183.88, coefficient_lt3: 50.52, coefficient_gt3: 83.88}  # 250 HP
+        - {power_kw_max: 205.94, coefficient_lt3: 57.12, coefficient_gt3: 91.92}  # 280 HP
+        - {power_kw_max: 228.01, coefficient_lt3: 64.56, coefficient_gt3: 100.56}  # 310 HP
+        - {power_kw_max: 250.07, coefficient_lt3: 72.96, coefficient_gt3: 110.16}  # 340 HP
+        - {power_kw_max: 272.14, coefficient_lt3: 83.16, coefficient_gt3: 120.60}  # 370 HP
+        - {power_kw_max: 294.20, coefficient_lt3: 94.80, coefficient_gt3: 132.00}  # 400 HP
+        - {power_kw_max: 316.27, coefficient_lt3: 108.00, coefficient_gt3: 144.60}  # 430 HP
+        - {power_kw_max: 338.33, coefficient_lt3: 123.24, coefficient_gt3: 158.40}  # 460 HP
+        - {power_kw_max: 367.75, coefficient_lt3: 140.40, coefficient_gt3: 173.40}  # 500 HP
+        - {power_kw_max: null, coefficient_lt3: 160.08, coefficient_gt3: 189.84}  # > 500 HP
 
     # 2001–3000 см³
     - volume_range: [2001, 3000]
       power_brackets:
-        - {power_kw_max: 51.48, coefficient_lt3: 0.17, coefficient_gt3: 0.26}
-        - {power_kw_max: 73.55, coefficient_lt3: 0.17, coefficient_gt3: 0.26}
-        - {power_kw_max: 95.61, coefficient_lt3: 0.17, coefficient_gt3: 0.26}
-        - {power_kw_max: 117.68, coefficient_lt3: 0.17, coefficient_gt3: 0.26}
-        - {power_kw_max: 139.75, coefficient_lt3: 96.11, coefficient_gt3: 144.0}
-        - {power_kw_max: 161.81, coefficient_lt3: 98.5, coefficient_gt3: 145.9}
-        - {power_kw_max: 183.88, coefficient_lt3: 100.1, coefficient_gt3: 148.0}
-        - {power_kw_max: 205.94, coefficient_lt3: 105.0, coefficient_gt3: 152.5}
-        - {power_kw_max: 228.00, coefficient_lt3: 109.2, coefficient_gt3: 157.1}
-        - {power_kw_max: 250.07, coefficient_lt3: 113.6, coefficient_gt3: 161.4}
-        - {power_kw_max: 272.13, coefficient_lt3: 118.1, coefficient_gt3: 165.9}
-        - {power_kw_max: 294.20, coefficient_lt3: 122.9, coefficient_gt3: 170.6}
-        - {power_kw_max: 316.26, coefficient_lt3: 127.8, coefficient_gt3: 175.4}
-        - {power_kw_max: 338.33, coefficient_lt3: 132.9, coefficient_gt3: 180.3}
-        - {power_kw_max: 367.75, coefficient_lt3: 138.2, coefficient_gt3: 185.3}
-        - {power_kw_max: null, coefficient_lt3: 143.7, coefficient_gt3: 190.5}
+        - {power_kw_max: 51.49, coefficient_lt3: 0.17, coefficient_gt3: 0.26}  # 70 HP
+        - {power_kw_max: 73.55, coefficient_lt3: 0.17, coefficient_gt3: 0.26}  # 100 HP
+        - {power_kw_max: 95.62, coefficient_lt3: 0.17, coefficient_gt3: 0.26}  # 130 HP
+        - {power_kw_max: 117.68, coefficient_lt3: 0.17, coefficient_gt3: 0.26}  # 160 HP
+        - {power_kw_max: 139.75, coefficient_lt3: 115.34, coefficient_gt3: 172.80}  # 190 HP
+        - {power_kw_max: 161.81, coefficient_lt3: 118.20, coefficient_gt3: 175.08}  # 220 HP
+        - {power_kw_max: 183.88, coefficient_lt3: 120.12, coefficient_gt3: 177.60}  # 250 HP
+        - {power_kw_max: 205.94, coefficient_lt3: 126.00, coefficient_gt3: 183.00}  # 280 HP
+        - {power_kw_max: 228.01, coefficient_lt3: 131.04, coefficient_gt3: 188.52}  # 310 HP
+        - {power_kw_max: 250.07, coefficient_lt3: 136.32, coefficient_gt3: 193.68}  # 340 HP
+        - {power_kw_max: 272.14, coefficient_lt3: 141.72, coefficient_gt3: 199.08}  # 370 HP
+        - {power_kw_max: 294.20, coefficient_lt3: 147.48, coefficient_gt3: 204.72}  # 400 HP
+        - {power_kw_max: 316.27, coefficient_lt3: 153.36, coefficient_gt3: 210.48}  # 430 HP
+        - {power_kw_max: 338.33, coefficient_lt3: 159.48, coefficient_gt3: 216.36}  # 460 HP
+        - {power_kw_max: 367.75, coefficient_lt3: 165.84, coefficient_gt3: 222.36}  # 500 HP
+        - {power_kw_max: null, coefficient_lt3: 172.44, coefficient_gt3: 228.60}  # > 500 HP
 
     # 3001–3500 см³
     - volume_range: [3001, 3500]
       power_brackets:
-        - {power_kw_max: 51.48, coefficient_lt3: 107.67, coefficient_gt3: 164.84}
-        - {power_kw_max: 73.55, coefficient_lt3: 107.67, coefficient_gt3: 164.84}
-        - {power_kw_max: 95.61, coefficient_lt3: 107.67, coefficient_gt3: 164.84}
-        - {power_kw_max: 117.68, coefficient_lt3: 107.67, coefficient_gt3: 164.84}
-        - {power_kw_max: 139.75, coefficient_lt3: 109.8, coefficient_gt3: 166.7}
-        - {power_kw_max: 161.81, coefficient_lt3: 112.0, coefficient_gt3: 168.5}
-        - {power_kw_max: 183.88, coefficient_lt3: 114.3, coefficient_gt3: 170.3}
-        - {power_kw_max: 205.94, coefficient_lt3: 117.1, coefficient_gt3: 172.7}
-        - {power_kw_max: 228.00, coefficient_lt3: 120.0, coefficient_gt3: 177.0}
-        - {power_kw_max: 250.07, coefficient_lt3: 126.6, coefficient_gt3: 181.5}
-        - {power_kw_max: 272.13, coefficient_lt3: 133.6, coefficient_gt3: 186.9}
-        - {power_kw_max: 294.20, coefficient_lt3: 141.0, coefficient_gt3: 192.5}
-        - {power_kw_max: 316.26, coefficient_lt3: 148.7, coefficient_gt3: 198.3}
-        - {power_kw_max: 338.33, coefficient_lt3: 156.9, coefficient_gt3: 204.2}
-        - {power_kw_max: 367.75, coefficient_lt3: 165.5, coefficient_gt3: 210.4}
-        - {power_kw_max: null, coefficient_lt3: 174.6, coefficient_gt3: 216.7}
+        - {power_kw_max: 51.49, coefficient_lt3: 129.20, coefficient_gt3: 197.81}  # 70 HP
+        - {power_kw_max: 73.55, coefficient_lt3: 129.20, coefficient_gt3: 197.81}  # 100 HP
+        - {power_kw_max: 95.62, coefficient_lt3: 129.20, coefficient_gt3: 197.81}  # 130 HP
+        - {power_kw_max: 117.68, coefficient_lt3: 129.20, coefficient_gt3: 197.81}  # 160 HP
+        - {power_kw_max: 139.75, coefficient_lt3: 131.76, coefficient_gt3: 200.04}  # 190 HP
+        - {power_kw_max: 161.81, coefficient_lt3: 134.40, coefficient_gt3: 202.20}  # 220 HP
+        - {power_kw_max: 183.88, coefficient_lt3: 137.16, coefficient_gt3: 204.36}  # 250 HP
+        - {power_kw_max: 205.94, coefficient_lt3: 140.52, coefficient_gt3: 207.24}  # 280 HP
+        - {power_kw_max: 228.01, coefficient_lt3: 144.00, coefficient_gt3: 212.40}  # 310 HP
+        - {power_kw_max: 250.07, coefficient_lt3: 151.92, coefficient_gt3: 217.80}  # 340 HP
+        - {power_kw_max: 272.14, coefficient_lt3: 160.32, coefficient_gt3: 224.28}  # 370 HP
+        - {power_kw_max: 294.20, coefficient_lt3: 169.20, coefficient_gt3: 231.00}  # 400 HP
+        - {power_kw_max: 316.27, coefficient_lt3: 178.44, coefficient_gt3: 237.96}  # 430 HP
+        - {power_kw_max: 338.33, coefficient_lt3: 188.28, coefficient_gt3: 245.04}  # 460 HP
+        - {power_kw_max: 367.75, coefficient_lt3: 198.60, coefficient_gt3: 252.48}  # 500 HP
+        - {power_kw_max: null, coefficient_lt3: 209.52, coefficient_gt3: 260.04}  # > 500 HP
 
     # > 3500 см³
     - volume_range: [3501, 999999]
       power_brackets:
-        - {power_kw_max: 51.48, coefficient_lt3: 137.11, coefficient_gt3: 180.24}
-        - {power_kw_max: 73.55, coefficient_lt3: 137.11, coefficient_gt3: 180.24}
-        - {power_kw_max: 95.61, coefficient_lt3: 137.11, coefficient_gt3: 180.24}
-        - {power_kw_max: 117.68, coefficient_lt3: 137.11, coefficient_gt3: 180.24}
-        - {power_kw_max: 139.75, coefficient_lt3: 139.4, coefficient_gt3: 182.9}
-        - {power_kw_max: 161.81, coefficient_lt3: 141.8, coefficient_gt3: 185.7}
-        - {power_kw_max: 183.88, coefficient_lt3: 144.2, coefficient_gt3: 188.5}
-        - {power_kw_max: 205.94, coefficient_lt3: 147.1, coefficient_gt3: 192.8}
-        - {power_kw_max: 228.00, coefficient_lt3: 150.0, coefficient_gt3: 197.2}
-        - {power_kw_max: 250.07, coefficient_lt3: 155.3, coefficient_gt3: 208.0}
-        - {power_kw_max: 272.13, coefficient_lt3: 160.73, coefficient_gt3: 219.5}
-        - {power_kw_max: 294.20, coefficient_lt3: 166.4, coefficient_gt3: 231.6}
-        - {power_kw_max: 316.26, coefficient_lt3: 172.2, coefficient_gt3: 244.3}
-        - {power_kw_max: 338.33, coefficient_lt3: 178.2, coefficient_gt3: 257.8}
-        - {power_kw_max: 367.75, coefficient_lt3: 184.4, coefficient_gt3: 272.0}
-        - {power_kw_max: null, coefficient_lt3: 190.9, coefficient_gt3: 286.9}
+        - {power_kw_max: 51.49, coefficient_lt3: 164.53, coefficient_gt3: 216.29}  # 70 HP
+        - {power_kw_max: 73.55, coefficient_lt3: 164.53, coefficient_gt3: 216.29}  # 100 HP
+        - {power_kw_max: 95.62, coefficient_lt3: 164.53, coefficient_gt3: 216.29}  # 130 HP
+        - {power_kw_max: 117.68, coefficient_lt3: 164.53, coefficient_gt3: 216.29}  # 160 HP
+        - {power_kw_max: 139.75, coefficient_lt3: 167.28, coefficient_gt3: 219.48}  # 190 HP
+        - {power_kw_max: 161.81, coefficient_lt3: 170.16, coefficient_gt3: 222.84}  # 220 HP
+        - {power_kw_max: 183.88, coefficient_lt3: 173.04, coefficient_gt3: 226.20}  # 250 HP
+        - {power_kw_max: 205.94, coefficient_lt3: 176.52, coefficient_gt3: 231.36}  # 280 HP
+        - {power_kw_max: 228.01, coefficient_lt3: 180.00, coefficient_gt3: 236.64}  # 310 HP
+        - {power_kw_max: 250.07, coefficient_lt3: 186.36, coefficient_gt3: 249.60}  # 340 HP
+        - {power_kw_max: 272.14, coefficient_lt3: 192.88, coefficient_gt3: 263.40}  # 370 HP
+        - {power_kw_max: 294.20, coefficient_lt3: 199.68, coefficient_gt3: 277.92}  # 400 HP
+        - {power_kw_max: 316.27, coefficient_lt3: 206.64, coefficient_gt3: 293.16}  # 430 HP
+        - {power_kw_max: 338.33, coefficient_lt3: 213.84, coefficient_gt3: 309.36}  # 460 HP
+        - {power_kw_max: 367.75, coefficient_lt3: 221.28, coefficient_gt3: 326.40}  # 500 HP
+        - {power_kw_max: null, coefficient_lt3: 229.08, coefficient_gt3: 344.28}  # > 500 HP
 
 live_source: "cbr"
